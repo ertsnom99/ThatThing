@@ -6,17 +6,9 @@ using UnityEngine;
 [CustomEditor(typeof(LevelLayout))]
 public class HouseLayoutEditor : Editor
 {
-    private LevelLayout _levelLayout;
-
-    private SerializedProperty _serializedRooms;
-    private SerializedProperty _serializedConnections;
-
-    private void OnEnable()
+    public override void OnInspectorGUI()
     {
-        // Get the HouseLayout that is being inspected
-        _levelLayout = (LevelLayout)target;
-
-        _serializedRooms = serializedObject.FindProperty("_rooms");
-        _serializedConnections = serializedObject.FindProperty("_connections");
+        GUI.enabled = false;
+        DrawDefaultInspector();
     }
 }

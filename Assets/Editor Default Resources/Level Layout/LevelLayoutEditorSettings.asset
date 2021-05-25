@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 942ca68d2089dca4088cd07725bed14c, type: 3}
   m_Name: LevelLayoutEditorSettings
   m_EditorClassIdentifier: 
-  CurrentLevelLayout: {fileID: 0}
-  Skin: {fileID: 0}
+  CurrentLevelLayout: {fileID: 11400000, guid: fd4cd0846df25b54783f11ee6b2b9053, type: 2}
+  Skin: {fileID: 11400000, guid: 7c5c40f6b5287864180bcf2de005b7d0, type: 2}

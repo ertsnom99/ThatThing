@@ -16,10 +16,6 @@ MonoBehaviour:
   - Id: 0
     Position: {x: 0, y: 0, z: 0}
   - Id: 1
-    Position: {x: 30, y: 0, z: -30}
-  _connections:
-  - RoomA: 0
-    RoomB: 1
-    Cost: 5
-    Traversable: 1
-    Type: 0
+    Position: {x: 10, y: 0, z: -20}
+  _connections: []
+  _roomIdCount: 7
