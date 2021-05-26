@@ -4,6 +4,4 @@ using UnityEngine;
 public class LevelLayoutEditorSettings : ScriptableObject
 {
     public LevelLayout CurrentLevelLayout;
-
-    public GUISkin Skin;
 }

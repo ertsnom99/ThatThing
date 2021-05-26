@@ -50,12 +50,15 @@ public class LevelLayout : ScriptableObject
     [HideInInspector]
     [SerializeField]
     private int _roomIdCount = 0;
+    [HideInInspector]
+    [SerializeField]
+    private int _connectionIdCount = 0;
 
     #region Methods for the editor window
     public void AddRoom(Transform transform = null)
     {
         Room newRoom = new Room();
-        newRoom.Id = GenerateUniqueId();
+        newRoom.Id = GenerateUniqueRoomId();
 
         if (transform)
         {
@@ -68,10 +71,18 @@ public class LevelLayout : ScriptableObject
         _rooms = tempRooms.ToArray();
     }
 
-    private int GenerateUniqueId()
+    private int GenerateUniqueRoomId()
     {
         int newId = _roomIdCount;
         _roomIdCount++;
+
+        return newId;
+    }
+
+    private int GenerateUniqueConnectionId()
+    {
+        int newId = _connectionIdCount;
+        _connectionIdCount++;
 
         return newId;
     }
@@ -82,6 +93,41 @@ public class LevelLayout : ScriptableObject
         tempRooms.Remove(_rooms[index]);
 
         _rooms = tempRooms.ToArray();
+    }
+
+    public List<string> GetAllRoomIds()
+    {
+        List<string> idList = new List<string>();
+
+        foreach(Room room in Rooms)
+        {
+            idList.Add(room.Id.ToString());
+        }
+
+        return idList;
+    }
+
+    public void AddConnection(int roomA, int roomB)
+    {
+        Connection newConnection = new Connection();
+        newConnection.Id = GenerateUniqueConnectionId();
+        newConnection.RoomA = roomA;
+        newConnection.RoomB = roomB;
+        newConnection.Cost = 1;
+        newConnection.Traversable = true;
+
+        List<Connection> tempConnections = new List<Connection>(_connections);
+        tempConnections.Add(newConnection);
+
+        _connections = tempConnections.ToArray();
+    }
+
+    public void RemoveConnection(int index)
+    {
+        List<Connection> tempConnections = new List<Connection>(_connections);
+        tempConnections.Remove(_connections[index]);
+
+        _connections = tempConnections.ToArray();
     }
     #endregion
 

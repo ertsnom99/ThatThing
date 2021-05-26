@@ -13,4 +13,3 @@ MonoBehaviour:
   m_Name: LevelLayoutEditorSettings
   m_EditorClassIdentifier: 
   CurrentLevelLayout: {fileID: 11400000, guid: fd4cd0846df25b54783f11ee6b2b9053, type: 2}
-  Skin: {fileID: 11400000, guid: 7c5c40f6b5287864180bcf2de005b7d0, type: 2}

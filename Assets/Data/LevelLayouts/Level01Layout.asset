@@ -13,9 +13,32 @@ MonoBehaviour:
   m_Name: Level01Layout
   m_EditorClassIdentifier: 
   _rooms:
-  - Id: 0
+  - Id: 10
+    Position: {x: 20, y: 0, z: 0}
+  - Id: 11
+    Position: {x: 0, y: 0, z: -30}
+  - Id: 12
+    Position: {x: 20, y: 0, z: -30}
+  - Id: 13
     Position: {x: 0, y: 0, z: 0}
-  - Id: 1
-    Position: {x: 10, y: 0, z: -20}
-  _connections: []
-  _roomIdCount: 7
+  _connections:
+  - Id: 4
+    RoomA: 0
+    RoomB: 1
+    Cost: 0
+    Traversable: 1
+    Type: 0
+  - Id: 5
+    RoomA: 3
+    RoomB: 0
+    Cost: 0
+    Traversable: 1
+    Type: 0
+  - Id: 7
+    RoomA: 1
+    RoomB: 2
+    Cost: 1
+    Traversable: 1
+    Type: 0
+  _roomIdCount: 14
+  _connectionIdCount: 8
