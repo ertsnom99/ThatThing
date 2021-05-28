@@ -6,13 +6,15 @@ using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 
-public class LevelLayoutEditorWindow : EditorWindow
+public class LevelStateEditorWindow : EditorWindow
 {
     #region Variables
     private string _relatedScene;
-    private LevelLayout _levelLayout;
+    private LevelState _levelState;
 
-    private SerializedObject _serializedLevelLayout;
+    private SerializedObject _serializedLevelState;
+
+    // Level graph variables
     private ReorderableList _rooms;
     private ReorderableList _connections;
 
@@ -34,12 +36,12 @@ public class LevelLayoutEditorWindow : EditorWindow
     private const float _editorMinWidth = 300;
     private const float _editorMinHeight = 300;
 
-    // LevelLayout ScriptableObject name
-    private const string _scriptableObjectName = "LevelLayout";
+    // LevelState ScriptableObject name
+    private const string _scriptableObjectName = "LevelState";
     #endregion
 
     // Add menu item to the main menu and inspector context menus and the static function becomes a menu command
-    [MenuItem("Level Layout/Editor")]
+    [MenuItem("Level State/Editor")]
     public static void ShowEditor()
     {
         Type inspectorType = Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll");
@@ -47,7 +49,7 @@ public class LevelLayoutEditorWindow : EditorWindow
         // Returns the first EditorWindow of type t which is currently on the screen.
         // If there is none, creates and shows new window and returns the instance of it.
         // Will attempt to dock next to inspector window
-        LevelLayoutEditorWindow editor = GetWindow<LevelLayoutEditorWindow>("Level Layout", inspectorType);
+        LevelStateEditorWindow editor = GetWindow<LevelStateEditorWindow>("Level State", inspectorType);
         editor.minSize = new Vector2(_editorMinWidth, _editorMinHeight);
     }
 
@@ -59,25 +61,25 @@ public class LevelLayoutEditorWindow : EditorWindow
 
     private void DrawEditor()
     {
-        string pathToLevelLayout = GetPathToLevelLayout();
-        string fullPath = Application.dataPath + pathToLevelLayout.Remove(0, 6);
+        string pathToLevelState = GetPathToLevelState();
+        string fullPath = Application.dataPath + pathToLevelState.Remove(0, 6);
 
-        // Show button to create LevelLayout if the directory doesn't exist or their is no LevelLayout inside that folder
-        if (!Directory.Exists(fullPath) || AssetDatabase.FindAssets(_scriptableObjectName, new[] { pathToLevelLayout }).Length < 1)
+        // Show button to create LevelState if the directory doesn't exist or their is no LevelState inside that folder
+        if (!Directory.Exists(fullPath) || AssetDatabase.FindAssets(_scriptableObjectName, new[] { pathToLevelState }).Length < 1)
         {
             _relatedScene = "";
 
-            // Clear the layout if there was one and repaint scene
-            if (_levelLayout)
+            // Clear _levelState if there was one and repaint scene
+            if (_levelState)
             {
-                _levelLayout = null;
+                _levelState = null;
                 SceneView.RepaintAll();
             }
 
             EditorGUILayout.Space(15);
 
-            // Create a LevelLayout when the button is clicked
-            if (GUILayout.Button("Create Layout"))
+            // Create a LevelState when the button is clicked
+            if (GUILayout.Button("Create Level State"))
             {
                 // Create folder if it doesn't exist
                 if (!Directory.Exists(fullPath))
@@ -85,7 +87,7 @@ public class LevelLayoutEditorWindow : EditorWindow
                     Directory.CreateDirectory(fullPath);
                 }
 
-                CreateLevelLayout(pathToLevelLayout);
+                CreateLevelState(pathToLevelState);
             }
             
             EditorGUILayout.Space(15);
@@ -96,14 +98,16 @@ public class LevelLayoutEditorWindow : EditorWindow
         string sceneName = EditorSceneManager.GetActiveScene().name;
 
         // When the level changed
-        if (_relatedScene != sceneName || _serializedLevelLayout == null)
+        if (_relatedScene != sceneName || _serializedLevelState == null)
         {
             _relatedScene = sceneName;
-            _levelLayout = GetLevelLayout(pathToLevelLayout);
+            _levelState = GetLevelState(pathToLevelState);
 
-            _serializedLevelLayout = new SerializedObject(_levelLayout);
-            _rooms = new ReorderableList(_serializedLevelLayout, _serializedLevelLayout.FindProperty("_rooms"), false, true, false, false);
-            _connections = new ReorderableList(_serializedLevelLayout, _serializedLevelLayout.FindProperty("_connections"), false, true, false, false);
+            _serializedLevelState = new SerializedObject(_levelState);
+
+            // Level graph serialization
+            _rooms = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._rooms"), false, true, false, false);
+            _connections = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._connections"), false, true, false, false);
 
             // Reset selections
             _selectedRoom = -1;
@@ -112,19 +116,19 @@ public class LevelLayoutEditorWindow : EditorWindow
             _selectedRoomB = 0;
         }
 
-        // Make sure the the LevelLayout is updated (for when the ScriptableObject was changed outside the editor window)
-        _serializedLevelLayout.Update();
+        // Make sure that the LevelState is updated (for when the ScriptableObject was changed outside the editor window)
+        _serializedLevelState.Update();
 
         DrawRoomsSection();
         EditorGUILayout.Space(15);
         DrawConnectionsSection();
 
         // Apply changes
-        _serializedLevelLayout.ApplyModifiedProperties();
+        _serializedLevelState.ApplyModifiedProperties();
 
         SceneView.RepaintAll();
     }
-
+    
     private void DrawRoomsSection()
     {
         // Add list of rooms
@@ -136,10 +140,10 @@ public class LevelLayoutEditorWindow : EditorWindow
 
         if (GUILayout.Button("Add room", GUILayout.Width(200)))
         {
-            _levelLayout.AddRoom(_selectedTransform);
+            _levelState.Graph.AddRoom(_selectedTransform);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelLayout);
+            EditorUtility.SetDirty(_levelState);
         }
 
         // Field to select a transform
@@ -157,10 +161,10 @@ public class LevelLayoutEditorWindow : EditorWindow
         // "Remove selected room" button
         if (GUILayout.Button("Remove selected room"))
         {
-            _levelLayout.RemoveRoom(_selectedRoom);
+            _levelState.Graph.RemoveRoom(_selectedRoom);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelLayout);
+            EditorUtility.SetDirty(_levelState);
 
             _selectedRoom = -1;
         }
@@ -207,7 +211,7 @@ public class LevelLayoutEditorWindow : EditorWindow
         _connections.DoLayoutList();
 
         // Add dropdown for room
-        List<string> ids = _levelLayout.GetAllRoomIds();
+        List<string> ids = _levelState.Graph.GetAllRoomIds();
         ids.Insert(0, "None");
 
         GUILayout.BeginHorizontal();
@@ -225,10 +229,10 @@ public class LevelLayoutEditorWindow : EditorWindow
 
         if (GUILayout.Button("Add connection"))
         {
-            _levelLayout.AddConnection(_selectedRoomA - 1, _selectedRoomB - 1);
+            _levelState.Graph.AddConnection(_selectedRoomA - 1, _selectedRoomB - 1);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelLayout);
+            EditorUtility.SetDirty(_levelState);
 
             _selectedRoomA = 0;
             _selectedRoomB = 0;
@@ -243,10 +247,10 @@ public class LevelLayoutEditorWindow : EditorWindow
         // "Remove selected connection" button
         if (GUILayout.Button("Remove selected connection"))
         {
-            _levelLayout.RemoveConnection(_selectedConnection);
+            _levelState.Graph.RemoveConnection(_selectedConnection);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelLayout);
+            EditorUtility.SetDirty(_levelState);
 
             _selectedConnection = -1;
         }
@@ -280,9 +284,9 @@ public class LevelLayoutEditorWindow : EditorWindow
             SerializedProperty Traversable = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
             SerializedProperty Type = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
             
-            if (_levelLayout.Rooms.Length > RoomA.intValue && _levelLayout.Rooms.Length > RoomB.intValue)
+            if (_levelState.Graph.Rooms.Length > RoomA.intValue && _levelState.Graph.Rooms.Length > RoomB.intValue)
             {
-                string roomAToRoomB = "Room " + _levelLayout.Rooms[RoomA.intValue].Id.ToString() + " to room " + _levelLayout.Rooms[RoomB.intValue].Id.ToString();
+                string roomAToRoomB = "Room " + _levelState.Graph.Rooms[RoomA.intValue].Id.ToString() + " to room " + _levelState.Graph.Rooms[RoomB.intValue].Id.ToString();
 
                 // Draw the necessary fields
                 EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
@@ -311,22 +315,22 @@ public class LevelLayoutEditorWindow : EditorWindow
     #endregion
 
     #region Asset Methods
-    private string GetPathToLevelLayout()
+    private string GetPathToLevelState()
     {
         string path = EditorSceneManager.GetActiveScene().path;
         path = path.Remove(path.LastIndexOf(".unity"), 6);
         return path;
     }
 
-    private void CreateLevelLayout(string pathToLevelLayout)
+    private void CreateLevelState(string pathToLevelState)
     {
-        LevelLayout levelLayout = ScriptableObject.CreateInstance<LevelLayout>();
-        AssetDatabase.CreateAsset(levelLayout, pathToLevelLayout + "/" + _scriptableObjectName + ".asset");
+        LevelState levelState = ScriptableObject.CreateInstance<LevelState>();
+        AssetDatabase.CreateAsset(levelState, pathToLevelState + "/" + _scriptableObjectName + ".asset");
     }
 
-    private LevelLayout GetLevelLayout(string pathToLevelLayout)
+    private LevelState GetLevelState(string pathToLevelState)
     {
-        return (LevelLayout)AssetDatabase.LoadAssetAtPath(pathToLevelLayout + "/" + _scriptableObjectName + ".asset", typeof(LevelLayout));
+        return (LevelState)AssetDatabase.LoadAssetAtPath(pathToLevelState + "/" + _scriptableObjectName + ".asset", typeof(LevelState));
     }
     #endregion
 
@@ -353,12 +357,12 @@ public class LevelLayoutEditorWindow : EditorWindow
 
     private void OnSceneGUI(SceneView sceneView)
     {
-        if (_levelLayout != null)
+        if (_levelState != null)
         {
             // Draw room debugs
             if (_rooms != null)
             {
-                for (int i = 0; i < _levelLayout.Rooms.Length; i++)
+                for (int i = 0; i < _levelState.Graph.Rooms.Length; i++)
                 {
                     // If the room is selected during the creation of a connection
                     if ((_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
@@ -375,7 +379,7 @@ public class LevelLayoutEditorWindow : EditorWindow
                         Handles.color = _debugRoomColor;
                     }
 
-                    Handles.DrawSolidDisc(_levelLayout.Rooms[i].Position + Vector3.up * .1f, Vector3.up, .5f);
+                    Handles.DrawSolidDisc(_levelState.Graph.Rooms[i].Position + Vector3.up * .1f, Vector3.up, .5f);
                 }
             }
 
@@ -385,7 +389,7 @@ public class LevelLayoutEditorWindow : EditorWindow
                 int roomAIndex;
                 int roomBIndex;
 
-                for (int i = 0; i < _levelLayout.Connections.Length; i++)
+                for (int i = 0; i < _levelState.Graph.Connections.Length; i++)
                 {
                     if (_selectedRoomA == 0 && _selectedRoomB == 0 && i == _connections.index)
                     {
@@ -396,10 +400,10 @@ public class LevelLayoutEditorWindow : EditorWindow
                         Handles.color = _debugConnectionColor;
                     }
 
-                    roomAIndex = _levelLayout.Connections[i].RoomA;
-                    roomBIndex = _levelLayout.Connections[i].RoomB;
+                    roomAIndex = _levelState.Graph.Connections[i].RoomA;
+                    roomBIndex = _levelState.Graph.Connections[i].RoomB;
 
-                    Handles.DrawLine(_levelLayout.Rooms[roomAIndex].Position + Vector3.up * .1f, _levelLayout.Rooms[roomBIndex].Position + Vector3.up * .1f, .5f);
+                    Handles.DrawLine(_levelState.Graph.Rooms[roomAIndex].Position + Vector3.up * .1f, _levelState.Graph.Rooms[roomBIndex].Position + Vector3.up * .1f, .5f);
                 }
             }
         }

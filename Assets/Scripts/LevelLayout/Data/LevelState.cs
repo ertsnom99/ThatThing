@@ -26,7 +26,8 @@ public class Connection
     public ConnectionType Type;
 }
 
-public class LevelLayout : ScriptableObject
+[Serializable]
+public class LevelGraph
 {
     [SerializeField]
     private Room[] _rooms = new Room[0];
@@ -151,6 +152,17 @@ public class LevelLayout : ScriptableObject
     }
     #endregion
 
-
     // TODO: Method to create a adjacency matrix
+}
+
+public class LevelState : ScriptableObject
+{
+    [SerializeField]
+    private LevelGraph _graph = new LevelGraph();
+
+    public LevelGraph Graph
+    {
+        get { return _graph; }
+        private set { _graph = value; }
+    }
 }
