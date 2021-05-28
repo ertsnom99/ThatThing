@@ -26,12 +26,11 @@ public class Connection
     public ConnectionType Type;
 }
 
-[CreateAssetMenu(fileName = "LevelLayout", menuName = "Level Layout/Level Layout")]
 public class LevelLayout : ScriptableObject
 {
     [SerializeField]
     private Room[] _rooms = new Room[0];
-
+    // TODO: Replace getter by method that return a pure COPY of _rooms
     public Room[] Rooms
     {
         get { return _rooms; }
@@ -40,7 +39,7 @@ public class LevelLayout : ScriptableObject
 
     [SerializeField]
     private Connection[] _connections = new Connection[0];
-
+    // TODO: Replace getter by method that return a pure COPY of _connections
     public Connection[] Connections
     {
         get { return _connections; }
@@ -89,6 +88,27 @@ public class LevelLayout : ScriptableObject
 
     public void RemoveRoom(int index)
     {
+        for (int i = _connections.Length; i > 0; i--)
+        {
+            // Remove any connections that uses the removed room
+            if (_connections[i - 1].RoomA == index || _connections[i - 1].RoomB == index)
+            {
+                RemoveConnection(i - 1);
+                continue;
+            }
+
+            // Fix indexes
+            if (_connections[i - 1].RoomA > index)
+            {
+                _connections[i - 1].RoomA -= 1;
+            }
+
+            if (_connections[i - 1].RoomB > index)
+            {
+                _connections[i - 1].RoomB -= 1;
+            }
+        }
+
         List<Room> tempRooms = new List<Room>(_rooms);
         tempRooms.Remove(_rooms[index]);
 
