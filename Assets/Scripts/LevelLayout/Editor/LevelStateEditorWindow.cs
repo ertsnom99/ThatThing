@@ -14,13 +14,16 @@ public class LevelStateEditorWindow : EditorWindow
 
     private SerializedObject _serializedLevelState;
 
+    // Toolbar variables
+    private int toolbarSelection = 0;
+    private string[] toolbarStrings = { "Level Graph", "Characters" };
+
     // Level graph variables
     private ReorderableList _rooms;
     private ReorderableList _connections;
 
     private int _selectedRoom = -1;
     private Transform _selectedTransform = null;
-
     private int _selectedConnection = -1;
     private int _selectedRoomA = 0;
     private int _selectedRoomB = 0;
@@ -32,9 +35,18 @@ public class LevelStateEditorWindow : EditorWindow
     private Color _debugConnectionColor = new Color(1.0f, 1.0f, .0f, 1.0f);
     private Color _debugSelectedConnectionColor = new Color(1.0f, .0f, 1.0f, 1.0f);
 
+    // Characters variables
+    private ReorderableList _characters;
+
+    private int _selectedCharacter = -1;
+    private int _selectedRoomForCharacter = 0;
+
     // Dimensions
     private const float _editorMinWidth = 300;
     private const float _editorMinHeight = 300;
+
+    // Scrolling
+    private Vector2 _scrollPos;
 
     // LevelState ScriptableObject name
     private const string _scriptableObjectName = "LevelState";
@@ -88,8 +100,11 @@ public class LevelStateEditorWindow : EditorWindow
                 }
 
                 CreateLevelState(pathToLevelState);
+
+                // Reset toolbar
+                toolbarSelection = 0;
             }
-            
+
             EditorGUILayout.Space(15);
 
             return;
@@ -109,26 +124,56 @@ public class LevelStateEditorWindow : EditorWindow
             _rooms = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._rooms"), false, true, false, false);
             _connections = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._connections"), false, true, false, false);
 
+            // Characters serialization
+            _characters = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_characters"), false, true, false, false);
+
             // Reset selections
             _selectedRoom = -1;
             _selectedConnection = -1;
             _selectedRoomA = 0;
             _selectedRoomB = 0;
+            _selectedCharacter = -1;
+            _selectedRoomForCharacter = 0;
         }
 
         // Make sure that the LevelState is updated (for when the ScriptableObject was changed outside the editor window)
         _serializedLevelState.Update();
 
-        DrawRoomsSection();
+        EditorGUILayout.Space(5);
+        GUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
+        toolbarSelection = GUILayout.Toolbar(toolbarSelection, toolbarStrings, GUILayout.Width(300), GUILayout.Height(20));
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
         EditorGUILayout.Space(15);
-        DrawConnectionsSection();
+
+        _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, false, false, GUILayout.Width(position.width), GUILayout.Height(position.height - 45));
+
+        switch (toolbarSelection)
+        {
+            case 0:
+                DrawLevelGraphSection();
+                break;
+            case 1:
+                DrawCharacterSection();
+                break;
+        }
+
+        EditorGUILayout.EndScrollView();
 
         // Apply changes
         _serializedLevelState.ApplyModifiedProperties();
 
         SceneView.RepaintAll();
     }
-    
+
+    private void DrawLevelGraphSection()
+    {
+        DrawRoomsSection();
+        EditorGUILayout.Space(15);
+        DrawConnectionsSection();
+    }
+
     private void DrawRoomsSection()
     {
         // Add list of rooms
@@ -278,25 +323,25 @@ public class LevelStateEditorWindow : EditorWindow
         {
             // Get the connection data
             SerializedProperty id = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
-            SerializedProperty RoomA = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("RoomA");
-            SerializedProperty RoomB = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("RoomB");
-            SerializedProperty Cost = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Cost");
-            SerializedProperty Traversable = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
-            SerializedProperty Type = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
+            SerializedProperty roomA = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("RoomA");
+            SerializedProperty roomB = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("RoomB");
+            SerializedProperty cost = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Cost");
+            SerializedProperty traversable = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
+            SerializedProperty type = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
             
-            if (_levelState.Graph.Rooms.Length > RoomA.intValue && _levelState.Graph.Rooms.Length > RoomB.intValue)
+            if (_levelState.Graph.Rooms.Length > roomA.intValue && _levelState.Graph.Rooms.Length > roomB.intValue)
             {
-                string roomAToRoomB = "Room " + _levelState.Graph.Rooms[RoomA.intValue].Id.ToString() + " to room " + _levelState.Graph.Rooms[RoomB.intValue].Id.ToString();
+                string roomAToRoomB = "Room " + _levelState.Graph.Rooms[roomA.intValue].Id.ToString() + " to room " + _levelState.Graph.Rooms[roomB.intValue].Id.ToString();
 
                 // Draw the necessary fields
                 EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
                 EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(roomAToRoomB));
                 EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), Cost, GUIContent.none);
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
                 EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), Traversable, GUIContent.none);
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
                 EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Type"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), Type, GUIContent.none);
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), type, GUIContent.none);
             }
         };
 
@@ -310,6 +355,83 @@ public class LevelStateEditorWindow : EditorWindow
         ReorderableConnections.onSelectCallback = (ReorderableList connections) =>
         {
             _selectedConnection = connections.index;
+        };
+    }
+
+    private void DrawCharacterSection()
+    {
+        // Add list of connections
+        HandleCharacters(_characters);
+        _characters.DoLayoutList();
+
+        // Add dropdown to select a room
+        List<string> ids = _levelState.Graph.GetAllRoomIds();
+        ids.Insert(0, "None");
+
+        GUILayout.BeginHorizontal();
+        // "Add Character" button (only available if selected 2 different rooms)
+        GUI.enabled = _selectedRoomForCharacter > 0;
+
+        if (GUILayout.Button("Add Character"))
+        {
+            _levelState.AddCharacter(_selectedRoomForCharacter - 1);
+
+            // Most be set dirty because the changes where made directly inside the ScriptableObject
+            EditorUtility.SetDirty(_levelState);
+
+            _selectedRoomForCharacter = 0;
+        }
+
+        GUI.enabled = true;
+
+        _selectedRoomForCharacter = EditorGUILayout.Popup(_selectedRoomForCharacter, ids.ToArray());
+
+        GUILayout.EndHorizontal();
+
+        GUI.enabled = _selectedCharacter > -1;
+
+        // "Remove selected connection" button
+        if (GUILayout.Button("Remove selected connection"))
+        {
+            _levelState.RemoveCharacter(_selectedCharacter);
+
+            // Most be set dirty because the changes where made directly inside the ScriptableObject
+            EditorUtility.SetDirty(_levelState);
+
+            _selectedCharacter = -1;
+        }
+
+        GUI.enabled = true;
+    }
+
+    // Add the correct callbacks for the _characters ReorderableList
+    private void HandleCharacters(ReorderableList ReorderableConnections)
+    {
+        ReorderableConnections.drawHeaderCallback = (Rect rect) =>
+        {
+            EditorGUI.LabelField(rect, "Characters");
+        };
+
+        ReorderableConnections.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        {
+            // Get the connection data
+            SerializedProperty room = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Room");
+            
+            if (_levelState.Graph.Rooms.Length > room.intValue)
+            {
+                // Draw the necessary fields
+                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(_levelState.Graph.Rooms[room.intValue].Id.ToString()));
+            }
+        };
+
+        ReorderableConnections.elementHeightCallback = (int index) =>
+        {
+            return EditorGUIUtility.singleLineHeight + 2 * EditorGUIUtility.standardVerticalSpacing;
+        };
+
+        ReorderableConnections.onSelectCallback = (ReorderableList connections) =>
+        {
+            _selectedCharacter = connections.index;
         };
     }
     #endregion

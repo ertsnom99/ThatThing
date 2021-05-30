@@ -155,6 +155,13 @@ public class LevelGraph
     // TODO: Method to create a adjacency matrix
 }
 
+// TODO: do tests with struct instead of class
+[Serializable]
+public class Character
+{
+    public int Room;
+}
+
 public class LevelState : ScriptableObject
 {
     [SerializeField]
@@ -164,5 +171,27 @@ public class LevelState : ScriptableObject
     {
         get { return _graph; }
         private set { _graph = value; }
+    }
+
+    [SerializeField]
+    private Character[] _characters = new Character[0];
+
+    public void AddCharacter(int room)
+    {
+        Character newCharacter = new Character();
+        newCharacter.Room = room;
+
+        List<Character> tempCharacters = new List<Character>(_characters);
+        tempCharacters.Add(newCharacter);
+
+        _characters = tempCharacters.ToArray();
+    }
+
+    public void RemoveCharacter(int index)
+    {
+        List<Character> tempCharacters = new List<Character>(_characters);
+        tempCharacters.Remove(_characters[index]);
+
+        _characters = tempCharacters.ToArray();
     }
 }

@@ -17,21 +17,60 @@ MonoBehaviour:
     - Id: 0
       Position: {x: 0, y: 0, z: 0}
     - Id: 1
-      Position: {x: 30, y: 0, z: 0}
+      Position: {x: 20, y: 0, z: 0}
     - Id: 2
-      Position: {x: 20, y: 0, z: -30}
+      Position: {x: 20, y: 0, z: -10}
+    - Id: 4
+      Position: {x: 30, y: 0, z: -25}
+    - Id: 5
+      Position: {x: 15, y: 0, z: -25}
+    - Id: 6
+      Position: {x: 0, y: 0, z: -15}
+    - Id: 7
+      Position: {x: 0, y: 0, z: -30}
     _connections:
-    - Id: 0
+    - Id: 3
       RoomA: 0
-      RoomB: 2
+      RoomB: 1
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 1
+    - Id: 4
       RoomA: 1
       RoomB: 2
       Cost: 1
       Traversable: 1
       Type: 0
-    _roomIdCount: 3
-    _connectionIdCount: 2
+    - Id: 5
+      RoomA: 2
+      RoomB: 3
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 6
+      RoomA: 3
+      RoomB: 4
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 7
+      RoomA: 4
+      RoomB: 5
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 8
+      RoomA: 5
+      RoomB: 0
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 10
+      RoomA: 4
+      RoomB: 6
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    _roomIdCount: 8
+    _connectionIdCount: 11
+  _characters: []
