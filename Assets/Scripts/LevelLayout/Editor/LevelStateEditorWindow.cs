@@ -18,6 +18,9 @@ public class LevelStateEditorWindow : EditorWindow
     private int toolbarSelection = 0;
     private string[] toolbarStrings = { "Level Graph", "Characters" };
 
+    // Scrolling
+    private Vector2 _scrollPos;
+
     // Level graph variables
     private ReorderableList _rooms;
     private ReorderableList _connections;
@@ -41,16 +44,34 @@ public class LevelStateEditorWindow : EditorWindow
     private int _selectedCharacter = -1;
     private int _selectedRoomForCharacter = 0;
 
+    private Texture _characterIcon;
+    private Texture _selectedCharacterIcon;
+
+    private GUIStyle _characterCounterStyle = new GUIStyle();
+    private Color _characterCounterStyleColor = Color.black;
+    private const int _characterCounterStyleFontSize = 22;
+
     // Dimensions
     private const float _editorMinWidth = 300;
     private const float _editorMinHeight = 300;
 
-    // Scrolling
-    private Vector2 _scrollPos;
-
     // LevelState ScriptableObject name
     private const string _scriptableObjectName = "LevelState";
+
+    // Character icon file names
+    private const string _characterIconFileName= "characterIcon.png";
+    private const string _selectedCharacterIconFileName = "selectedCharacterIcon.png";
     #endregion
+
+    private void OnEnable()
+    {
+        // Setup textures and styles
+        _characterIcon = EditorGUIUtility.FindTexture(_characterIconFileName);
+        _selectedCharacterIcon = EditorGUIUtility.FindTexture(_selectedCharacterIconFileName);
+
+        _characterCounterStyle.normal.textColor = _characterCounterStyleColor;
+        _characterCounterStyle.fontSize = _characterCounterStyleFontSize;
+    }
 
     // Add menu item to the main menu and inspector context menus and the static function becomes a menu command
     [MenuItem("Level State/Editor")]
@@ -487,12 +508,12 @@ public class LevelStateEditorWindow : EditorWindow
                 for (int i = 0; i < _levelState.Graph.Rooms.Length; i++)
                 {
                     // If the room is selected during the creation of a connection
-                    if ((_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
+                    if (toolbarSelection == 0 && (_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
                     {
                         Handles.color = _debugRoomForConnectionColor;
                     }
                     // If the room is selected in the list of room
-                    else if ((_selectedRoomA == 0 && _selectedRoomB == 0) && i == _rooms.index)
+                    else if (toolbarSelection == 0 && (_selectedRoomA == 0 && _selectedRoomB == 0) && i == _rooms.index)
                     {
                         Handles.color = _debugSelectedRoomColor;
                     }
@@ -513,7 +534,7 @@ public class LevelStateEditorWindow : EditorWindow
 
                 for (int i = 0; i < _levelState.Graph.Connections.Length; i++)
                 {
-                    if (_selectedRoomA == 0 && _selectedRoomB == 0 && i == _connections.index)
+                    if (toolbarSelection == 0 && _selectedRoomA == 0 && _selectedRoomB == 0 && i == _connections.index)
                     {
                         Handles.color = _debugSelectedConnectionColor;
                     }
@@ -528,11 +549,46 @@ public class LevelStateEditorWindow : EditorWindow
                     Handles.DrawLine(_levelState.Graph.Rooms[roomAIndex].Position + Vector3.up * .1f, _levelState.Graph.Rooms[roomBIndex].Position + Vector3.up * .1f, .5f);
                 }
             }
-        }
 
-        Handles.BeginGUI();
-        // Do your drawing here using GUI. (2D stuff)
-        Handles.EndGUI();
+            // Draw character debugs
+            if (toolbarSelection == 1 && _characters != null)
+            {
+                //List<int> roomsWithCharacters = new List<int>();
+                Dictionary<int, int> characterCountByRoom = new Dictionary<int, int>();
+                int selectedCharacterRoom = -1;
+
+                if (_selectedCharacter > -1)
+                {
+                    selectedCharacterRoom = _levelState.Characters[_selectedCharacter].Room;
+                }
+
+                foreach (Character character in _levelState.Characters)
+                {
+                    if(!characterCountByRoom.ContainsKey(character.Room))
+                    {
+                        characterCountByRoom.Add(character.Room, 1);
+                    }
+                    else
+                    {
+                        characterCountByRoom[character.Room] += 1;
+                    }
+                }
+
+                foreach (KeyValuePair<int, int> room in characterCountByRoom)
+                {
+                    if (selectedCharacterRoom != room.Key)
+                    {
+                        Handles.Label(_levelState.Graph.Rooms[room.Key].Position + Vector3.up * 2.0f, _characterIcon);
+                    }
+                    else
+                    {
+                        Handles.Label(_levelState.Graph.Rooms[room.Key].Position + Vector3.up * 2.0f, _selectedCharacterIcon);
+                    }
+
+                    Handles.Label(_levelState.Graph.Rooms[room.Key].Position + Vector3.up * 1.0f, "X" + room.Value.ToString(), _characterCounterStyle);
+                }
+            }
+        }
     }
     #endregion
 }

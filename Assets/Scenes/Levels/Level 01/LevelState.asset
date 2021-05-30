@@ -73,4 +73,8 @@ MonoBehaviour:
       Type: 0
     _roomIdCount: 8
     _connectionIdCount: 11
-  _characters: []
+  _characters:
+  - Room: 5
+  - Room: 2
+  - Room: 6
+  - Room: 2

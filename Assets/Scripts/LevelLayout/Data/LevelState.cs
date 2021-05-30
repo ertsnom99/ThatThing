@@ -176,6 +176,12 @@ public class LevelState : ScriptableObject
     [SerializeField]
     private Character[] _characters = new Character[0];
 
+    public Character[] Characters
+    {
+        get { return _characters; }
+        private set { _characters = value; }
+    }
+
     public void AddCharacter(int room)
     {
         Character newCharacter = new Character();
