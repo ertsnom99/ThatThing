@@ -38,6 +38,8 @@ public class LevelStateEditorWindow : EditorWindow
     private Color _debugConnectionColor = new Color(1.0f, 1.0f, .0f, 1.0f);
     private Color _debugSelectedConnectionColor = new Color(1.0f, .0f, 1.0f, 1.0f);
 
+    private const float _debugRoomDiscRadius = 1.0f;
+
     // Characters variables
     private ReorderableList _characters;
 
@@ -508,7 +510,8 @@ public class LevelStateEditorWindow : EditorWindow
                 for (int i = 0; i < _levelState.Graph.Rooms.Length; i++)
                 {
                     // If the room is selected during the creation of a connection
-                    if (toolbarSelection == 0 && (_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
+                    if ((toolbarSelection == 0 && (_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
+                     || (toolbarSelection == 1 && _selectedRoomForCharacter > 0 && i == _selectedRoomForCharacter - 1))
                     {
                         Handles.color = _debugRoomForConnectionColor;
                     }
@@ -522,7 +525,7 @@ public class LevelStateEditorWindow : EditorWindow
                         Handles.color = _debugRoomColor;
                     }
 
-                    Handles.DrawSolidDisc(_levelState.Graph.Rooms[i].Position + Vector3.up * .1f, Vector3.up, .5f);
+                    Handles.DrawSolidDisc(_levelState.Graph.Rooms[i].Position + Vector3.up * .1f, Vector3.up, _debugRoomDiscRadius);
                 }
             }
 

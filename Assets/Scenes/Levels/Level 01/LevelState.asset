@@ -15,19 +15,19 @@ MonoBehaviour:
   _graph:
     _rooms:
     - Id: 0
-      Position: {x: 0, y: 0, z: 0}
+      Position: {x: 0, y: 0, z: 30}
     - Id: 1
-      Position: {x: 20, y: 0, z: 0}
+      Position: {x: 20, y: 0, z: 30}
     - Id: 2
-      Position: {x: 20, y: 0, z: -10}
+      Position: {x: 20, y: 0, z: 20}
     - Id: 4
-      Position: {x: 30, y: 0, z: -25}
+      Position: {x: 30, y: 0, z: 5}
     - Id: 5
-      Position: {x: 15, y: 0, z: -25}
+      Position: {x: 15, y: 0, z: 5}
     - Id: 6
-      Position: {x: 0, y: 0, z: -15}
+      Position: {x: 0, y: 0, z: 15}
     - Id: 7
-      Position: {x: 0, y: 0, z: -30}
+      Position: {x: 0, y: 0, z: 0}
     _connections:
     - Id: 3
       RoomA: 0
@@ -74,7 +74,4 @@ MonoBehaviour:
     _roomIdCount: 8
     _connectionIdCount: 11
   _characters:
-  - Room: 5
-  - Room: 2
-  - Room: 6
-  - Room: 2
+  - Room: 0
