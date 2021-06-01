@@ -135,8 +135,8 @@ MonoBehaviour:
       Cost: 1
       Traversable: 1
       Type: 0
-    _roomIdCount: 18
-    _connectionIdCount: 16
+    _roomIdCount: 20
+    _connectionIdCount: 17
   _characters:
   - Room: 10
   - Room: 5

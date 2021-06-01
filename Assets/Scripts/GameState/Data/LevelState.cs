@@ -4,7 +4,7 @@ using UnityEngine;
 
 // TODO: do tests with struct instead of class
 [Serializable]
-public class Room
+public struct Room
 {
     public int Id;
     public Vector3 Position;
@@ -14,7 +14,7 @@ public enum ConnectionType { Corridor, Door, Vent };
 
 // TODO: do tests with struct instead of class
 [Serializable]
-public class Connection
+public struct Connection
 {
     public int Id;
     // Index of RoomA in _rooms
@@ -31,21 +31,9 @@ public class LevelGraph
 {
     [SerializeField]
     private Room[] _rooms = new Room[0];
-    // TODO: Replace getter by method that return a pure COPY of _rooms
-    public Room[] Rooms
-    {
-        get { return _rooms; }
-        private set { _rooms = value; }
-    }
 
     [SerializeField]
     private Connection[] _connections = new Connection[0];
-    // TODO: Replace getter by method that return a pure COPY of _connections
-    public Connection[] Connections
-    {
-        get { return _connections; }
-        private set { _connections = value; }
-    }
 
     [HideInInspector]
     [SerializeField]
@@ -120,7 +108,7 @@ public class LevelGraph
     {
         List<string> idList = new List<string>();
 
-        foreach(Room room in Rooms)
+        foreach(Room room in _rooms)
         {
             idList.Add(room.Id.ToString());
         }
@@ -151,6 +139,32 @@ public class LevelGraph
         _connections = tempConnections.ToArray();
     }
     #endregion
+
+    // Returns a COPY of the array of rooms
+    public Room[] GetRooms()
+    {
+        Room[] roomsCopy = new Room[_rooms.Length];
+        _rooms.CopyTo(roomsCopy, 0);
+        return roomsCopy;
+    }
+
+    public int GetRoomsLength()
+    {
+        return _rooms.Length;
+    }
+
+    // Returns a COPY of the array of connections
+    public Connection[] GetConnections()
+    {
+        Connection[] connectionsCopy = new Connection[_connections.Length];
+        _connections.CopyTo(connectionsCopy, 0);
+        return connectionsCopy;
+    }
+
+    public int GetConnectionsLength()
+    {
+        return _connections.Length;
+    }
 
     // TODO: Method to create a adjacency matrix
 }

@@ -351,10 +351,12 @@ public class LevelStateEditorWindow : EditorWindow
             SerializedProperty cost = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Cost");
             SerializedProperty traversable = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
             SerializedProperty type = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
-            
-            if (_levelState.Graph.Rooms.Length > roomA.intValue && _levelState.Graph.Rooms.Length > roomB.intValue)
+
+            Room[] rooms = _levelState.Graph.GetRooms();
+
+            if (rooms.Length > roomA.intValue && rooms.Length > roomB.intValue)
             {
-                string roomAToRoomB = "Room " + _levelState.Graph.Rooms[roomA.intValue].Id.ToString() + " to room " + _levelState.Graph.Rooms[roomB.intValue].Id.ToString();
+                string roomAToRoomB = "Room " + rooms[roomA.intValue].Id.ToString() + " to room " + rooms[roomB.intValue].Id.ToString();
 
                 // Draw the necessary fields
                 EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
@@ -439,11 +441,13 @@ public class LevelStateEditorWindow : EditorWindow
         {
             // Get the connection data
             SerializedProperty room = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Room");
-            
-            if (_levelState.Graph.Rooms.Length > room.intValue)
+
+            Room[] rooms = _levelState.Graph.GetRooms();
+
+            if (rooms.Length > room.intValue)
             {
                 // Draw the necessary fields
-                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(_levelState.Graph.Rooms[room.intValue].Id.ToString()));
+                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(rooms[room.intValue].Id.ToString()));
             }
         };
 
@@ -504,10 +508,12 @@ public class LevelStateEditorWindow : EditorWindow
     {
         if (_levelState != null)
         {
+            Room[] rooms = _levelState.Graph.GetRooms();
+
             // Draw room debugs
             if (_rooms != null)
             {
-                for (int i = 0; i < _levelState.Graph.Rooms.Length; i++)
+                for (int i = 0; i < rooms.Length; i++)
                 {
                     // If the room is selected during the creation of a connection
                     if ((toolbarSelection == 0 && (_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
@@ -525,17 +531,19 @@ public class LevelStateEditorWindow : EditorWindow
                         Handles.color = _debugRoomColor;
                     }
 
-                    Handles.DrawSolidDisc(_levelState.Graph.Rooms[i].Position + Vector3.up * .1f, Vector3.up, _debugRoomDiscRadius);
+                    Handles.DrawSolidDisc(rooms[i].Position + Vector3.up * .1f, Vector3.up, _debugRoomDiscRadius);
                 }
             }
 
             // Draw connection debugs
             if (_connections != null)
             {
+                Connection[] connections = _levelState.Graph.GetConnections();
+
                 int roomAIndex;
                 int roomBIndex;
 
-                for (int i = 0; i < _levelState.Graph.Connections.Length; i++)
+                for (int i = 0; i < connections.Length; i++)
                 {
                     if (toolbarSelection == 0 && _selectedRoomA == 0 && _selectedRoomB == 0 && i == _connections.index)
                     {
@@ -546,10 +554,10 @@ public class LevelStateEditorWindow : EditorWindow
                         Handles.color = _debugConnectionColor;
                     }
 
-                    roomAIndex = _levelState.Graph.Connections[i].RoomA;
-                    roomBIndex = _levelState.Graph.Connections[i].RoomB;
+                    roomAIndex = connections[i].RoomA;
+                    roomBIndex = connections[i].RoomB;
 
-                    Handles.DrawLine(_levelState.Graph.Rooms[roomAIndex].Position + Vector3.up * .1f, _levelState.Graph.Rooms[roomBIndex].Position + Vector3.up * .1f, .5f);
+                    Handles.DrawLine(rooms[roomAIndex].Position + Vector3.up * .1f, rooms[roomBIndex].Position + Vector3.up * .1f, .5f);
                 }
             }
 
@@ -581,14 +589,14 @@ public class LevelStateEditorWindow : EditorWindow
                 {
                     if (selectedCharacterRoom != room.Key)
                     {
-                        Handles.Label(_levelState.Graph.Rooms[room.Key].Position + Vector3.up * 2.0f, _characterIcon);
+                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, _characterIcon);
                     }
                     else
                     {
-                        Handles.Label(_levelState.Graph.Rooms[room.Key].Position + Vector3.up * 2.0f, _selectedCharacterIcon);
+                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, _selectedCharacterIcon);
                     }
 
-                    Handles.Label(_levelState.Graph.Rooms[room.Key].Position + Vector3.up * 1.0f, "X" + room.Value.ToString(), _characterCounterStyle);
+                    Handles.Label(rooms[room.Key].Position + Vector3.up * 1.0f, "X" + room.Value.ToString(), _characterCounterStyle);
                 }
             }
         }
