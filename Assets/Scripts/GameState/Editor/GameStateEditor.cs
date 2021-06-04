@@ -117,8 +117,8 @@ public class GameStateEditor : Editor
         LevelStateByBuildIndexes.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
             // Get the properties
-            SerializedProperty buildIndex = LevelStateByBuildIndexes.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("BuildIndex");
-            SerializedProperty levelState = LevelStateByBuildIndexes.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("LevelState");
+            SerializedProperty buildIndex = LevelStateByBuildIndexes.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_buildIndex");
+            SerializedProperty levelState = LevelStateByBuildIndexes.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_levelState");
             
             // Build index can't be smaller then 0
             if (buildIndex.intValue < 0)

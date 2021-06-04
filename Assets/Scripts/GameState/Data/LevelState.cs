@@ -34,6 +34,14 @@ public struct LevelGraph
     public int RoomIdCount;
     [HideInInspector]
     public int ConnectionIdCount;
+
+    public LevelGraph(Room[] rooms, Connection[] connections)
+    {
+        Rooms = rooms;
+        Connections = connections;
+        RoomIdCount = 0;
+        ConnectionIdCount = 0;
+    }
 }
 
 [Serializable]

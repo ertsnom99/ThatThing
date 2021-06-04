@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 387b15422ee2dfa46bc85f7b7b1d14e3, type: 3}
   m_Name: LevelStateEditorSettings
   m_EditorClassIdentifier: 
-  CurrentLevelState: {fileID: 11400000, guid: fb0a20a4480504043b53506046c4a8c8, type: 2}
+  CurrentLevelState: {fileID: 11400000, guid: b95576152f98401439c0cad2435de8a2, type: 2}
   DebugRoomColor: {r: 0, g: 0, b: 1, a: 0.5}
   DebugSelectedRoomColor: {r: 1, g: 0, b: 0, a: 0.5}
   DebugRoomForConnectionColor: {r: 0, g: 1, b: 0, a: 0.5}

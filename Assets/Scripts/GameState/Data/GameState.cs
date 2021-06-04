@@ -5,8 +5,23 @@ using UnityEngine;
 [Serializable]
 public struct LevelStateByBuildIndex
 {
-    public int BuildIndex;
-    public LevelState LevelState;
+    [SerializeField]
+    private int _buildIndex;
+
+    public int BuildIndex
+    {
+        get { return _buildIndex; }
+        private set { _buildIndex = value; }
+    }
+
+    [SerializeField]
+    private LevelState _levelState;
+
+    public LevelState LevelState
+    {
+        get { return _levelState; }
+        private set { _levelState = value; }
+    }
 }
 
 [CreateAssetMenu(fileName = "GameState", menuName = "Game State/Game State")]
@@ -15,8 +30,20 @@ public class GameState : ScriptableObject
     [SerializeField]
     private PlayerState _playerState;
 
+    public PlayerState PlayerState
+    {
+        get { return _playerState; }
+        private set { _playerState = value; }
+    }
+
     [SerializeField]
     private LevelStateByBuildIndex[] _levelStatesByBuildIndex = new LevelStateByBuildIndex[0];
+
+    public LevelStateByBuildIndex[] LevelStatesByBuildIndex
+    {
+        get { return _levelStatesByBuildIndex; }
+        private set { _levelStatesByBuildIndex = value; }
+    }
 
     public bool IsValid()
     {

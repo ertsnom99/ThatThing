@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerState: {fileID: 11400000, guid: 24cd8c15bcc57744faac3c7d316f489c, type: 2}
   _levelStatesByBuildIndex:
-  - BuildIndex: 1
-    LevelState: {fileID: 11400000, guid: b95576152f98401439c0cad2435de8a2, type: 2}
-  - BuildIndex: 2
-    LevelState: {fileID: 11400000, guid: fb0a20a4480504043b53506046c4a8c8, type: 2}
+  - _buildIndex: 1
+    _levelState: {fileID: 11400000, guid: b95576152f98401439c0cad2435de8a2, type: 2}
+  - _buildIndex: 2
+    _levelState: {fileID: 11400000, guid: fb0a20a4480504043b53506046c4a8c8, type: 2}
