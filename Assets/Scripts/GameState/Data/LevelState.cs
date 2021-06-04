@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// TODO: do tests with struct instead of class
 [Serializable]
 public struct Room
 {
@@ -12,14 +11,13 @@ public struct Room
 
 public enum ConnectionType { Corridor, Door, Vent };
 
-// TODO: do tests with struct instead of class
 [Serializable]
 public struct Connection
 {
     public int Id;
-    // Index of RoomA in _rooms
+    // Index of RoomA in LevelGraph.Rooms
     public int RoomA;
-    // Index of RoomB in _rooms
+    // Index of RoomB in LevelGraph.Rooms
     public int RoomB;
     public int Cost;
     public bool Traversable;
@@ -27,22 +25,40 @@ public struct Connection
 }
 
 [Serializable]
-public class LevelGraph
+public struct LevelGraph
+{
+    public Room[] Rooms;
+    public Connection[] Connections;
+
+    [HideInInspector]
+    public int RoomIdCount;
+    [HideInInspector]
+    public int ConnectionIdCount;
+}
+
+[Serializable]
+public struct Character
+{
+    public int Room;
+}
+
+[CreateAssetMenu(fileName = "LevelState", menuName = "Game State/Level State")]
+public class LevelState : ScriptableObject
 {
     [SerializeField]
-    private Room[] _rooms = new Room[0];
+    private LevelGraph _graph;
 
     [SerializeField]
-    private Connection[] _connections = new Connection[0];
-
-    [HideInInspector]
-    [SerializeField]
-    private int _roomIdCount = 0;
-    [HideInInspector]
-    [SerializeField]
-    private int _connectionIdCount = 0;
+    private Character[] _characters;
 
     #region Methods for the editor window
+    public void Initialize()
+    {
+        _graph.Rooms = new Room[0];
+        _graph.Connections = new Connection[0];
+        _characters = new Character[0];
+    }
+
     public void AddRoom(Transform transform = null)
     {
         Room newRoom = new Room();
@@ -53,62 +69,78 @@ public class LevelGraph
             newRoom.Position = transform.position;
         }
 
-        List<Room> tempRooms = new List<Room>(_rooms);
+        List<Room> tempRooms = new List<Room>(_graph.Rooms);
         tempRooms.Add(newRoom);
 
-        _rooms = tempRooms.ToArray();
+        _graph.Rooms = tempRooms.ToArray();
     }
 
     private int GenerateUniqueRoomId()
     {
-        int newId = _roomIdCount;
-        _roomIdCount++;
+        int newId = _graph.RoomIdCount;
+        _graph.RoomIdCount++;
 
         return newId;
     }
 
     private int GenerateUniqueConnectionId()
     {
-        int newId = _connectionIdCount;
-        _connectionIdCount++;
+        int newId = _graph.ConnectionIdCount;
+        _graph.ConnectionIdCount++;
 
         return newId;
     }
 
     public void RemoveRoom(int index)
     {
-        for (int i = _connections.Length; i > 0; i--)
+        for (int i = _graph.Connections.Length; i > 0; i--)
         {
             // Remove any connections that uses the removed room
-            if (_connections[i - 1].RoomA == index || _connections[i - 1].RoomB == index)
+            if (_graph.Connections[i - 1].RoomA == index || _graph.Connections[i - 1].RoomB == index)
             {
                 RemoveConnection(i - 1);
                 continue;
             }
 
             // Fix indexes
-            if (_connections[i - 1].RoomA > index)
+            if (_graph.Connections[i - 1].RoomA > index)
             {
-                _connections[i - 1].RoomA -= 1;
+                _graph.Connections[i - 1].RoomA -= 1;
             }
 
-            if (_connections[i - 1].RoomB > index)
+            if (_graph.Connections[i - 1].RoomB > index)
             {
-                _connections[i - 1].RoomB -= 1;
+                _graph.Connections[i - 1].RoomB -= 1;
             }
         }
 
-        List<Room> tempRooms = new List<Room>(_rooms);
-        tempRooms.Remove(_rooms[index]);
+        for (int i = _characters.Length; i > 0; i--)
+        {
+            // Remove any character that uses the removed room
+            if (_characters[i - 1].Room == index)
+            {
+                RemoveCharacter(i - 1);
+                continue;
+            }
 
-        _rooms = tempRooms.ToArray();
+            // Fix indexes
+            if (_characters[i - 1].Room > index)
+            {
+                _characters[i - 1].Room -= 1;
+            }
+        }
+
+        List<Room> tempRooms = new List<Room>(_graph.Rooms);
+        tempRooms.Remove(_graph.Rooms[index]);
+
+        _graph.Rooms = tempRooms.ToArray();
     }
 
     public List<string> GetAllRoomIds()
     {
         List<string> idList = new List<string>();
 
-        foreach(Room room in _rooms)
+        foreach (Room room in _graph.Rooms)
         {
             idList.Add(room.Id.ToString());
         }
@@ -125,75 +157,18 @@ public class LevelGraph
         newConnection.Cost = 1;
         newConnection.Traversable = true;
 
-        List<Connection> tempConnections = new List<Connection>(_connections);
+        List<Connection> tempConnections = new List<Connection>(_graph.Connections);
         tempConnections.Add(newConnection);
 
-        _connections = tempConnections.ToArray();
+        _graph.Connections = tempConnections.ToArray();
     }
 
     public void RemoveConnection(int index)
     {
-        List<Connection> tempConnections = new List<Connection>(_connections);
-        tempConnections.Remove(_connections[index]);
+        List<Connection> tempConnections = new List<Connection>(_graph.Connections);
+        tempConnections.Remove(_graph.Connections[index]);
 
-        _connections = tempConnections.ToArray();
-    }
-    #endregion
-
-    // Returns a COPY of the array of rooms
-    public Room[] GetRooms()
-    {
-        Room[] roomsCopy = new Room[_rooms.Length];
-        _rooms.CopyTo(roomsCopy, 0);
-        return roomsCopy;
-    }
-
-    public int GetRoomsLength()
-    {
-        return _rooms.Length;
-    }
-
-    // Returns a COPY of the array of connections
-    public Connection[] GetConnections()
-    {
-        Connection[] connectionsCopy = new Connection[_connections.Length];
-        _connections.CopyTo(connectionsCopy, 0);
-        return connectionsCopy;
-    }
-
-    public int GetConnectionsLength()
-    {
-        return _connections.Length;
-    }
-
-    // TODO: Method to create a adjacency matrix
-}
-
-// TODO: do tests with struct instead of class
-[Serializable]
-public class Character
-{
-    public int Room;
-}
-
-public class LevelState : ScriptableObject
-{
-    [SerializeField]
-    private LevelGraph _graph = new LevelGraph();
-
-    public LevelGraph Graph
-    {
-        get { return _graph; }
-        private set { _graph = value; }
-    }
-
-    [SerializeField]
-    private Character[] _characters = new Character[0];
-
-    public Character[] Characters
-    {
-        get { return _characters; }
-        private set { _characters = value; }
+        _graph.Connections = tempConnections.ToArray();
     }
 
     public void AddCharacter(int room)
@@ -213,5 +188,45 @@ public class LevelState : ScriptableObject
         tempCharacters.Remove(_characters[index]);
 
         _characters = tempCharacters.ToArray();
+    }
+    #endregion
+
+    // Returns a COPY of the array of rooms
+    public Room[] GetRooms()
+    {
+        Room[] roomsCopy = new Room[_graph.Rooms.Length];
+        _graph.Rooms.CopyTo(roomsCopy, 0);
+        return roomsCopy;
+    }
+
+    public int GetRoomsLength()
+    {
+        return _graph.Rooms.Length;
+    }
+
+    // Returns a COPY of the array of connections
+    public Connection[] GetConnections()
+    {
+        Connection[] connectionsCopy = new Connection[_graph.Connections.Length];
+        _graph.Connections.CopyTo(connectionsCopy, 0);
+        return connectionsCopy;
+    }
+
+    public int GetConnectionsLength()
+    {
+        return _graph.Connections.Length;
+    }
+
+    // Returns a COPY of the array of characters
+    public Character[] GetCharacters()
+    {
+        Character[] charactersCopy = new Character[_characters.Length];
+        _characters.CopyTo(charactersCopy, 0);
+        return charactersCopy;
+    }
+
+    public int GetCharactersLength()
+    {
+        return _characters.Length;
     }
 }

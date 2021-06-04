@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 
 public class LevelStateEditorWindow : EditorWindow
 {
     #region Variables
-    private string _relatedScene;
-    private LevelState _levelState;
+    private LevelState _previousLevelState;
+    public static LevelStateEditorSettings Settings;
 
     private SerializedObject _serializedLevelState;
 
@@ -31,48 +29,25 @@ public class LevelStateEditorWindow : EditorWindow
     private int _selectedRoomA = 0;
     private int _selectedRoomB = 0;
 
-    private Color _debugRoomColor = new Color(.0f, .0f, 1.0f, .5f);
-    private Color _debugSelectedRoomColor = new Color(1.0f, .0f, .0f, .5f);
-
-    private Color _debugRoomForConnectionColor = new Color(.0f, 1.0f, .0f, .5f);
-    private Color _debugConnectionColor = new Color(1.0f, 1.0f, .0f, 1.0f);
-    private Color _debugSelectedConnectionColor = new Color(1.0f, .0f, 1.0f, 1.0f);
-
-    private const float _debugRoomDiscRadius = 1.0f;
-
     // Characters variables
     private ReorderableList _characters;
 
     private int _selectedCharacter = -1;
     private int _selectedRoomForCharacter = 0;
 
-    private Texture _characterIcon;
-    private Texture _selectedCharacterIcon;
-
-    private GUIStyle _characterCounterStyle = new GUIStyle();
-    private Color _characterCounterStyleColor = Color.black;
-    private const int _characterCounterStyleFontSize = 22;
-
     // Dimensions
     private const float _editorMinWidth = 300;
     private const float _editorMinHeight = 300;
-
-    // LevelState ScriptableObject name
-    private const string _scriptableObjectName = "LevelState";
-
-    // Character icon file names
-    private const string _characterIconFileName= "characterIcon.png";
-    private const string _selectedCharacterIconFileName = "selectedCharacterIcon.png";
     #endregion
 
     private void OnEnable()
     {
-        // Setup textures and styles
-        _characterIcon = EditorGUIUtility.FindTexture(_characterIconFileName);
-        _selectedCharacterIcon = EditorGUIUtility.FindTexture(_selectedCharacterIconFileName);
+        Settings = EditorGUIUtility.Load("Level State/LevelStateEditorSettings.asset") as LevelStateEditorSettings;
 
-        _characterCounterStyle.normal.textColor = _characterCounterStyleColor;
-        _characterCounterStyle.fontSize = _characterCounterStyleFontSize;
+        if (Settings == null)
+        {
+            Debug.LogError("Couldn't find LevelStateEditorSettings.asset file in Assets\\Editor Default Resources\\Level State");
+        }
     }
 
     // Add menu item to the main menu and inspector context menus and the static function becomes a menu command
@@ -96,98 +71,79 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawEditor()
     {
-        string pathToLevelState = GetPathToLevelState();
-        string fullPath = Application.dataPath + pathToLevelState.Remove(0, 6);
+        // Field for the LevelState
+        //EditorGUILayout.LabelField(" ", GUILayout.Width(100));
+        EditorGUILayout.LabelField("Assign LevelState:", GUILayout.Width(200));
+        Settings.CurrentLevelState = (LevelState)EditorGUILayout.ObjectField(Settings.CurrentLevelState, typeof(LevelState), false, GUILayout.Width(200));
 
-        // Show button to create LevelState if the directory doesn't exist or their is no LevelState inside that folder
-        if (!Directory.Exists(fullPath) || AssetDatabase.FindAssets(_scriptableObjectName, new[] { pathToLevelState }).Length < 1)
+        // When the LecelState changed
+        if (_previousLevelState != Settings.CurrentLevelState)
         {
-            _relatedScene = "";
+            _serializedLevelState = null;
+            _previousLevelState = Settings.CurrentLevelState;
 
-            // Clear _levelState if there was one and repaint scene
-            if (_levelState)
+            // Save the settings
+            EditorUtility.SetDirty(Settings);
+        }
+
+        if (Settings.CurrentLevelState != null)
+        {
+            if (_serializedLevelState == null)
             {
-                _levelState = null;
-                SceneView.RepaintAll();
+                _serializedLevelState = new SerializedObject(Settings.CurrentLevelState);
+
+                // Level graph serialization
+                _rooms = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Rooms"), false, true, false, false);
+                _connections = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Connections"), false, true, false, false);
+
+                // Characters serialization
+                _characters = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_characters"), false, true, false, false);
+
+                // Reset selections
+                _selectedRoom = -1;
+                _selectedConnection = -1;
+                _selectedRoomA = 0;
+                _selectedRoomB = 0;
+                _selectedCharacter = -1;
+                _selectedRoomForCharacter = 0;
+            }
+            else
+            {
+                // Make sure that the LevelState is updated (for when the ScriptableObject was changed outside the editor window)
+                _serializedLevelState.Update();
             }
 
+            EditorGUILayout.Space(5);
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            toolbarSelection = GUILayout.Toolbar(toolbarSelection, toolbarStrings, GUILayout.Width(300), GUILayout.Height(20));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
             EditorGUILayout.Space(15);
 
-            // Create a LevelState when the button is clicked
-            if (GUILayout.Button("Create Level State"))
+            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, false, false, GUILayout.Width(position.width), GUILayout.Height(position.height - 85));
+
+            EditorGUI.BeginChangeCheck();
+
+            switch (toolbarSelection)
             {
-                // Create folder if it doesn't exist
-                if (!Directory.Exists(fullPath))
-                {
-                    Directory.CreateDirectory(fullPath);
-                }
-
-                CreateLevelState(pathToLevelState);
-
-                // Reset toolbar
-                toolbarSelection = 0;
+                case 0:
+                    DrawLevelGraphSection();
+                    break;
+                case 1:
+                    DrawCharacterSection();
+                    break;
             }
 
-            EditorGUILayout.Space(15);
+            EditorGUILayout.EndScrollView();
 
-            return;
+            if (EditorGUI.EndChangeCheck())
+            {
+                _serializedLevelState.ApplyModifiedProperties();
+            }
+
+            SceneView.RepaintAll();
         }
-
-        string sceneName = EditorSceneManager.GetActiveScene().name;
-
-        // When the level changed
-        if (_relatedScene != sceneName || _serializedLevelState == null)
-        {
-            _relatedScene = sceneName;
-            _levelState = GetLevelState(pathToLevelState);
-
-            _serializedLevelState = new SerializedObject(_levelState);
-
-            // Level graph serialization
-            _rooms = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._rooms"), false, true, false, false);
-            _connections = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._connections"), false, true, false, false);
-
-            // Characters serialization
-            _characters = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_characters"), false, true, false, false);
-
-            // Reset selections
-            _selectedRoom = -1;
-            _selectedConnection = -1;
-            _selectedRoomA = 0;
-            _selectedRoomB = 0;
-            _selectedCharacter = -1;
-            _selectedRoomForCharacter = 0;
-        }
-
-        // Make sure that the LevelState is updated (for when the ScriptableObject was changed outside the editor window)
-        _serializedLevelState.Update();
-
-        EditorGUILayout.Space(5);
-        GUILayout.BeginHorizontal();
-        GUILayout.FlexibleSpace();
-        toolbarSelection = GUILayout.Toolbar(toolbarSelection, toolbarStrings, GUILayout.Width(300), GUILayout.Height(20));
-        GUILayout.FlexibleSpace();
-        GUILayout.EndHorizontal();
-        EditorGUILayout.Space(15);
-
-        _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, false, false, GUILayout.Width(position.width), GUILayout.Height(position.height - 45));
-
-        switch (toolbarSelection)
-        {
-            case 0:
-                DrawLevelGraphSection();
-                break;
-            case 1:
-                DrawCharacterSection();
-                break;
-        }
-
-        EditorGUILayout.EndScrollView();
-
-        // Apply changes
-        _serializedLevelState.ApplyModifiedProperties();
-
-        SceneView.RepaintAll();
     }
 
     private void DrawLevelGraphSection()
@@ -208,10 +164,10 @@ public class LevelStateEditorWindow : EditorWindow
 
         if (GUILayout.Button("Add room", GUILayout.Width(200)))
         {
-            _levelState.Graph.AddRoom(_selectedTransform);
+            Settings.CurrentLevelState.AddRoom(_selectedTransform);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelState);
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
         }
 
         // Field to select a transform
@@ -229,10 +185,10 @@ public class LevelStateEditorWindow : EditorWindow
         // "Remove selected room" button
         if (GUILayout.Button("Remove selected room"))
         {
-            _levelState.Graph.RemoveRoom(_selectedRoom);
+            Settings.CurrentLevelState.RemoveRoom(_selectedRoom);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelState);
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedRoom = -1;
         }
@@ -240,11 +196,6 @@ public class LevelStateEditorWindow : EditorWindow
         GUI.enabled = true;
 
         EditorGUILayout.Space(15);
-
-        // Debug colors for rooms
-        EditorGUILayout.LabelField("Room debug");
-        _debugRoomColor = EditorGUILayout.ColorField("Room color", _debugRoomColor);
-        _debugSelectedRoomColor = EditorGUILayout.ColorField("Selected room color", _debugSelectedRoomColor);
     }
 
     // Add the correct callbacks for the _rooms ReorderableList
@@ -279,7 +230,7 @@ public class LevelStateEditorWindow : EditorWindow
         _connections.DoLayoutList();
 
         // Add dropdown for room
-        List<string> ids = _levelState.Graph.GetAllRoomIds();
+        List<string> ids = Settings.CurrentLevelState.GetAllRoomIds();
         ids.Insert(0, "None");
 
         GUILayout.BeginHorizontal();
@@ -297,10 +248,10 @@ public class LevelStateEditorWindow : EditorWindow
 
         if (GUILayout.Button("Add connection"))
         {
-            _levelState.Graph.AddConnection(_selectedRoomA - 1, _selectedRoomB - 1);
+            Settings.CurrentLevelState.AddConnection(_selectedRoomA - 1, _selectedRoomB - 1);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelState);
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedRoomA = 0;
             _selectedRoomB = 0;
@@ -315,10 +266,10 @@ public class LevelStateEditorWindow : EditorWindow
         // "Remove selected connection" button
         if (GUILayout.Button("Remove selected connection"))
         {
-            _levelState.Graph.RemoveConnection(_selectedConnection);
+            Settings.CurrentLevelState.RemoveConnection(_selectedConnection);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelState);
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedConnection = -1;
         }
@@ -326,12 +277,6 @@ public class LevelStateEditorWindow : EditorWindow
         GUI.enabled = true;
 
         EditorGUILayout.Space(15);
-
-        // Debug colors for collections
-        EditorGUILayout.LabelField("Connection debug");
-        _debugRoomForConnectionColor = EditorGUILayout.ColorField("Room for connection color", _debugRoomForConnectionColor);
-        _debugConnectionColor = EditorGUILayout.ColorField("Connection color", _debugConnectionColor);
-        _debugSelectedConnectionColor = EditorGUILayout.ColorField("Selected connection color", _debugSelectedConnectionColor);
     }
 
     // Add the correct callbacks for the _connections ReorderableList
@@ -352,7 +297,7 @@ public class LevelStateEditorWindow : EditorWindow
             SerializedProperty traversable = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
             SerializedProperty type = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
 
-            Room[] rooms = _levelState.Graph.GetRooms();
+            Room[] rooms = Settings.CurrentLevelState.GetRooms();
 
             if (rooms.Length > roomA.intValue && rooms.Length > roomB.intValue)
             {
@@ -390,7 +335,7 @@ public class LevelStateEditorWindow : EditorWindow
         _characters.DoLayoutList();
 
         // Add dropdown to select a room
-        List<string> ids = _levelState.Graph.GetAllRoomIds();
+        List<string> ids = Settings.CurrentLevelState.GetAllRoomIds();
         ids.Insert(0, "None");
 
         GUILayout.BeginHorizontal();
@@ -399,10 +344,10 @@ public class LevelStateEditorWindow : EditorWindow
 
         if (GUILayout.Button("Add Character"))
         {
-            _levelState.AddCharacter(_selectedRoomForCharacter - 1);
+            Settings.CurrentLevelState.AddCharacter(_selectedRoomForCharacter - 1);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelState);
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedRoomForCharacter = 0;
         }
@@ -418,10 +363,10 @@ public class LevelStateEditorWindow : EditorWindow
         // "Remove selected connection" button
         if (GUILayout.Button("Remove selected connection"))
         {
-            _levelState.RemoveCharacter(_selectedCharacter);
+            Settings.CurrentLevelState.RemoveCharacter(_selectedCharacter);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(_levelState);
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedCharacter = -1;
         }
@@ -442,7 +387,7 @@ public class LevelStateEditorWindow : EditorWindow
             // Get the connection data
             SerializedProperty room = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Room");
 
-            Room[] rooms = _levelState.Graph.GetRooms();
+            Room[] rooms = Settings.CurrentLevelState.GetRooms();
 
             if (rooms.Length > room.intValue)
             {
@@ -460,26 +405,6 @@ public class LevelStateEditorWindow : EditorWindow
         {
             _selectedCharacter = connections.index;
         };
-    }
-    #endregion
-
-    #region Asset Methods
-    private string GetPathToLevelState()
-    {
-        string path = EditorSceneManager.GetActiveScene().path;
-        path = path.Remove(path.LastIndexOf(".unity"), 6);
-        return path;
-    }
-
-    private void CreateLevelState(string pathToLevelState)
-    {
-        LevelState levelState = ScriptableObject.CreateInstance<LevelState>();
-        AssetDatabase.CreateAsset(levelState, pathToLevelState + "/" + _scriptableObjectName + ".asset");
-    }
-
-    private LevelState GetLevelState(string pathToLevelState)
-    {
-        return (LevelState)AssetDatabase.LoadAssetAtPath(pathToLevelState + "/" + _scriptableObjectName + ".asset", typeof(LevelState));
     }
     #endregion
 
@@ -506,9 +431,9 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void OnSceneGUI(SceneView sceneView)
     {
-        if (_levelState != null)
+        if (Settings.CurrentLevelState != null)
         {
-            Room[] rooms = _levelState.Graph.GetRooms();
+            Room[] rooms = Settings.CurrentLevelState.GetRooms();
 
             // Draw room debugs
             if (_rooms != null)
@@ -519,26 +444,26 @@ public class LevelStateEditorWindow : EditorWindow
                     if ((toolbarSelection == 0 && (_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
                      || (toolbarSelection == 1 && _selectedRoomForCharacter > 0 && i == _selectedRoomForCharacter - 1))
                     {
-                        Handles.color = _debugRoomForConnectionColor;
+                        Handles.color = Settings.DebugRoomForConnectionColor;
                     }
                     // If the room is selected in the list of room
                     else if (toolbarSelection == 0 && (_selectedRoomA == 0 && _selectedRoomB == 0) && i == _rooms.index)
                     {
-                        Handles.color = _debugSelectedRoomColor;
+                        Handles.color = Settings.DebugSelectedRoomColor;
                     }
                     else
                     {
-                        Handles.color = _debugRoomColor;
+                        Handles.color = Settings.DebugRoomColor;
                     }
 
-                    Handles.DrawSolidDisc(rooms[i].Position + Vector3.up * .1f, Vector3.up, _debugRoomDiscRadius);
+                    Handles.DrawSolidDisc(rooms[i].Position + Vector3.up * .1f, Vector3.up, Settings.DebugRoomDiscRadius);
                 }
             }
 
             // Draw connection debugs
             if (_connections != null)
             {
-                Connection[] connections = _levelState.Graph.GetConnections();
+                Connection[] connections = Settings.CurrentLevelState.GetConnections();
 
                 int roomAIndex;
                 int roomBIndex;
@@ -547,11 +472,11 @@ public class LevelStateEditorWindow : EditorWindow
                 {
                     if (toolbarSelection == 0 && _selectedRoomA == 0 && _selectedRoomB == 0 && i == _connections.index)
                     {
-                        Handles.color = _debugSelectedConnectionColor;
+                        Handles.color = Settings.DebugSelectedConnectionColor;
                     }
                     else
                     {
-                        Handles.color = _debugConnectionColor;
+                        Handles.color = Settings.DebugConnectionColor;
                     }
 
                     roomAIndex = connections[i].RoomA;
@@ -564,16 +489,17 @@ public class LevelStateEditorWindow : EditorWindow
             // Draw character debugs
             if (toolbarSelection == 1 && _characters != null)
             {
-                //List<int> roomsWithCharacters = new List<int>();
+                Character[] characters = Settings.CurrentLevelState.GetCharacters();
+
                 Dictionary<int, int> characterCountByRoom = new Dictionary<int, int>();
                 int selectedCharacterRoom = -1;
 
                 if (_selectedCharacter > -1)
                 {
-                    selectedCharacterRoom = _levelState.Characters[_selectedCharacter].Room;
+                    selectedCharacterRoom = characters[_selectedCharacter].Room;
                 }
 
-                foreach (Character character in _levelState.Characters)
+                foreach (Character character in characters)
                 {
                     if(!characterCountByRoom.ContainsKey(character.Room))
                     {
@@ -589,14 +515,14 @@ public class LevelStateEditorWindow : EditorWindow
                 {
                     if (selectedCharacterRoom != room.Key)
                     {
-                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, _characterIcon);
+                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, Settings.CharacterIcon);
                     }
                     else
                     {
-                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, _selectedCharacterIcon);
+                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, Settings.SelectedCharacterIcon);
                     }
 
-                    Handles.Label(rooms[room.Key].Position + Vector3.up * 1.0f, "X" + room.Value.ToString(), _characterCounterStyle);
+                    Handles.Label(rooms[room.Key].Position + Vector3.up * 1.0f, "X" + room.Value.ToString(), Settings.CharacterCounterStyle);
                 }
             }
         }

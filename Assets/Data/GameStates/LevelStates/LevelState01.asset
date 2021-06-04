@@ -10,68 +10,68 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bd055f0a62a7e94488937168276a795, type: 3}
-  m_Name: LevelState
+  m_Name: LevelState01
   m_EditorClassIdentifier: 
   _graph:
-    _rooms:
+    Rooms:
     - Id: 0
       Position: {x: 0, y: 0, z: 30}
     - Id: 1
       Position: {x: 20, y: 0, z: 30}
     - Id: 2
       Position: {x: 20, y: 0, z: 20}
-    - Id: 4
+    - Id: 3
       Position: {x: 30, y: 0, z: 5}
+    - Id: 4
+      Position: {x: 0, y: 0, z: 15}
     - Id: 5
       Position: {x: 15, y: 0, z: 5}
     - Id: 6
-      Position: {x: 0, y: 0, z: 15}
-    - Id: 7
       Position: {x: 0, y: 0, z: 0}
-    _connections:
+    Connections:
+    - Id: 0
+      RoomA: 6
+      RoomB: 5
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 1
+      RoomA: 5
+      RoomB: 4
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 2
+      RoomA: 5
+      RoomB: 3
+      Cost: 1
+      Traversable: 1
+      Type: 0
     - Id: 3
+      RoomA: 4
+      RoomB: 0
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 4
       RoomA: 0
       RoomB: 1
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 4
+    - Id: 5
       RoomA: 1
       RoomB: 2
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 5
+    - Id: 6
       RoomA: 2
       RoomB: 3
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 6
-      RoomA: 3
-      RoomB: 4
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 7
-      RoomA: 4
-      RoomB: 5
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 8
-      RoomA: 5
-      RoomB: 0
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 10
-      RoomA: 4
-      RoomB: 6
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    _roomIdCount: 8
-    _connectionIdCount: 11
+    RoomIdCount: 7
+    ConnectionIdCount: 7
   _characters:
-  - Room: 0
+  - Room: 2

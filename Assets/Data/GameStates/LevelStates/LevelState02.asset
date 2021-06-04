@@ -10,35 +10,35 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bd055f0a62a7e94488937168276a795, type: 3}
-  m_Name: LevelState
+  m_Name: LevelState02
   m_EditorClassIdentifier: 
   _graph:
-    _rooms:
+    Rooms:
     - Id: 0
       Position: {x: 0, y: 0, z: 0}
     - Id: 1
       Position: {x: 0, y: 0, z: 10}
-    - Id: 3
+    - Id: 2
       Position: {x: 20, y: 0, z: 30}
-    - Id: 6
+    - Id: 3
       Position: {x: 0, y: 0, z: 50}
-    - Id: 8
+    - Id: 4
       Position: {x: -20, y: 0, z: 30}
-    - Id: 11
+    - Id: 5
       Position: {x: -5, y: 0, z: 25}
-    - Id: 12
-      Position: {x: 10, y: 0, z: 30}
-    - Id: 13
+    - Id: 6
       Position: {x: -5, y: 0, z: 40}
-    - Id: 14
+    - Id: 7
+      Position: {x: 10, y: 0, z: 30}
+    - Id: 8
       Position: {x: -30, y: 0, z: 40}
-    - Id: 15
-      Position: {x: 0, y: 0, z: 60}
-    - Id: 16
-      Position: {x: 20, y: 0, z: 60}
-    - Id: 17
+    - Id: 9
       Position: {x: 30, y: 0, z: 40}
-    _connections:
+    - Id: 10
+      Position: {x: 20, y: 0, z: 60}
+    - Id: 11
+      Position: {x: 0, y: 0, z: 60}
+    Connections:
     - Id: 0
       RoomA: 0
       RoomB: 1
@@ -82,61 +82,61 @@ MonoBehaviour:
       Traversable: 1
       Type: 0
     - Id: 7
+      RoomA: 6
+      RoomB: 3
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 8
       RoomA: 5
       RoomB: 7
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 8
-      RoomA: 6
+    - Id: 9
+      RoomA: 7
       RoomB: 2
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 9
-      RoomA: 7
-      RoomB: 3
-      Cost: 1
-      Traversable: 1
-      Type: 0
     - Id: 10
-      RoomA: 4
-      RoomB: 8
+      RoomA: 3
+      RoomB: 11
       Cost: 1
       Traversable: 1
       Type: 0
     - Id: 11
-      RoomA: 8
-      RoomB: 3
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 12
-      RoomA: 3
-      RoomB: 9
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 13
       RoomA: 3
       RoomB: 10
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 14
+    - Id: 12
       RoomA: 10
-      RoomB: 11
+      RoomB: 9
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 15
-      RoomA: 11
+    - Id: 13
+      RoomA: 9
       RoomB: 2
       Cost: 1
       Traversable: 1
       Type: 0
-    _roomIdCount: 20
-    _connectionIdCount: 17
+    - Id: 14
+      RoomA: 8
+      RoomB: 3
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 15
+      RoomA: 8
+      RoomB: 4
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    RoomIdCount: 13
+    ConnectionIdCount: 17
   _characters:
-  - Room: 10
   - Room: 5
+  - Room: 10
