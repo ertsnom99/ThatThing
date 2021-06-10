@@ -28,6 +28,8 @@ MonoBehaviour:
       Position: {x: 15, y: 0, z: 5}
     - Id: 6
       Position: {x: 0, y: 0, z: 0}
+    - Id: 9
+      Position: {x: 0, y: 0, z: 0}
     Connections:
     - Id: 0
       RoomA: 6
@@ -71,7 +73,12 @@ MonoBehaviour:
       Cost: 1
       Traversable: 1
       Type: 0
-    RoomIdCount: 7
+    RoomIdCount: 10
     ConnectionIdCount: 7
   _characters:
   - Room: 2
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0}
+  - Room: 1
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0}

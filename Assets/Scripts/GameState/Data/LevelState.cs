@@ -47,7 +47,10 @@ public struct LevelGraph
 [Serializable]
 public struct Character
 {
+    // Index of the room
     public int Room;
+    public Vector3 Position;
+    public Vector3 Rotation;
 }
 
 [CreateAssetMenu(fileName = "LevelState", menuName = "Game State/Level State")]

@@ -1,34 +1,90 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using UnityEngine.SceneManagement;
+using BehaviorDesigner.Runtime;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
+// This script requires thoses components and will be added if they aren't already there
+[RequireComponent(typeof(BehaviorManager))]
 public class LevelsManager : MonoBehaviour
 {
     [SerializeField]
-    private GameState _initialGameState;
+    private GameState _DebugGameState;
 
-    private GameSave _gameSave;
+    private int _buildIndex = -1;
+
+    private BehaviorManager _behaviorManager;
+
+    private static GameSave _gameSave;
 
     private void Awake()
     {
+        _behaviorManager = GetComponent<BehaviorManager>();
 
+        // Store current scene buildIndex
+        _buildIndex = SceneManager.GetActiveScene().buildIndex;
+
+#if UNITY_EDITOR
+        // Use debug GameState if _gameSave wasn't created yet
+        if (_gameSave == null)
+        {
+            CreateGameSave(_DebugGameState);
+            _gameSave.PlayerLevel = _buildIndex;
+        }
+#endif
+
+        UpdateScene();
+        CreateAIs();
+
+        // TODO: Set player (position, rotation, etc.)
     }
 
-    public void CreateNewSave()
+    private void UpdateScene()
     {
-        DeleteGameState();
-
-        // Create a new instance of GameState and copy initial GameState
-        _gameSave = new GameSave(_initialGameState);
-
-        SaveGameState();
+        // TODO: Change state of scene based on LevelState
     }
 
-    #region Saving Methods
-    private void SaveGameState()
+    // TODO: how are AI managed?
+    private void CreateAIs()
     {
+        foreach (KeyValuePair<int, SerializableLevelState> LevelState in _gameSave.LevelStatesByBuildIndex)
+        {
+            if (_buildIndex == LevelState.Key)
+            {
+                foreach(Character character in LevelState.Value.Characters)
+                {
+                    // TODO: Create characters in scene
+                    Debug.Log("In scene: " + character.Room);
+                }
+            }
+            else
+            {
+                foreach (Character character in LevelState.Value.Characters)
+                {
+                    // TODO: Create characters in other scenes
+                    Debug.Log("Scene " + LevelState.Key + " : " + character.Room);
+                }
+            }
+        }
+    }
+
+    #region Static Methods
+    public static void CreateGameSave(GameState gameState)
+    {
+        // Create a new instance with copy constructor
+        _gameSave = new GameSave(gameState);
+    }
+
+    // Returns if _gameSave was saved
+    public static bool SaveGameSave()
+    {
+        if (_gameSave == null)
+        {
+            return false;
+        }
+
         BinaryFormatter bf = new BinaryFormatter();
         AddSurrogateSelector(bf);
 
@@ -36,9 +92,11 @@ public class LevelsManager : MonoBehaviour
 
         bf.Serialize(file, _gameSave);
         file.Close();
+
+        return true;
     }
 
-    private void LoadGameState()
+    public static void LoadGameSave()
     {
         if (File.Exists(Application.persistentDataPath + "/GameState.dat"))
         {
@@ -56,7 +114,7 @@ public class LevelsManager : MonoBehaviour
         Debug.LogError("There is no save data!");
     }
 
-    private void AddSurrogateSelector(BinaryFormatter bf)
+    private static void AddSurrogateSelector(BinaryFormatter bf)
     {
         // Tell the formatter how to serialize Vector3
         SurrogateSelector ss = new SurrogateSelector();
@@ -65,7 +123,7 @@ public class LevelsManager : MonoBehaviour
         bf.SurrogateSelector = ss;
     }
 
-    void DeleteGameState()
+    public static void DeleteGameSave()
     {
         if (File.Exists(Application.persistentDataPath + "/GameState.dat"))
         {

@@ -6,12 +6,12 @@ using UnityEngine;
 public struct SerializableLevelState
 {
     public LevelGraph Graph;
-    public Character[] Characters;
+    public List<Character> Characters;
 
     public SerializableLevelState(LevelGraph graph, Character[] characters)
     {
         Graph = graph;
-        Characters = characters;
+        Characters = new List<Character>(characters);
     }
 }
 
@@ -45,6 +45,12 @@ public class GameSave
             rooms = levelStateByBuildIndex.LevelState.GetRooms();
             connections = levelStateByBuildIndex.LevelState.GetConnections();
             characters = levelStateByBuildIndex.LevelState.GetCharacters();
+
+            // Set characters position to Room Position
+            for (int i = 0; i < characters.Length; i++)
+            {
+                characters[i].Position = rooms[characters[i].Room].Position;
+            }
 
             graph = new LevelGraph(rooms, connections);
             levelState = new SerializableLevelState(graph, characters);
