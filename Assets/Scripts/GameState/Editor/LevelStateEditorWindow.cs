@@ -553,7 +553,7 @@ public class LevelStateEditorWindow : EditorWindow
                     }
                     // If the vertex is selected in the list of vertex
                     else if ((toolbarSelection == 0 && (_selectedVertexA == 0 && _selectedVertexB == 0) && i == _vertices.index)
-                          || (toolbarSelection == 1 && i == selectedRoomVertex))
+                          || (toolbarSelection == 1 && _selectedVertexForRoom == 0 && i == selectedRoomVertex))
                     {
                         Handles.color = Settings.DebugSelectedVertexColor;
                     }

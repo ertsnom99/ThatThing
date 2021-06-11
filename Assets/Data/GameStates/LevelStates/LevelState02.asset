@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bd055f0a62a7e94488937168276a795, type: 3}
-  m_Name: Level_02
+  m_Name: LevelState02
   m_EditorClassIdentifier: 
   _graph:
     Vertices: []

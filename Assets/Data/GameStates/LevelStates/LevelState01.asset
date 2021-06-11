@@ -10,12 +10,29 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bd055f0a62a7e94488937168276a795, type: 3}
-  m_Name: Level_01
+  m_Name: LevelState01
   m_EditorClassIdentifier: 
   _graph:
-    Vertices: []
-    Edges: []
-    VertexIdCount: 0
-    EdgeIdCount: 0
-  _rooms: []
-  _characters: []
+    Vertices:
+    - Id: 0
+      Position: {x: 0, y: 0, z: 0}
+    - Id: 1
+      Position: {x: 10, y: 0, z: 0}
+    Edges:
+    - Id: 0
+      VertexA: 0
+      VertexB: 1
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    VertexIdCount: 2
+    EdgeIdCount: 1
+  _rooms:
+  - Vertex: 1
+    Name: SomeRoom
+  - Vertex: 0
+    Name: OtherRoom
+  _characters:
+  - Vertex: 1
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0}
