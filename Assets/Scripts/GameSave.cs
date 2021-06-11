@@ -6,11 +6,13 @@ using UnityEngine;
 public struct SerializableLevelState
 {
     public LevelGraph Graph;
+    public List<Room> Rooms;
     public List<Character> Characters;
 
-    public SerializableLevelState(LevelGraph graph, Character[] characters)
+    public SerializableLevelState(LevelGraph graph, Room[] rooms, Character[] characters)
     {
         Graph = graph;
+        Rooms = new List<Room>(rooms);
         Characters = new List<Character>(characters);
     }
 }
@@ -34,26 +36,28 @@ public class GameSave
         PlayerRotatin = gameState.PlayerState.Rotation;
 
         // Copy LevelStates
+        Vertex[] vertices;
+        Edge[] edges;
         Room[] rooms;
-        Connection[] connections;
         Character[] characters;
         LevelGraph graph;
         SerializableLevelState levelState;
 
         foreach (LevelStateByBuildIndex levelStateByBuildIndex in gameState.LevelStatesByBuildIndex)
         {
+            vertices = levelStateByBuildIndex.LevelState.GetVertices();
+            edges = levelStateByBuildIndex.LevelState.GetEdges();
             rooms = levelStateByBuildIndex.LevelState.GetRooms();
-            connections = levelStateByBuildIndex.LevelState.GetConnections();
             characters = levelStateByBuildIndex.LevelState.GetCharacters();
 
-            // Set characters position to Room Position
+            // Set characters position to vertex Position
             for (int i = 0; i < characters.Length; i++)
             {
-                characters[i].Position = rooms[characters[i].Room].Position;
+                characters[i].Position = vertices[characters[i].Vertex].Position;
             }
 
-            graph = new LevelGraph(rooms, connections);
-            levelState = new SerializableLevelState(graph, characters);
+            graph = new LevelGraph(vertices, edges);
+            levelState = new SerializableLevelState(graph, rooms, characters);
 
             LevelStatesByBuildIndex.Add(levelStateByBuildIndex.BuildIndex, levelState);
         }

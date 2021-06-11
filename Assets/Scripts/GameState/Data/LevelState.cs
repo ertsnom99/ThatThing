@@ -3,52 +3,60 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
-public struct Room
+public struct Vertex
 {
     public int Id;
     public Vector3 Position;
 }
 
-public enum ConnectionType { Corridor, Door, Vent };
+public enum EdgeType { Corridor, Door, Vent };
 
 [Serializable]
-public struct Connection
+public struct Edge
 {
     public int Id;
-    // Index of RoomA in LevelGraph.Rooms
-    public int RoomA;
-    // Index of RoomB in LevelGraph.Rooms
-    public int RoomB;
+    // Index of VertexA in LevelGraph.Vertices
+    public int VertexA;
+    // Index of VertexB in LevelGraph.Vertices
+    public int VertexB;
     public int Cost;
     public bool Traversable;
-    public ConnectionType Type;
+    public EdgeType Type;
 }
 
 [Serializable]
 public struct LevelGraph
 {
-    public Room[] Rooms;
-    public Connection[] Connections;
+    public Vertex[] Vertices;
+    public Edge[] Edges;
 
     [HideInInspector]
-    public int RoomIdCount;
+    public int VertexIdCount;
     [HideInInspector]
-    public int ConnectionIdCount;
+    public int EdgeIdCount;
 
-    public LevelGraph(Room[] rooms, Connection[] connections)
+    public LevelGraph(Vertex[] vertices, Edge[] edges)
     {
-        Rooms = rooms;
-        Connections = connections;
-        RoomIdCount = 0;
-        ConnectionIdCount = 0;
+        Vertices = vertices;
+        Edges = edges;
+        VertexIdCount = 0;
+        EdgeIdCount = 0;
     }
+}
+
+[Serializable]
+public struct Room
+{
+    // Index of the room in LevelGraph.Vertices
+    public int Vertex;
+    public string Name;
 }
 
 [Serializable]
 public struct Character
 {
-    // Index of the room
-    public int Room;
+    // Index of the vertex
+    public int Vertex;
     public Vector3 Position;
     public Vector3 Rotation;
 }
@@ -60,132 +68,171 @@ public class LevelState : ScriptableObject
     private LevelGraph _graph;
 
     [SerializeField]
+    private Room[] _rooms;
+
+    [SerializeField]
     private Character[] _characters;
 
     #region Methods for the editor window
     public void Initialize()
     {
-        _graph.Rooms = new Room[0];
-        _graph.Connections = new Connection[0];
+        _graph.Vertices = new Vertex[0];
+        _graph.Edges = new Edge[0];
+        _rooms = new Room[0];
         _characters = new Character[0];
     }
 
-    public void AddRoom(Transform transform = null)
+    public void AddVertex(Transform transform = null)
     {
-        Room newRoom = new Room();
-        newRoom.Id = GenerateUniqueRoomId();
+        Vertex newVertex = new Vertex();
+        newVertex.Id = GenerateUniqueVertexId();
 
         if (transform)
         {
-            newRoom.Position = transform.position;
+            newVertex.Position = transform.position;
         }
 
-        List<Room> tempRooms = new List<Room>(_graph.Rooms);
-        tempRooms.Add(newRoom);
+        List<Vertex> tempVertices = new List<Vertex>(_graph.Vertices);
+        tempVertices.Add(newVertex);
 
-        _graph.Rooms = tempRooms.ToArray();
+        _graph.Vertices = tempVertices.ToArray();
     }
 
-    private int GenerateUniqueRoomId()
+    private int GenerateUniqueVertexId()
     {
-        int newId = _graph.RoomIdCount;
-        _graph.RoomIdCount++;
+        int newId = _graph.VertexIdCount;
+        _graph.VertexIdCount++;
 
         return newId;
     }
 
-    private int GenerateUniqueConnectionId()
+    public void RemoveVertex(int index)
     {
-        int newId = _graph.ConnectionIdCount;
-        _graph.ConnectionIdCount++;
-
-        return newId;
-    }
-
-    public void RemoveRoom(int index)
-    {
-        for (int i = _graph.Connections.Length; i > 0; i--)
+        for (int i = _graph.Edges.Length; i > 0; i--)
         {
-            // Remove any connections that uses the removed room
-            if (_graph.Connections[i - 1].RoomA == index || _graph.Connections[i - 1].RoomB == index)
+            // Remove any edges that uses the removed vertex
+            if (_graph.Edges[i - 1].VertexA == index || _graph.Edges[i - 1].VertexB == index)
             {
-                RemoveConnection(i - 1);
+                RemoveEdge(i - 1);
                 continue;
             }
 
             // Fix indexes
-            if (_graph.Connections[i - 1].RoomA > index)
+            if (_graph.Edges[i - 1].VertexA > index)
             {
-                _graph.Connections[i - 1].RoomA -= 1;
+                _graph.Edges[i - 1].VertexA -= 1;
             }
 
-            if (_graph.Connections[i - 1].RoomB > index)
+            if (_graph.Edges[i - 1].VertexB > index)
             {
-                _graph.Connections[i - 1].RoomB -= 1;
+                _graph.Edges[i - 1].VertexB -= 1;
+            }
+        }
+
+        for (int i = _rooms.Length; i > 0; i--)
+        {
+            // Remove any room that uses the removed vertex
+            if (_rooms[i - 1].Vertex == index)
+            {
+                RemoveRoom(i - 1);
+                continue;
+            }
+
+            // Fix indexes
+            if (_rooms[i - 1].Vertex > index)
+            {
+                _rooms[i - 1].Vertex -= 1;
             }
         }
 
         for (int i = _characters.Length; i > 0; i--)
         {
-            // Remove any character that uses the removed room
-            if (_characters[i - 1].Room == index)
+            // Remove any character that uses the removed vertex
+            if (_characters[i - 1].Vertex == index)
             {
                 RemoveCharacter(i - 1);
                 continue;
             }
 
             // Fix indexes
-            if (_characters[i - 1].Room > index)
+            if (_characters[i - 1].Vertex > index)
             {
-                _characters[i - 1].Room -= 1;
+                _characters[i - 1].Vertex -= 1;
             }
         }
 
-        List<Room> tempRooms = new List<Room>(_graph.Rooms);
-        tempRooms.Remove(_graph.Rooms[index]);
+        List<Vertex> tempVertices = new List<Vertex>(_graph.Vertices);
+        tempVertices.Remove(_graph.Vertices[index]);
 
-        _graph.Rooms = tempRooms.ToArray();
+        _graph.Vertices = tempVertices.ToArray();
     }
 
-    public List<string> GetAllRoomIds()
+    public List<string> GetAllVertexIds()
     {
         List<string> idList = new List<string>();
 
-        foreach (Room room in _graph.Rooms)
+        foreach (Vertex vertex in _graph.Vertices)
         {
-            idList.Add(room.Id.ToString());
+            idList.Add(vertex.Id.ToString());
         }
 
         return idList;
     }
 
-    public void AddConnection(int roomA, int roomB)
+    public void AddEdge(int vertexA, int vertexB)
     {
-        Connection newConnection = new Connection();
-        newConnection.Id = GenerateUniqueConnectionId();
-        newConnection.RoomA = roomA;
-        newConnection.RoomB = roomB;
-        newConnection.Cost = 1;
-        newConnection.Traversable = true;
+        Edge newEdge = new Edge();
+        newEdge.Id = GenerateUniqueEdgeId();
+        newEdge.VertexA = vertexA;
+        newEdge.VertexB = vertexB;
+        newEdge.Cost = 1;
+        newEdge.Traversable = true;
 
-        List<Connection> tempConnections = new List<Connection>(_graph.Connections);
-        tempConnections.Add(newConnection);
+        List<Edge> tempEdges = new List<Edge>(_graph.Edges);
+        tempEdges.Add(newEdge);
 
-        _graph.Connections = tempConnections.ToArray();
+        _graph.Edges = tempEdges.ToArray();
     }
 
-    public void RemoveConnection(int index)
+    private int GenerateUniqueEdgeId()
     {
-        List<Connection> tempConnections = new List<Connection>(_graph.Connections);
-        tempConnections.Remove(_graph.Connections[index]);
+        int newId = _graph.EdgeIdCount;
+        _graph.EdgeIdCount++;
 
-        _graph.Connections = tempConnections.ToArray();
+        return newId;
     }
 
-    public void AddCharacter(int room)
+    public void RemoveEdge(int index)
+    {
+        List<Edge> tempEdges = new List<Edge>(_graph.Edges);
+        tempEdges.Remove(_graph.Edges[index]);
+
+        _graph.Edges = tempEdges.ToArray();
+    }
+
+    public void AddRoom(int vertex)
+    {
+        Room newRoom = new Room();
+        newRoom.Vertex = vertex;
+
+        List<Room> tempRooms = new List<Room>(_rooms);
+        tempRooms.Add(newRoom);
+
+        _rooms = tempRooms.ToArray();
+    }
+
+    public void RemoveRoom(int index)
+    {
+        List<Room> tempRooms = new List<Room>(_rooms);
+        tempRooms.Remove(_rooms[index]);
+
+        _rooms = tempRooms.ToArray();
+    }
+
+    public void AddCharacter(int vertex)
     {
         Character newCharacter = new Character();
-        newCharacter.Room = room;
+        newCharacter.Vertex = vertex;
 
         List<Character> tempCharacters = new List<Character>(_characters);
         tempCharacters.Add(newCharacter);
@@ -202,30 +249,43 @@ public class LevelState : ScriptableObject
     }
     #endregion
 
+    // Returns a COPY of the array of vertices
+    public Vertex[] GetVertices()
+    {
+        Vertex[] verticesCopy = new Vertex[_graph.Vertices.Length];
+        _graph.Vertices.CopyTo(verticesCopy, 0);
+        return verticesCopy;
+    }
+
+    public int GetVerticesLength()
+    {
+        return _graph.Vertices.Length;
+    }
+
+    // Returns a COPY of the array of edges
+    public Edge[] GetEdges()
+    {
+        Edge[] edgesCopy = new Edge[_graph.Edges.Length];
+        _graph.Edges.CopyTo(edgesCopy, 0);
+        return edgesCopy;
+    }
+
+    public int GetEdgesLength()
+    {
+        return _graph.Edges.Length;
+    }
+
     // Returns a COPY of the array of rooms
     public Room[] GetRooms()
     {
-        Room[] roomsCopy = new Room[_graph.Rooms.Length];
-        _graph.Rooms.CopyTo(roomsCopy, 0);
+        Room[] roomsCopy = new Room[_rooms.Length];
+        _rooms.CopyTo(roomsCopy, 0);
         return roomsCopy;
     }
 
     public int GetRoomsLength()
     {
-        return _graph.Rooms.Length;
-    }
-
-    // Returns a COPY of the array of connections
-    public Connection[] GetConnections()
-    {
-        Connection[] connectionsCopy = new Connection[_graph.Connections.Length];
-        _graph.Connections.CopyTo(connectionsCopy, 0);
-        return connectionsCopy;
-    }
-
-    public int GetConnectionsLength()
-    {
-        return _graph.Connections.Length;
+        return _rooms.Length;
     }
 
     // Returns a COPY of the array of characters

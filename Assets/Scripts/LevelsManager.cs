@@ -56,7 +56,7 @@ public class LevelsManager : MonoBehaviour
                 foreach(Character character in LevelState.Value.Characters)
                 {
                     // TODO: Create characters in scene
-                    Debug.Log("In scene: " + character.Room);
+                    Debug.Log("In scene: " + character.Vertex);
                 }
             }
             else
@@ -64,7 +64,7 @@ public class LevelsManager : MonoBehaviour
                 foreach (Character character in LevelState.Value.Characters)
                 {
                     // TODO: Create characters in other scenes
-                    Debug.Log("Scene " + LevelState.Key + " : " + character.Room);
+                    Debug.Log("Scene " + LevelState.Key + " : " + character.Vertex);
                 }
             }
         }

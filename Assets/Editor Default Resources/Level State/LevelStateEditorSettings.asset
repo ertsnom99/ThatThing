@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 387b15422ee2dfa46bc85f7b7b1d14e3, type: 3}
   m_Name: LevelStateEditorSettings
   m_EditorClassIdentifier: 
-  CurrentLevelState: {fileID: 11400000, guid: b95576152f98401439c0cad2435de8a2, type: 2}
-  DebugRoomColor: {r: 0, g: 0, b: 1, a: 0.5}
-  DebugSelectedRoomColor: {r: 1, g: 0, b: 0, a: 0.5}
-  DebugRoomForConnectionColor: {r: 0, g: 1, b: 0, a: 0.5}
-  DebugConnectionColor: {r: 1, g: 1, b: 0, a: 1}
-  DebugSelectedConnectionColor: {r: 1, g: 0, b: 1, a: 1}
-  DebugRoomDiscRadius: 1
+  CurrentLevelState: {fileID: 11400000, guid: 5072c4a0f4daf2747ac41c049d4d98cf, type: 2}
+  DebugVertexColor: {r: 0, g: 0, b: 1, a: 0.5}
+  DebugSelectedVertexColor: {r: 1, g: 0, b: 0, a: 0.5}
+  DebugVertexForEdgeColor: {r: 0, g: 1, b: 0, a: 0.5}
+  DebugEdgeColor: {r: 1, g: 1, b: 0, a: 1}
+  DebugSelectedEdgeColor: {r: 1, g: 0, b: 1, a: 1}
+  DebugVertexDiscRadius: 1
   CharacterIcon: {fileID: 2800000, guid: dff036b0e96332843ba56876fac70b0c, type: 3}
   SelectedCharacterIcon: {fileID: 2800000, guid: c12cb1c3355251749b3ca819fe21263e, type: 3}
   CharacterCounterStyle:

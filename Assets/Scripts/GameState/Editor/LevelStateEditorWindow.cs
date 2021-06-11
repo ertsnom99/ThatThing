@@ -14,26 +14,32 @@ public class LevelStateEditorWindow : EditorWindow
 
     // Toolbar variables
     private int toolbarSelection = 0;
-    private string[] toolbarStrings = { "Level Graph", "Characters" };
+    private string[] toolbarStrings = { "Level Graph", "Rooms", "Characters" };
 
     // Scrolling
     private Vector2 _scrollPos;
 
     // Level graph variables
+    private ReorderableList _vertices;
+    private ReorderableList _edges;
+
+    private int _selectedVertex = -1;
+    private Transform _selectedTransform = null;
+    private int _selectedEdge = -1;
+    private int _selectedVertexA = 0;
+    private int _selectedVertexB = 0;
+
+    // Rooms variables
     private ReorderableList _rooms;
-    private ReorderableList _connections;
 
     private int _selectedRoom = -1;
-    private Transform _selectedTransform = null;
-    private int _selectedConnection = -1;
-    private int _selectedRoomA = 0;
-    private int _selectedRoomB = 0;
+    private int _selectedVertexForRoom = 0;
 
     // Characters variables
     private ReorderableList _characters;
 
     private int _selectedCharacter = -1;
-    private int _selectedRoomForCharacter = 0;
+    private int _selectedVertexForCharacter = 0;
 
     // Dimensions
     private const float _editorMinWidth = 300;
@@ -93,19 +99,24 @@ public class LevelStateEditorWindow : EditorWindow
                 _serializedLevelState = new SerializedObject(Settings.CurrentLevelState);
 
                 // Level graph serialization
-                _rooms = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Rooms"), false, true, false, false);
-                _connections = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Connections"), false, true, false, false);
+                _vertices = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Vertices"), false, true, false, false);
+                _edges = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Edges"), false, true, false, false);
+
+                // Rooms serialization
+                _rooms = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_rooms"), false, true, false, false);
 
                 // Characters serialization
                 _characters = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_characters"), false, true, false, false);
 
                 // Reset selections
+                _selectedVertex = -1;
+                _selectedEdge = -1;
+                _selectedVertexA = 0;
+                _selectedVertexB = 0;
                 _selectedRoom = -1;
-                _selectedConnection = -1;
-                _selectedRoomA = 0;
-                _selectedRoomB = 0;
+                _selectedVertexForRoom = 0;
                 _selectedCharacter = -1;
-                _selectedRoomForCharacter = 0;
+                _selectedVertexForCharacter = 0;
             }
             else
             {
@@ -131,7 +142,10 @@ public class LevelStateEditorWindow : EditorWindow
                     DrawLevelGraphSection();
                     break;
                 case 1:
-                    DrawCharacterSection();
+                    DrawRoomsSection();
+                    break;
+                case 2:
+                    DrawCharactersSection();
                     break;
             }
 
@@ -148,23 +162,23 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawLevelGraphSection()
     {
-        DrawRoomsSection();
+        DrawVerticesSection();
         EditorGUILayout.Space(15);
-        DrawConnectionsSection();
+        DrawEdgesSection();
     }
 
-    private void DrawRoomsSection()
+    private void DrawVerticesSection()
     {
-        // Add list of rooms
-        HandleRooms(_rooms);
-        _rooms.DoLayoutList();
+        // Add list of vertices
+        HandleVertices(_vertices);
+        _vertices.DoLayoutList();
 
-        // "Add room" button
+        // "Add vertex" button
         GUILayout.BeginHorizontal();
 
-        if (GUILayout.Button("Add room", GUILayout.Width(200)))
+        if (GUILayout.Button("Add vertex", GUILayout.Width(200)))
         {
-            Settings.CurrentLevelState.AddRoom(_selectedTransform);
+            Settings.CurrentLevelState.AddVertex(_selectedTransform);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
             EditorUtility.SetDirty(Settings.CurrentLevelState);
@@ -175,13 +189,191 @@ public class LevelStateEditorWindow : EditorWindow
 
         GUILayout.EndHorizontal();
 
-        EditorGUILayout.LabelField("*Room position set to the transform position (if set)");
+        EditorGUILayout.LabelField("*Vertex position set to the transform position (if set)");
 
         EditorGUILayout.Space(10);
 
-        // Remove button is enabled only if a room is selected
+        // Remove button is enabled only if a vertex is selected
+        GUI.enabled = _selectedVertex > -1;
+
+        // "Remove selected vertex" button
+        if (GUILayout.Button("Remove selected vertex"))
+        {
+            Settings.CurrentLevelState.RemoveVertex(_selectedVertex);
+
+            // Most be set dirty because the changes where made directly inside the ScriptableObject
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
+
+            _selectedVertex = -1;
+        }
+
+        GUI.enabled = true;
+
+        EditorGUILayout.Space(15);
+    }
+
+    // Add the correct callbacks for the _vertices ReorderableList
+    private void HandleVertices(ReorderableList ReorderableVertices)
+    {
+        ReorderableVertices.drawHeaderCallback = (Rect rect) =>
+        {
+            EditorGUI.LabelField(rect, "Vertices");
+        };
+
+        ReorderableVertices.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        {
+            // Get the requirement data
+            SerializedProperty id = ReorderableVertices.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
+            SerializedProperty position = ReorderableVertices.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Position");
+
+            // Draw the necessary fields
+            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
+            EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .14f, rect.width * (1 - .2f), EditorGUIUtility.singleLineHeight), position, GUIContent.none);
+        };
+
+        ReorderableVertices.onSelectCallback = (ReorderableList vertices) =>
+        {
+            _selectedVertex = vertices.index;
+        };
+    }
+
+    private void DrawEdgesSection()
+    {
+        // Add list of edges
+        HandleEdges(_edges);
+        _edges.DoLayoutList();
+
+        // Add dropdown for vertex
+        List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
+        ids.Insert(0, "None");
+
+        GUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Vertex A (id)");
+        EditorGUILayout.LabelField("Vertex B (id)");
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        _selectedVertexA = EditorGUILayout.Popup(_selectedVertexA, ids.ToArray());
+        _selectedVertexB = EditorGUILayout.Popup(_selectedVertexB, ids.ToArray());
+        GUILayout.EndHorizontal();
+
+        // "Add edge" button (only available if selected 2 different vertices)
+        GUI.enabled = (_selectedVertexA != _selectedVertexB) && _selectedVertexA > 0 && _selectedVertexB > 0;
+
+        if (GUILayout.Button("Add edge"))
+        {
+            Settings.CurrentLevelState.AddEdge(_selectedVertexA - 1, _selectedVertexB - 1);
+
+            // Most be set dirty because the changes where made directly inside the ScriptableObject
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
+
+            _selectedVertexA = 0;
+            _selectedVertexB = 0;
+        }
+
+        EditorGUILayout.LabelField("*Two different vertices must be selected to create an edge");
+
+        EditorGUILayout.Space(10);
+
+        GUI.enabled = _selectedEdge > -1;
+
+        // "Remove selected edge" button
+        if (GUILayout.Button("Remove selected edge"))
+        {
+            Settings.CurrentLevelState.RemoveEdge(_selectedEdge);
+
+            // Most be set dirty because the changes where made directly inside the ScriptableObject
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
+
+            _selectedEdge = -1;
+        }
+
+        GUI.enabled = true;
+
+        EditorGUILayout.Space(15);
+    }
+
+    // Add the correct callbacks for the _edges ReorderableList
+    private void HandleEdges(ReorderableList ReorderableEdges)
+    {
+        ReorderableEdges.drawHeaderCallback = (Rect rect) =>
+        {
+            EditorGUI.LabelField(rect, "Edges");
+        };
+
+        ReorderableEdges.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        {
+            // Get the edge data
+            SerializedProperty id = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
+            SerializedProperty vertexA = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("VertexA");
+            SerializedProperty vertexB = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("VertexB");
+            SerializedProperty cost = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Cost");
+            SerializedProperty traversable = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
+            SerializedProperty type = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
+
+            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
+
+            if (vertices.Length > vertexA.intValue && vertices.Length > vertexB.intValue)
+            {
+                string vertexAToVertexB = "Vertex " + vertices[vertexA.intValue].Id.ToString() + " to vertex " + vertices[vertexB.intValue].Id.ToString();
+
+                // Draw the necessary fields
+                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
+                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(vertexAToVertexB));
+                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
+                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
+                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Type"));
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), type, GUIContent.none);
+            }
+        };
+
+        ReorderableEdges.elementHeightCallback = (int index) =>
+        {
+            float height = EditorGUIUtility.standardVerticalSpacing;
+            height += EditorGUIUtility.singleLineHeight * 4.0f;
+            return height + EditorGUIUtility.standardVerticalSpacing;
+        };
+
+        ReorderableEdges.onSelectCallback = (ReorderableList edges) =>
+        {
+            _selectedEdge = edges.index;
+        };
+    }
+
+    private void DrawRoomsSection()
+    {
+        // Add list of edges
+        HandleRooms(_rooms);
+        _rooms.DoLayoutList();
+
+        GUILayout.BeginHorizontal();
+        // "Add Room" button
+        GUI.enabled = _selectedVertexForRoom > 0;
+
+        if (GUILayout.Button("Add Room"))
+        {
+            Settings.CurrentLevelState.AddRoom(_selectedVertexForRoom - 1);
+
+            // Most be set dirty because the changes where made directly inside the ScriptableObject
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
+
+            _selectedVertexForRoom = 0;
+        }
+
+        GUI.enabled = true;
+
+        // Add dropdown to select a vertex
+        List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
+        ids.Insert(0, "None");
+
+        _selectedVertexForRoom = EditorGUILayout.Popup(_selectedVertexForRoom, ids.ToArray());
+
+        GUILayout.EndHorizontal();
+
         GUI.enabled = _selectedRoom > -1;
-        
+
         // "Remove selected room" button
         if (GUILayout.Button("Remove selected room"))
         {
@@ -194,11 +386,9 @@ public class LevelStateEditorWindow : EditorWindow
         }
 
         GUI.enabled = true;
-
-        EditorGUILayout.Space(15);
     }
 
-    // Add the correct callbacks for the _rooms ReorderableList
+    // Add the correct callbacks for the _characters ReorderableList
     private void HandleRooms(ReorderableList ReorderableRooms)
     {
         ReorderableRooms.drawHeaderCallback = (Rect rect) =>
@@ -208,160 +398,66 @@ public class LevelStateEditorWindow : EditorWindow
 
         ReorderableRooms.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
-            // Get the requirement data
-            SerializedProperty id = ReorderableRooms.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
-            SerializedProperty position = ReorderableRooms.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Position");
+            // Get the vertex data
+            SerializedProperty vertex = ReorderableRooms.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Vertex");
+            SerializedProperty name = ReorderableRooms.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Name");
 
-            // Draw the necessary fields
-            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
-            EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .14f, rect.width * (1 - .2f), EditorGUIUtility.singleLineHeight), position, GUIContent.none);
-        };
+            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
 
-        ReorderableRooms.onSelectCallback = (ReorderableList rooms) =>
-        {
-            _selectedRoom = rooms.index;
-        };
-    }
-
-    private void DrawConnectionsSection()
-    {
-        // Add list of connections
-        HandleConnections(_connections);
-        _connections.DoLayoutList();
-
-        // Add dropdown for room
-        List<string> ids = Settings.CurrentLevelState.GetAllRoomIds();
-        ids.Insert(0, "None");
-
-        GUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("Room A (id)");
-        EditorGUILayout.LabelField("Room B (id)");
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal();
-        _selectedRoomA = EditorGUILayout.Popup(_selectedRoomA, ids.ToArray());
-        _selectedRoomB = EditorGUILayout.Popup(_selectedRoomB, ids.ToArray());
-        GUILayout.EndHorizontal();
-
-        // "Add connection" button (only available if selected 2 different rooms)
-        GUI.enabled = (_selectedRoomA != _selectedRoomB) && _selectedRoomA > 0 && _selectedRoomB > 0;
-
-        if (GUILayout.Button("Add connection"))
-        {
-            Settings.CurrentLevelState.AddConnection(_selectedRoomA - 1, _selectedRoomB - 1);
-
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
-
-            _selectedRoomA = 0;
-            _selectedRoomB = 0;
-        }
-
-        EditorGUILayout.LabelField("*Two different rooms must be selected to create a connection");
-
-        EditorGUILayout.Space(10);
-
-        GUI.enabled = _selectedConnection > -1;
-
-        // "Remove selected connection" button
-        if (GUILayout.Button("Remove selected connection"))
-        {
-            Settings.CurrentLevelState.RemoveConnection(_selectedConnection);
-
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
-
-            _selectedConnection = -1;
-        }
-
-        GUI.enabled = true;
-
-        EditorGUILayout.Space(15);
-    }
-
-    // Add the correct callbacks for the _connections ReorderableList
-    private void HandleConnections(ReorderableList ReorderableConnections)
-    {
-        ReorderableConnections.drawHeaderCallback = (Rect rect) =>
-        {
-            EditorGUI.LabelField(rect, "Connections");
-        };
-
-        ReorderableConnections.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
-        {
-            // Get the connection data
-            SerializedProperty id = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
-            SerializedProperty roomA = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("RoomA");
-            SerializedProperty roomB = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("RoomB");
-            SerializedProperty cost = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Cost");
-            SerializedProperty traversable = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
-            SerializedProperty type = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
-
-            Room[] rooms = Settings.CurrentLevelState.GetRooms();
-
-            if (rooms.Length > roomA.intValue && rooms.Length > roomB.intValue)
+            if (vertices.Length > vertex.intValue)
             {
-                string roomAToRoomB = "Room " + rooms[roomA.intValue].Id.ToString() + " to room " + rooms[roomB.intValue].Id.ToString();
-
                 // Draw the necessary fields
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
-                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(roomAToRoomB));
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Type"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), type, GUIContent.none);
+                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent(vertices[vertex.intValue].Id.ToString()));
             }
+
+            EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .14f, rect.width * (1 - .2f), EditorGUIUtility.singleLineHeight), name, GUIContent.none);
         };
 
-        ReorderableConnections.elementHeightCallback = (int index) =>
+        ReorderableRooms.elementHeightCallback = (int index) =>
         {
-            float height = EditorGUIUtility.standardVerticalSpacing;
-            height += EditorGUIUtility.singleLineHeight * 4.0f;
-            return height + EditorGUIUtility.standardVerticalSpacing;
+            return EditorGUIUtility.singleLineHeight + 2 * EditorGUIUtility.standardVerticalSpacing;
         };
 
-        ReorderableConnections.onSelectCallback = (ReorderableList connections) =>
+        ReorderableRooms.onSelectCallback = (ReorderableList edges) =>
         {
-            _selectedConnection = connections.index;
+            _selectedRoom = edges.index;
         };
     }
 
-    private void DrawCharacterSection()
+    private void DrawCharactersSection()
     {
-        // Add list of connections
+        // Add list of edges
         HandleCharacters(_characters);
         _characters.DoLayoutList();
 
-        // Add dropdown to select a room
-        List<string> ids = Settings.CurrentLevelState.GetAllRoomIds();
-        ids.Insert(0, "None");
-
         GUILayout.BeginHorizontal();
-        // "Add Character" button (only available if selected 2 different rooms)
-        GUI.enabled = _selectedRoomForCharacter > 0;
+        // "Add Character" button
+        GUI.enabled = _selectedVertexForCharacter > 0;
 
         if (GUILayout.Button("Add Character"))
         {
-            Settings.CurrentLevelState.AddCharacter(_selectedRoomForCharacter - 1);
+            Settings.CurrentLevelState.AddCharacter(_selectedVertexForCharacter - 1);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
             EditorUtility.SetDirty(Settings.CurrentLevelState);
 
-            _selectedRoomForCharacter = 0;
+            _selectedVertexForCharacter = 0;
         }
 
         GUI.enabled = true;
 
-        _selectedRoomForCharacter = EditorGUILayout.Popup(_selectedRoomForCharacter, ids.ToArray());
+        // Add dropdown to select a vertex
+        List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
+        ids.Insert(0, "None");
+
+        _selectedVertexForCharacter = EditorGUILayout.Popup(_selectedVertexForCharacter, ids.ToArray());
 
         GUILayout.EndHorizontal();
 
         GUI.enabled = _selectedCharacter > -1;
 
-        // "Remove selected connection" button
-        if (GUILayout.Button("Remove selected connection"))
+        // "Remove selected edge" button
+        if (GUILayout.Button("Remove selected edge"))
         {
             Settings.CurrentLevelState.RemoveCharacter(_selectedCharacter);
 
@@ -375,35 +471,35 @@ public class LevelStateEditorWindow : EditorWindow
     }
 
     // Add the correct callbacks for the _characters ReorderableList
-    private void HandleCharacters(ReorderableList ReorderableConnections)
+    private void HandleCharacters(ReorderableList ReorderableCharacters)
     {
-        ReorderableConnections.drawHeaderCallback = (Rect rect) =>
+        ReorderableCharacters.drawHeaderCallback = (Rect rect) =>
         {
             EditorGUI.LabelField(rect, "Characters");
         };
 
-        ReorderableConnections.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        ReorderableCharacters.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
-            // Get the connection data
-            SerializedProperty room = ReorderableConnections.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Room");
+            // Get the vertex data
+            SerializedProperty vertex = ReorderableCharacters.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Vertex");
 
-            Room[] rooms = Settings.CurrentLevelState.GetRooms();
+            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
 
-            if (rooms.Length > room.intValue)
+            if (vertices.Length > vertex.intValue)
             {
                 // Draw the necessary fields
-                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(rooms[room.intValue].Id.ToString()));
+                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(vertices[vertex.intValue].Id.ToString()));
             }
         };
 
-        ReorderableConnections.elementHeightCallback = (int index) =>
+        ReorderableCharacters.elementHeightCallback = (int index) =>
         {
             return EditorGUIUtility.singleLineHeight + 2 * EditorGUIUtility.standardVerticalSpacing;
         };
 
-        ReorderableConnections.onSelectCallback = (ReorderableList connections) =>
+        ReorderableCharacters.onSelectCallback = (ReorderableList edges) =>
         {
-            _selectedCharacter = connections.index;
+            _selectedCharacter = edges.index;
         };
     }
     #endregion
@@ -433,96 +529,106 @@ public class LevelStateEditorWindow : EditorWindow
     {
         if (Settings.CurrentLevelState != null)
         {
-            Room[] rooms = Settings.CurrentLevelState.GetRooms();
+            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
 
-            // Draw room debugs
-            if (_rooms != null)
+            // Draw vertex debugs
+            if (_vertices != null)
             {
-                for (int i = 0; i < rooms.Length; i++)
+                // Get what room is selected
+                int selectedRoomVertex = -1;
+
+                if (_selectedRoom > -1)
                 {
-                    // If the room is selected during the creation of a connection
-                    if ((toolbarSelection == 0 && (_selectedRoomA > 0 || _selectedRoomB > 0) && (i == _selectedRoomA - 1 || i == _selectedRoomB - 1))
-                     || (toolbarSelection == 1 && _selectedRoomForCharacter > 0 && i == _selectedRoomForCharacter - 1))
+                    selectedRoomVertex = Settings.CurrentLevelState.GetRooms()[_selectedRoom].Vertex;
+                }
+
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    // If the vertex is selected during the creation of a edge
+                    if ((toolbarSelection == 0 && (_selectedVertexA > 0 || _selectedVertexB > 0) && (i == _selectedVertexA - 1 || i == _selectedVertexB - 1))
+                     || (toolbarSelection == 1 && _selectedVertexForRoom > 0 && i == _selectedVertexForRoom - 1)
+                     || (toolbarSelection == 2 && _selectedVertexForCharacter > 0 && i == _selectedVertexForCharacter - 1))
                     {
-                        Handles.color = Settings.DebugRoomForConnectionColor;
+                        Handles.color = Settings.DebugVertexForEdgeColor;
                     }
-                    // If the room is selected in the list of room
-                    else if (toolbarSelection == 0 && (_selectedRoomA == 0 && _selectedRoomB == 0) && i == _rooms.index)
+                    // If the vertex is selected in the list of vertex
+                    else if ((toolbarSelection == 0 && (_selectedVertexA == 0 && _selectedVertexB == 0) && i == _vertices.index)
+                          || (toolbarSelection == 1 && i == selectedRoomVertex))
                     {
-                        Handles.color = Settings.DebugSelectedRoomColor;
+                        Handles.color = Settings.DebugSelectedVertexColor;
                     }
                     else
                     {
-                        Handles.color = Settings.DebugRoomColor;
+                        Handles.color = Settings.DebugVertexColor;
                     }
 
-                    Handles.DrawSolidDisc(rooms[i].Position + Vector3.up * .1f, Vector3.up, Settings.DebugRoomDiscRadius);
+                    Handles.DrawSolidDisc(vertices[i].Position + Vector3.up * .1f, Vector3.up, Settings.DebugVertexDiscRadius);
                 }
             }
 
-            // Draw connection debugs
-            if (_connections != null)
+            // Draw edge debugs
+            if (_edges != null)
             {
-                Connection[] connections = Settings.CurrentLevelState.GetConnections();
+                Edge[] edges = Settings.CurrentLevelState.GetEdges();
 
-                int roomAIndex;
-                int roomBIndex;
+                int vertexAIndex;
+                int vertexBIndex;
 
-                for (int i = 0; i < connections.Length; i++)
+                for (int i = 0; i < edges.Length; i++)
                 {
-                    if (toolbarSelection == 0 && _selectedRoomA == 0 && _selectedRoomB == 0 && i == _connections.index)
+                    if (toolbarSelection == 0 && _selectedVertexA == 0 && _selectedVertexB == 0 && i == _edges.index)
                     {
-                        Handles.color = Settings.DebugSelectedConnectionColor;
+                        Handles.color = Settings.DebugSelectedEdgeColor;
                     }
                     else
                     {
-                        Handles.color = Settings.DebugConnectionColor;
+                        Handles.color = Settings.DebugEdgeColor;
                     }
 
-                    roomAIndex = connections[i].RoomA;
-                    roomBIndex = connections[i].RoomB;
+                    vertexAIndex = edges[i].VertexA;
+                    vertexBIndex = edges[i].VertexB;
 
-                    Handles.DrawLine(rooms[roomAIndex].Position + Vector3.up * .1f, rooms[roomBIndex].Position + Vector3.up * .1f, .5f);
+                    Handles.DrawLine(vertices[vertexAIndex].Position + Vector3.up * .1f, vertices[vertexBIndex].Position + Vector3.up * .1f, .5f);
                 }
             }
 
             // Draw character debugs
-            if (toolbarSelection == 1 && _characters != null)
+            if (toolbarSelection == 2 && _characters != null)
             {
                 Character[] characters = Settings.CurrentLevelState.GetCharacters();
 
-                Dictionary<int, int> characterCountByRoom = new Dictionary<int, int>();
-                int selectedCharacterRoom = -1;
+                Dictionary<int, int> characterCountByVertex = new Dictionary<int, int>();
+                int selectedCharacterVertex = -1;
 
                 if (_selectedCharacter > -1)
                 {
-                    selectedCharacterRoom = characters[_selectedCharacter].Room;
+                    selectedCharacterVertex = characters[_selectedCharacter].Vertex;
                 }
 
                 foreach (Character character in characters)
                 {
-                    if(!characterCountByRoom.ContainsKey(character.Room))
+                    if(!characterCountByVertex.ContainsKey(character.Vertex))
                     {
-                        characterCountByRoom.Add(character.Room, 1);
+                        characterCountByVertex.Add(character.Vertex, 1);
                     }
                     else
                     {
-                        characterCountByRoom[character.Room] += 1;
+                        characterCountByVertex[character.Vertex] += 1;
                     }
                 }
 
-                foreach (KeyValuePair<int, int> room in characterCountByRoom)
+                foreach (KeyValuePair<int, int> vertex in characterCountByVertex)
                 {
-                    if (selectedCharacterRoom != room.Key)
+                    if (selectedCharacterVertex != vertex.Key)
                     {
-                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, Settings.CharacterIcon);
+                        Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.CharacterIcon);
                     }
                     else
                     {
-                        Handles.Label(rooms[room.Key].Position + Vector3.up * 2.0f, Settings.SelectedCharacterIcon);
+                        Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.SelectedCharacterIcon);
                     }
 
-                    Handles.Label(rooms[room.Key].Position + Vector3.up * 1.0f, "X" + room.Value.ToString(), Settings.CharacterCounterStyle);
+                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 1.0f, "X" + vertex.Value.ToString(), Settings.CharacterCounterStyle);
                 }
             }
         }

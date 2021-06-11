@@ -7,14 +7,14 @@ public class LevelStateEditorSettings : ScriptableObject
 
     // Debug for graph
     [Header("Graph Debug")]
-    public Color DebugRoomColor = new Color(.0f, .0f, 1.0f, .5f);
-    public Color DebugSelectedRoomColor = new Color(1.0f, .0f, .0f, .5f);
+    public Color DebugVertexColor = new Color(.0f, .0f, 1.0f, .5f);
+    public Color DebugSelectedVertexColor = new Color(1.0f, .0f, .0f, .5f);
 
-    public Color DebugRoomForConnectionColor = new Color(.0f, 1.0f, .0f, .5f);
-    public Color DebugConnectionColor = new Color(1.0f, 1.0f, .0f, 1.0f);
-    public Color DebugSelectedConnectionColor = new Color(1.0f, .0f, 1.0f, 1.0f);
+    public Color DebugVertexForEdgeColor = new Color(.0f, 1.0f, .0f, .5f);
+    public Color DebugEdgeColor = new Color(1.0f, 1.0f, .0f, 1.0f);
+    public Color DebugSelectedEdgeColor = new Color(1.0f, .0f, 1.0f, 1.0f);
 
-    public float DebugRoomDiscRadius = 1.0f;
+    public float DebugVertexDiscRadius = 1.0f;
 
     // Debug for characters
     [Header("Characters Debug")]
