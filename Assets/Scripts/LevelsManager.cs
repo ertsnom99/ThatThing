@@ -19,6 +19,114 @@ public class LevelsManager : MonoBehaviour
 
     private static GameSave _gameSave;
 
+    public static GameSave GetGameSave()
+    {
+        return _gameSave;
+    }
+
+    // Takes a world position and finds the closest vertexA, the possible edge it's on (given by vertexB) and the progress on that edge.
+    // Returns true if the conversion was successful. Even if the conversion is successful, vertexB could be -1, if the position
+    // was considered exactly at vertexA. 
+    public static bool ConvertPositionToGraph(LevelGraph graph, Vector3 position, LayerMask blockingMask, out int vertexA, out int vertexB, out float progress)
+    {
+        // Reset variables
+        vertexA = -1;
+        vertexB = -1;
+        progress = .0f;
+
+        Vector3 vertexToPos;
+        float VertexToPosMagnitude;
+        const float infinity = 99999;
+        float smallestDistanceToVertex = infinity;
+
+        // Find closest Vertex
+        RaycastHit hit;
+
+        for (int i = 0; i < graph.Vertices.Length; i++)
+        {
+            vertexToPos = position - graph.Vertices[i].Position;
+            VertexToPosMagnitude = vertexToPos.magnitude;
+
+            // Skip check if the previously found closest vertex is already closer then this vertex (avoid unnecessary raycast)
+            if (vertexA > -1 && VertexToPosMagnitude >= smallestDistanceToVertex)
+            {
+                continue;
+            }
+
+            // TODO: Use sphere sweep instead?
+            // Check if a raycast can reach vertex
+            if (!Physics.Raycast(graph.Vertices[i].Position, vertexToPos.normalized, out hit, VertexToPosMagnitude, blockingMask))
+            {
+                vertexA = i;
+                smallestDistanceToVertex = VertexToPosMagnitude;
+            }
+        }
+
+        // The position can't be converted to graph if no vertexA could be found
+        if (vertexA == -1)
+        {
+            return false;
+        }
+
+        // Reset smallest distance
+        smallestDistanceToVertex = infinity;
+
+        int secondVertex;
+
+        // Find closest vertex connected to the first vertexA
+        foreach (Edge edge in graph.Edges)
+        {
+            if (edge.VertexA == vertexA)
+            {
+                secondVertex = edge.VertexB;
+            }
+            else if (edge.VertexB == vertexA)
+            {
+                secondVertex = edge.VertexA;
+            }
+            else
+            {
+                continue;
+            }
+
+            vertexToPos = position - graph.Vertices[secondVertex].Position;
+            VertexToPosMagnitude = vertexToPos.sqrMagnitude;
+
+            if (VertexToPosMagnitude < smallestDistanceToVertex)
+            {
+                vertexB = secondVertex;
+                smallestDistanceToVertex = VertexToPosMagnitude;
+            }
+        }
+
+        // Find progress along the edge if vertexB was found
+        if (vertexB > -1)
+        {
+            Vector3 VertexAToB = graph.Vertices[vertexB].Position - graph.Vertices[vertexA].Position;
+            vertexToPos = position - graph.Vertices[vertexA].Position;
+            float dotA = Vector3.Dot(VertexAToB, vertexToPos);
+
+            Vector3 VertexBToA = graph.Vertices[vertexA].Position - graph.Vertices[vertexB].Position;
+            vertexToPos = position - graph.Vertices[vertexB].Position;
+            float dotB = Vector3.Dot(VertexBToA, vertexToPos);
+
+            // Check if position is aligned with the edge
+            if (dotA * dotB < .0f)
+            {
+                progress = .0f;
+            }
+            else
+            {
+                // Calculate projection directly since we already calculated the dot product
+                Vector3 projectedPosition = (dotA / VertexAToB.sqrMagnitude) * VertexAToB;
+
+                progress = projectedPosition.magnitude;
+            }
+        }
+
+        return true;
+    }
+
     private void Awake()
     {
         _behaviorManager = GetComponent<BehaviorManager>();

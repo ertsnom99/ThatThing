@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8819673829699421525}
   - component: {fileID: 1033044397294246409}
   - component: {fileID: 2696287958784584649}
-  m_Layer: 15
+  m_Layer: 6
   m_Name: PanelB
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -107,7 +107,7 @@ GameObject:
   - component: {fileID: 2503147957163674902}
   - component: {fileID: 2503147957163674903}
   - component: {fileID: 2503147957163674896}
-  m_Layer: 15
+  m_Layer: 6
   m_Name: PanelA
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -202,7 +202,7 @@ GameObject:
   - component: {fileID: 2796636541228951739}
   - component: {fileID: 2038845900509858161}
   - component: {fileID: 577149417506148893}
-  m_Layer: 15
+  m_Layer: 6
   m_Name: PanelD
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -297,7 +297,7 @@ GameObject:
   - component: {fileID: 5238187933161191659}
   - component: {fileID: 7633558609340090150}
   - component: {fileID: 2873599584328495023}
-  m_Layer: 15
+  m_Layer: 6
   m_Name: PanelC
   m_TagString: Untagged
   m_Icon: {fileID: 0}
