@@ -35,30 +35,32 @@ public class LevelsManager : MonoBehaviour
         progress = .0f;
 
         Vector3 vertexToPos;
-        float VertexToPosMagnitude;
+        float distanceToPosition;
         const float infinity = 99999;
-        float smallestDistanceToVertex = infinity;
+        float smallestDistance = infinity;
 
         // Find closest Vertex
         RaycastHit hit;
 
+        // TODO: Sort all vertices by distance (closest to fartess) in an other array?
+
         for (int i = 0; i < graph.Vertices.Length; i++)
         {
             vertexToPos = position - graph.Vertices[i].Position;
-            VertexToPosMagnitude = vertexToPos.magnitude;
+            distanceToPosition = vertexToPos.magnitude;
 
             // Skip check if the previously found closest vertex is already closer then this vertex (avoid unnecessary raycast)
-            if (vertexA > -1 && VertexToPosMagnitude >= smallestDistanceToVertex)
+            if (vertexA > -1 && distanceToPosition >= smallestDistance)
             {
                 continue;
             }
 
             // TODO: Use sphere sweep instead?
             // Check if a raycast can reach vertex
-            if (!Physics.Raycast(graph.Vertices[i].Position, vertexToPos.normalized, out hit, VertexToPosMagnitude, blockingMask))
+            if (!Physics.Raycast(graph.Vertices[i].Position, vertexToPos.normalized, out hit, distanceToPosition, blockingMask))
             {
                 vertexA = i;
-                smallestDistanceToVertex = VertexToPosMagnitude;
+                smallestDistance = distanceToPosition;
             }
         }
 
@@ -69,11 +71,16 @@ public class LevelsManager : MonoBehaviour
         }
 
         // Reset smallest distance
-        smallestDistanceToVertex = infinity;
+        smallestDistance = infinity;
 
         int secondVertex;
+        Vector3 vertexAToSecond;
+        Vector3 secondToVertexA;
+        float dotA;
+        float dotB;
+        Vector3 projectedPosition;
 
-        // Find closest vertex connected to the first vertexA
+        // Find closest edge connected to the first vertexA
         foreach (Edge edge in graph.Edges)
         {
             if (edge.VertexA == vertexA)
@@ -89,38 +96,30 @@ public class LevelsManager : MonoBehaviour
                 continue;
             }
 
-            vertexToPos = position - graph.Vertices[secondVertex].Position;
-            VertexToPosMagnitude = vertexToPos.sqrMagnitude;
-
-            if (VertexToPosMagnitude < smallestDistanceToVertex)
-            {
-                vertexB = secondVertex;
-                smallestDistanceToVertex = VertexToPosMagnitude;
-            }
-        }
-
-        // Find progress along the edge if vertexB was found
-        if (vertexB > -1)
-        {
-            Vector3 VertexAToB = graph.Vertices[vertexB].Position - graph.Vertices[vertexA].Position;
+            // Find progress along the edge
+            vertexAToSecond = graph.Vertices[secondVertex].Position - graph.Vertices[vertexA].Position;
             vertexToPos = position - graph.Vertices[vertexA].Position;
-            float dotA = Vector3.Dot(VertexAToB, vertexToPos);
+            dotA = Vector3.Dot(vertexAToSecond, vertexToPos);
 
-            Vector3 VertexBToA = graph.Vertices[vertexA].Position - graph.Vertices[vertexB].Position;
-            vertexToPos = position - graph.Vertices[vertexB].Position;
-            float dotB = Vector3.Dot(VertexBToA, vertexToPos);
+            secondToVertexA = graph.Vertices[vertexA].Position - graph.Vertices[secondVertex].Position;
+            vertexToPos = position - graph.Vertices[secondVertex].Position;
+            dotB = Vector3.Dot(secondToVertexA, vertexToPos);
 
             // Check if position is aligned with the edge
-            if (dotA * dotB < .0f)
-            {
-                progress = .0f;
-            }
-            else
+            if (dotA * dotB > .0f)
             {
                 // Calculate projection directly since we already calculated the dot product
-                Vector3 projectedPosition = (dotA / VertexAToB.sqrMagnitude) * VertexAToB;
+                projectedPosition = (dotA / vertexAToSecond.sqrMagnitude) * vertexAToSecond;
 
-                progress = projectedPosition.magnitude;
+                // Calculate the distance between the position and the projected position 
+                distanceToPosition = (position - graph.Vertices[vertexA].Position - projectedPosition).sqrMagnitude;
+
+                if (distanceToPosition < smallestDistance)
+                {
+                    vertexB = secondVertex;
+                    progress = projectedPosition.magnitude;
+                    smallestDistance = distanceToPosition;
+                }
             }
         }
 
