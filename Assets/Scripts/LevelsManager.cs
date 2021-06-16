@@ -34,33 +34,29 @@ public class LevelsManager : MonoBehaviour
         vertexB = -1;
         progress = .0f;
 
-        Vector3 vertexToPos;
-        float distanceToPosition;
-        const float infinity = 99999;
-        float smallestDistance = infinity;
+        int[] indexes = new int[graph.Vertices.Length];
+        float[] distances = new float[graph.Vertices.Length];
+
+        for (int i = 0; i < graph.Vertices.Length; i++)
+        {
+            indexes[i] = i;
+            distances[i] = (position - graph.Vertices[i].Position).magnitude;
+        }
+
+        // Sort all vertices by distance
+        QuickSort.QuickSortAlignedArrays(distances, indexes, 0, distances.Length - 1);
 
         // Find closest Vertex
         RaycastHit hit;
 
-        // TODO: Sort all vertices by distance (closest to fartess) in an other array?
-
-        for (int i = 0; i < graph.Vertices.Length; i++)
+        for (int i = 0; i < indexes.Length; i++)
         {
-            vertexToPos = position - graph.Vertices[i].Position;
-            distanceToPosition = vertexToPos.magnitude;
-
-            // Skip check if the previously found closest vertex is already closer then this vertex (avoid unnecessary raycast)
-            if (vertexA > -1 && distanceToPosition >= smallestDistance)
-            {
-                continue;
-            }
-
             // TODO: Use sphere sweep instead?
             // Check if a raycast can reach vertex
-            if (!Physics.Raycast(graph.Vertices[i].Position, vertexToPos.normalized, out hit, distanceToPosition, blockingMask))
+            if (!Physics.Raycast(graph.Vertices[indexes[i]].Position, (position - graph.Vertices[indexes[i]].Position).normalized, out hit, distances[i], blockingMask))
             {
-                vertexA = i;
-                smallestDistance = distanceToPosition;
+                vertexA = indexes[i];
+                break;
             }
         }
 
@@ -70,15 +66,17 @@ public class LevelsManager : MonoBehaviour
             return false;
         }
 
-        // Reset smallest distance
-        smallestDistance = infinity;
-
         int secondVertex;
+        Vector3 vertexToPos;
         Vector3 vertexAToSecond;
         Vector3 secondToVertexA;
         float dotA;
         float dotB;
         Vector3 projectedPosition;
+
+        float distanceToPosition;
+        const float infinity = 99999;
+        float smallestDistance = infinity;
 
         // Find closest edge connected to the first vertexA
         foreach (Edge edge in graph.Edges)
