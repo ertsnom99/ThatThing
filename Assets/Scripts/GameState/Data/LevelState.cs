@@ -30,35 +30,18 @@ public struct LevelGraph
     public Vertex[] Vertices;
     public Edge[] Edges;
 
-    [HideInInspector]
-    public int VertexIdCount;
-    [HideInInspector]
-    public int EdgeIdCount;
-
     public LevelGraph(Vertex[] vertices, Edge[] edges)
     {
         Vertices = vertices;
         Edges = edges;
-        VertexIdCount = 0;
-        EdgeIdCount = 0;
     }
 }
 
 [Serializable]
-public struct Room
-{
-    // Index of the room in LevelGraph.Vertices
-    public int Vertex;
-    public string Name;
-}
-
-[Serializable]
-public struct Character
+public struct LevelStateCharacter
 {
     // Index of the vertex
     public int Vertex;
-    public Vector3 Position;
-    public Vector3 Rotation;
 }
 
 [CreateAssetMenu(fileName = "LevelState", menuName = "Game State/Level State")]
@@ -67,19 +50,36 @@ public class LevelState : ScriptableObject
     [SerializeField]
     private LevelGraph _graph;
 
-    [SerializeField]
-    private Room[] _rooms;
+    [HideInInspector]
+    public int VertexIdCount;
+    [HideInInspector]
+    public int EdgeIdCount;
 
     [SerializeField]
-    private Character[] _characters;
+    private LevelStateCharacter[] _characters;
+
+    [HideInInspector]
+    [SerializeField]
+    private bool _initialized = false;
+
+    private void OnEnable()
+    {
+        if (!_initialized)
+        {
+            Initialize();
+            _initialized = true;
+        }
+    }
 
     #region Methods for the editor window
     public void Initialize()
     {
         _graph.Vertices = new Vertex[0];
         _graph.Edges = new Edge[0];
-        _rooms = new Room[0];
-        _characters = new Character[0];
+        VertexIdCount = 0;
+        EdgeIdCount = 0;
+
+        _characters = new LevelStateCharacter[0];
     }
 
     public void AddVertex(Transform transform = null)
@@ -100,8 +100,8 @@ public class LevelState : ScriptableObject
 
     private int GenerateUniqueVertexId()
     {
-        int newId = _graph.VertexIdCount;
-        _graph.VertexIdCount++;
+        int newId = VertexIdCount;
+        VertexIdCount++;
 
         return newId;
     }
@@ -126,22 +126,6 @@ public class LevelState : ScriptableObject
             if (_graph.Edges[i - 1].VertexB > index)
             {
                 _graph.Edges[i - 1].VertexB -= 1;
-            }
-        }
-
-        for (int i = _rooms.Length; i > 0; i--)
-        {
-            // Remove any room that uses the removed vertex
-            if (_rooms[i - 1].Vertex == index)
-            {
-                RemoveRoom(i - 1);
-                continue;
-            }
-
-            // Fix indexes
-            if (_rooms[i - 1].Vertex > index)
-            {
-                _rooms[i - 1].Vertex -= 1;
             }
         }
 
@@ -170,7 +154,7 @@ public class LevelState : ScriptableObject
     public List<string> GetAllVertexIds()
     {
         List<string> idList = new List<string>();
-
+        
         foreach (Vertex vertex in _graph.Vertices)
         {
             idList.Add(vertex.Id.ToString());
@@ -196,8 +180,8 @@ public class LevelState : ScriptableObject
 
     private int GenerateUniqueEdgeId()
     {
-        int newId = _graph.EdgeIdCount;
-        _graph.EdgeIdCount++;
+        int newId = EdgeIdCount;
+        EdgeIdCount++;
 
         return newId;
     }
@@ -210,31 +194,12 @@ public class LevelState : ScriptableObject
         _graph.Edges = tempEdges.ToArray();
     }
 
-    public void AddRoom(int vertex)
-    {
-        Room newRoom = new Room();
-        newRoom.Vertex = vertex;
-
-        List<Room> tempRooms = new List<Room>(_rooms);
-        tempRooms.Add(newRoom);
-
-        _rooms = tempRooms.ToArray();
-    }
-
-    public void RemoveRoom(int index)
-    {
-        List<Room> tempRooms = new List<Room>(_rooms);
-        tempRooms.Remove(_rooms[index]);
-
-        _rooms = tempRooms.ToArray();
-    }
-
     public void AddCharacter(int vertex)
     {
-        Character newCharacter = new Character();
+        LevelStateCharacter newCharacter = new LevelStateCharacter();
         newCharacter.Vertex = vertex;
 
-        List<Character> tempCharacters = new List<Character>(_characters);
+        List<LevelStateCharacter> tempCharacters = new List<LevelStateCharacter>(_characters);
         tempCharacters.Add(newCharacter);
 
         _characters = tempCharacters.ToArray();
@@ -242,7 +207,7 @@ public class LevelState : ScriptableObject
 
     public void RemoveCharacter(int index)
     {
-        List<Character> tempCharacters = new List<Character>(_characters);
+        List<LevelStateCharacter> tempCharacters = new List<LevelStateCharacter>(_characters);
         tempCharacters.Remove(_characters[index]);
 
         _characters = tempCharacters.ToArray();
@@ -250,7 +215,7 @@ public class LevelState : ScriptableObject
     #endregion
 
     // Returns a COPY of the array of vertices
-    public Vertex[] GetVertices()
+    public Vertex[] GetVerticesCopy()
     {
         Vertex[] verticesCopy = new Vertex[_graph.Vertices.Length];
         _graph.Vertices.CopyTo(verticesCopy, 0);
@@ -263,7 +228,7 @@ public class LevelState : ScriptableObject
     }
 
     // Returns a COPY of the array of edges
-    public Edge[] GetEdges()
+    public Edge[] GetEdgesCopy()
     {
         Edge[] edgesCopy = new Edge[_graph.Edges.Length];
         _graph.Edges.CopyTo(edgesCopy, 0);
@@ -275,25 +240,9 @@ public class LevelState : ScriptableObject
         return _graph.Edges.Length;
     }
 
-    // Returns a COPY of the array of rooms
-    public Room[] GetRooms()
+    public LevelStateCharacter[] GetCharacters()
     {
-        Room[] roomsCopy = new Room[_rooms.Length];
-        _rooms.CopyTo(roomsCopy, 0);
-        return roomsCopy;
-    }
-
-    public int GetRoomsLength()
-    {
-        return _rooms.Length;
-    }
-
-    // Returns a COPY of the array of characters
-    public Character[] GetCharacters()
-    {
-        Character[] charactersCopy = new Character[_characters.Length];
-        _characters.CopyTo(charactersCopy, 0);
-        return charactersCopy;
+        return _characters;
     }
 
     public int GetCharactersLength()

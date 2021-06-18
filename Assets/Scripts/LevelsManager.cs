@@ -154,22 +154,22 @@ public class LevelsManager : MonoBehaviour
     // TODO: how are AI managed?
     private void CreateAIs()
     {
-        foreach (KeyValuePair<int, SerializableLevelState> LevelState in _gameSave.LevelStatesByBuildIndex)
+        foreach (KeyValuePair<int, LevelStateSave> LevelState in _gameSave.LevelStatesByBuildIndex)
         {
             if (_buildIndex == LevelState.Key)
             {
-                foreach(Character character in LevelState.Value.Characters)
+                foreach(CharacterSave character in LevelState.Value.CharacterSaves)
                 {
                     // TODO: Create characters in scene
-                    Debug.Log("In scene: " + character.Vertex);
+                    Debug.Log("In scene: " + character.CurrentVertex);
                 }
             }
             else
             {
-                foreach (Character character in LevelState.Value.Characters)
+                foreach (CharacterSave character in LevelState.Value.CharacterSaves)
                 {
                     // TODO: Create characters in other scenes
-                    Debug.Log("Scene " + LevelState.Key + " : " + character.Vertex);
+                    Debug.Log("Scene " + LevelState.Key + " : " + character.CurrentVertex);
                 }
             }
         }

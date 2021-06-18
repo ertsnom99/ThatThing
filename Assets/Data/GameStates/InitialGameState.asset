@@ -15,6 +15,6 @@ MonoBehaviour:
   _playerState: {fileID: 11400000, guid: 24cd8c15bcc57744faac3c7d316f489c, type: 2}
   _levelStatesByBuildIndex:
   - _buildIndex: 1
-    _levelState: {fileID: 11400000, guid: 5072c4a0f4daf2747ac41c049d4d98cf, type: 2}
+    _levelState: {fileID: 11400000, guid: 7dc8379434a66064bab2cc8008b37143, type: 2}
   - _buildIndex: 2
-    _levelState: {fileID: 11400000, guid: 4c4708c3a2059d549a260bad954e7ffa, type: 2}
+    _levelState: {fileID: 11400000, guid: 26525f2d091024b4e8d925041c45a4c3, type: 2}

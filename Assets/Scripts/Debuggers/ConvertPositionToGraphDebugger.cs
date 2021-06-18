@@ -45,9 +45,9 @@ public class ConvertPositionToGraphDebugger : MonoBehaviour
         }
         else if (vertexA > -1 && vertexB > -1)
         {
-            Vector3 closestToSecondRoom = (vertices[vertexB].Position - vertices[vertexA].Position).normalized;
+            Vector3 closestToSecondVertex = (vertices[vertexB].Position - vertices[vertexA].Position).normalized;
             Gizmos.color = Color.green;
-            Gizmos.DrawSphere(vertices[vertexA].Position + closestToSecondRoom * progress, 1.5f);
+            Gizmos.DrawSphere(vertices[vertexA].Position + closestToSecondVertex * progress, 1.5f);
         }
     }
 }

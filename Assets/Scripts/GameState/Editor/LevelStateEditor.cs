@@ -26,17 +26,21 @@ public class LevelStateEditor : Editor
 
         // Get path to scriptable object
         string path = AssetDatabase.GetAssetPath(target);
-        int index = path.LastIndexOf("/");
-        path = path.Substring(0, index);
 
-        // Can<t duplicate if the name is empty or the file already exist
-        GUI.enabled = _duplicateAssetName != "" && !File.Exists(Application.dataPath + path.Remove(0, 6) + "/" + _duplicateAssetName + ".asset");
-
-        if (GUILayout.Button("Duplicate", GUILayout.Width(200)))
+        if (path != "")
         {
-            // Duplicate
-            ScriptableObject duplicate = Object.Instantiate(target) as ScriptableObject;
-            AssetDatabase.CreateAsset(duplicate, path + "/" + _duplicateAssetName + ".asset");
+            int index = path.LastIndexOf("/");
+            path = path.Substring(0, index);
+
+            // Can<t duplicate if the name is empty or the file already exist
+            GUI.enabled = _duplicateAssetName != "" && !File.Exists(Application.dataPath + path.Remove(0, 6) + "/" + _duplicateAssetName + ".asset");
+
+            if (GUILayout.Button("Duplicate", GUILayout.Width(200)))
+            {
+                // Duplicate
+                ScriptableObject duplicate = Object.Instantiate(target) as ScriptableObject;
+                AssetDatabase.CreateAsset(duplicate, path + "/" + _duplicateAssetName + ".asset");
+            }
         }
 
         GUI.enabled = true;

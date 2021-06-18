@@ -42,13 +42,13 @@ MonoBehaviour:
       VertexB: 1
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 1
       VertexA: 1
       VertexB: 2
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 2
       VertexA: 1
       VertexB: 3
@@ -60,57 +60,53 @@ MonoBehaviour:
       VertexB: 4
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 4
       VertexA: 4
       VertexB: 5
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 5
       VertexA: 5
       VertexB: 6
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 6
-      VertexA: 6
-      VertexB: 7
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 7
-      VertexA: 7
-      VertexB: 8
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 9
-      VertexA: 9
-      VertexB: 7
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 11
       VertexA: 6
       VertexB: 10
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 12
-      VertexA: 2
+    - Id: 7
+      VertexA: 6
+      VertexB: 7
+      Cost: 1
+      Traversable: 1
+      Type: 1
+    - Id: 8
+      VertexA: 7
+      VertexB: 9
+      Cost: 1
+      Traversable: 1
+      Type: 0
+    - Id: 9
+      VertexA: 7
       VertexB: 8
       Cost: 1
       Traversable: 1
       Type: 0
-    VertexIdCount: 11
-    EdgeIdCount: 13
-  _rooms:
-  - Vertex: 1
-    Name: SomeRoom
-  - Vertex: 0
-    Name: OtherRoom
+    - Id: 10
+      VertexA: 8
+      VertexB: 2
+      Cost: 1
+      Traversable: 1
+      Type: 1
+  VertexIdCount: 11
+  EdgeIdCount: 11
   _characters:
-  - Vertex: 1
-    Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0}
+  - Vertex: 2
+  - Vertex: 2
+  - Vertex: 7
+  _initialized: 1

@@ -14,7 +14,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     // Toolbar variables
     private int toolbarSelection = 0;
-    private string[] toolbarStrings = { "Level Graph", "Rooms", "Characters" };
+    private string[] toolbarStrings = { "Level Graph", "Characters" };
 
     // Scrolling
     private Vector2 _scrollPos;
@@ -24,16 +24,9 @@ public class LevelStateEditorWindow : EditorWindow
     private ReorderableList _edges;
 
     private int _selectedVertex = -1;
-    private Transform _selectedTransform = null;
     private int _selectedEdge = -1;
     private int _selectedVertexA = 0;
     private int _selectedVertexB = 0;
-
-    // Rooms variables
-    private ReorderableList _rooms;
-
-    private int _selectedRoom = -1;
-    private int _selectedVertexForRoom = 0;
 
     // Characters variables
     private ReorderableList _characters;
@@ -70,6 +63,12 @@ public class LevelStateEditorWindow : EditorWindow
     }
 
     #region GUI Methods
+    // Repaint at 10 frames per second to give the inspector a chance to update (usefull for the "Add vertex using selection" button)
+    private void OnInspectorUpdate()
+    {
+        Repaint();
+    }
+
     private void OnGUI()
     {
         DrawEditor();
@@ -78,16 +77,15 @@ public class LevelStateEditorWindow : EditorWindow
     private void DrawEditor()
     {
         // Field for the LevelState
-        //EditorGUILayout.LabelField(" ", GUILayout.Width(100));
         EditorGUILayout.LabelField("Assign LevelState:", GUILayout.Width(200));
         Settings.CurrentLevelState = (LevelState)EditorGUILayout.ObjectField(Settings.CurrentLevelState, typeof(LevelState), false, GUILayout.Width(200));
-
+        
         // When the LecelState changed
         if (_previousLevelState != Settings.CurrentLevelState)
         {
             _serializedLevelState = null;
             _previousLevelState = Settings.CurrentLevelState;
-
+            
             // Save the settings
             EditorUtility.SetDirty(Settings);
         }
@@ -102,9 +100,6 @@ public class LevelStateEditorWindow : EditorWindow
                 _vertices = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Vertices"), false, true, false, false);
                 _edges = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Edges"), false, true, false, false);
 
-                // Rooms serialization
-                _rooms = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_rooms"), false, true, false, false);
-
                 // Characters serialization
                 _characters = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_characters"), false, true, false, false);
 
@@ -113,8 +108,6 @@ public class LevelStateEditorWindow : EditorWindow
                 _selectedEdge = -1;
                 _selectedVertexA = 0;
                 _selectedVertexB = 0;
-                _selectedRoom = -1;
-                _selectedVertexForRoom = 0;
                 _selectedCharacter = -1;
                 _selectedVertexForCharacter = 0;
             }
@@ -142,9 +135,6 @@ public class LevelStateEditorWindow : EditorWindow
                     DrawLevelGraphSection();
                     break;
                 case 1:
-                    DrawRoomsSection();
-                    break;
-                case 2:
                     DrawCharactersSection();
                     break;
             }
@@ -176,22 +166,25 @@ public class LevelStateEditorWindow : EditorWindow
         // "Add vertex" button
         GUILayout.BeginHorizontal();
 
-        if (GUILayout.Button("Add vertex", GUILayout.Width(200)))
+        if (GUILayout.Button("Add vertex"))
         {
-            Settings.CurrentLevelState.AddVertex(_selectedTransform);
+            Settings.CurrentLevelState.AddVertex();
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
             EditorUtility.SetDirty(Settings.CurrentLevelState);
         }
 
-        // Field to select a transform
-        _selectedTransform = (Transform)EditorGUILayout.ObjectField(_selectedTransform, typeof(Transform), true);
+        GUI.enabled = Selection.activeTransform;
+
+        if (GUILayout.Button("Add vertex using selection", GUILayout.Width(Screen.width / 2.0f)))
+        {
+            Settings.CurrentLevelState.AddVertex(Selection.activeTransform);
+
+            // Most be set dirty because the changes where made directly inside the ScriptableObject
+            EditorUtility.SetDirty(Settings.CurrentLevelState);
+        }
 
         GUILayout.EndHorizontal();
-
-        EditorGUILayout.LabelField("*Vertex position set to the transform position (if set)");
-
-        EditorGUILayout.Space(10);
 
         // Remove button is enabled only if a vertex is selected
         GUI.enabled = _selectedVertex > -1;
@@ -249,12 +242,12 @@ public class LevelStateEditorWindow : EditorWindow
 
         GUILayout.BeginHorizontal();
         EditorGUILayout.LabelField("Vertex A (id)");
-        EditorGUILayout.LabelField("Vertex B (id)");
+        EditorGUILayout.LabelField("Vertex B (id)", GUILayout.Width(Screen.width / 2.0f));
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
         _selectedVertexA = EditorGUILayout.Popup(_selectedVertexA, ids.ToArray());
-        _selectedVertexB = EditorGUILayout.Popup(_selectedVertexB, ids.ToArray());
+        _selectedVertexB = EditorGUILayout.Popup(_selectedVertexB, ids.ToArray(), GUILayout.Width(Screen.width / 2.0f));
         GUILayout.EndHorizontal();
 
         // "Add edge" button (only available if selected 2 different vertices)
@@ -311,7 +304,7 @@ public class LevelStateEditorWindow : EditorWindow
             SerializedProperty traversable = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
             SerializedProperty type = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
 
-            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
+            Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
 
             if (vertices.Length > vertexA.intValue && vertices.Length > vertexB.intValue)
             {
@@ -342,88 +335,6 @@ public class LevelStateEditorWindow : EditorWindow
         };
     }
 
-    private void DrawRoomsSection()
-    {
-        // Add list of edges
-        HandleRooms(_rooms);
-        _rooms.DoLayoutList();
-
-        GUILayout.BeginHorizontal();
-        // "Add Room" button
-        GUI.enabled = _selectedVertexForRoom > 0;
-
-        if (GUILayout.Button("Add Room"))
-        {
-            Settings.CurrentLevelState.AddRoom(_selectedVertexForRoom - 1);
-
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
-
-            _selectedVertexForRoom = 0;
-        }
-
-        GUI.enabled = true;
-
-        // Add dropdown to select a vertex
-        List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
-        ids.Insert(0, "None");
-
-        _selectedVertexForRoom = EditorGUILayout.Popup(_selectedVertexForRoom, ids.ToArray());
-
-        GUILayout.EndHorizontal();
-
-        GUI.enabled = _selectedRoom > -1;
-
-        // "Remove selected room" button
-        if (GUILayout.Button("Remove selected room"))
-        {
-            Settings.CurrentLevelState.RemoveRoom(_selectedRoom);
-
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
-
-            _selectedRoom = -1;
-        }
-
-        GUI.enabled = true;
-    }
-
-    // Add the correct callbacks for the _characters ReorderableList
-    private void HandleRooms(ReorderableList ReorderableRooms)
-    {
-        ReorderableRooms.drawHeaderCallback = (Rect rect) =>
-        {
-            EditorGUI.LabelField(rect, "Rooms");
-        };
-
-        ReorderableRooms.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
-        {
-            // Get the vertex data
-            SerializedProperty vertex = ReorderableRooms.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Vertex");
-            SerializedProperty name = ReorderableRooms.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Name");
-
-            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
-
-            if (vertices.Length > vertex.intValue)
-            {
-                // Draw the necessary fields
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent(vertices[vertex.intValue].Id.ToString()));
-            }
-
-            EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .14f, rect.width * (1 - .2f), EditorGUIUtility.singleLineHeight), name, GUIContent.none);
-        };
-
-        ReorderableRooms.elementHeightCallback = (int index) =>
-        {
-            return EditorGUIUtility.singleLineHeight + 2 * EditorGUIUtility.standardVerticalSpacing;
-        };
-
-        ReorderableRooms.onSelectCallback = (ReorderableList edges) =>
-        {
-            _selectedRoom = edges.index;
-        };
-    }
-
     private void DrawCharactersSection()
     {
         // Add list of edges
@@ -434,7 +345,7 @@ public class LevelStateEditorWindow : EditorWindow
         // "Add Character" button
         GUI.enabled = _selectedVertexForCharacter > 0;
 
-        if (GUILayout.Button("Add Character"))
+        if (GUILayout.Button("Add Character", GUILayout.Width(Screen.width / 2.0f)))
         {
             Settings.CurrentLevelState.AddCharacter(_selectedVertexForCharacter - 1);
 
@@ -483,7 +394,7 @@ public class LevelStateEditorWindow : EditorWindow
             // Get the vertex data
             SerializedProperty vertex = ReorderableCharacters.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Vertex");
 
-            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
+            Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
 
             if (vertices.Length > vertex.intValue)
             {
@@ -529,31 +440,21 @@ public class LevelStateEditorWindow : EditorWindow
     {
         if (Settings.CurrentLevelState != null)
         {
-            Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
+            Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
 
             // Draw vertex debugs
             if (_vertices != null)
             {
-                // Get what room is selected
-                int selectedRoomVertex = -1;
-
-                if (_selectedRoom > -1)
-                {
-                    selectedRoomVertex = Settings.CurrentLevelState.GetRooms()[_selectedRoom].Vertex;
-                }
-
                 for (int i = 0; i < vertices.Length; i++)
                 {
                     // If the vertex is selected during the creation of a edge
                     if ((toolbarSelection == 0 && (_selectedVertexA > 0 || _selectedVertexB > 0) && (i == _selectedVertexA - 1 || i == _selectedVertexB - 1))
-                     || (toolbarSelection == 1 && _selectedVertexForRoom > 0 && i == _selectedVertexForRoom - 1)
-                     || (toolbarSelection == 2 && _selectedVertexForCharacter > 0 && i == _selectedVertexForCharacter - 1))
+                     || (toolbarSelection == 1 && _selectedVertexForCharacter > 0 && i == _selectedVertexForCharacter - 1))
                     {
                         Handles.color = Settings.DebugVertexForEdgeColor;
                     }
                     // If the vertex is selected in the list of vertex
-                    else if ((toolbarSelection == 0 && (_selectedVertexA == 0 && _selectedVertexB == 0) && i == _vertices.index)
-                          || (toolbarSelection == 1 && _selectedVertexForRoom == 0 && i == selectedRoomVertex))
+                    else if ((toolbarSelection == 0 && (_selectedVertexA == 0 && _selectedVertexB == 0) && i == _vertices.index))
                     {
                         Handles.color = Settings.DebugSelectedVertexColor;
                     }
@@ -569,7 +470,7 @@ public class LevelStateEditorWindow : EditorWindow
             // Draw edge debugs
             if (_edges != null)
             {
-                Edge[] edges = Settings.CurrentLevelState.GetEdges();
+                Edge[] edges = Settings.CurrentLevelState.GetEdgesCopy();
 
                 int vertexAIndex;
                 int vertexBIndex;
@@ -593,9 +494,9 @@ public class LevelStateEditorWindow : EditorWindow
             }
 
             // Draw character debugs
-            if (toolbarSelection == 2 && _characters != null)
+            if (toolbarSelection == 1 && _characters != null)
             {
-                Character[] characters = Settings.CurrentLevelState.GetCharacters();
+                LevelStateCharacter[] characters = Settings.CurrentLevelState.GetCharacters();
 
                 Dictionary<int, int> characterCountByVertex = new Dictionary<int, int>();
                 int selectedCharacterVertex = -1;
@@ -605,7 +506,7 @@ public class LevelStateEditorWindow : EditorWindow
                     selectedCharacterVertex = characters[_selectedCharacter].Vertex;
                 }
 
-                foreach (Character character in characters)
+                foreach (LevelStateCharacter character in characters)
                 {
                     if(!characterCountByVertex.ContainsKey(character.Vertex))
                     {
