@@ -27,4 +27,9 @@ public class LevelStateEditorSettings : ScriptableObject
     public Texture CharacterIcon;
     public Texture SelectedCharacterIcon;
     public GUIStyle CharacterCounterStyle = new GUIStyle();
+
+    // Debug for the GUI
+    [Header("GUI Debug")]
+    public Color GUIClickTextBoxColor = new Color(.0f, .0f, .0f, 1.0f);
+    public Color GUIClickTextColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 }

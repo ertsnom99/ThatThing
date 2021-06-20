@@ -220,6 +220,9 @@ public class LevelStateEditorWindow : EditorWindow
         if (GUILayout.Button("Add vertex with click"))
         {
             _creatingVertexWithClick = true;
+
+            // Unselect everything
+            Selection.objects = null;
         }
 
         // Remove button is enabled only if a vertex is selected
@@ -319,6 +322,9 @@ public class LevelStateEditorWindow : EditorWindow
         if (GUILayout.Button("Add edge with click"))
         {
             _creatingEdgeWithClick = true;
+
+            // Unselect everything
+            Selection.objects = null;
         }
 
         GUI.enabled = _selectedEdge > -1;
@@ -497,111 +503,152 @@ public class LevelStateEditorWindow : EditorWindow
         if (Settings.CurrentLevelState != null)
         {
             HandleUserInput(Event.current, sceneView);
+            DrawSecenDebug();
+            DrawGUIDebug();
+        }
+    }
 
-            Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
-
-            // Draw vertex debugs
-            if (_vertices != null)
+    private void DrawSecenDebug()
+    {
+        Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
+        
+        // Draw vertex debugs
+        if (_vertices != null)
+        {
+            for (int i = 0; i < vertices.Length; i++)
             {
-                for (int i = 0; i < vertices.Length; i++)
+                // If the vertex is selected during the creation of a edge
+                if ((toolbarSelection == 0 && !_creatingEdgeWithClick && (_selectedPopupVertexA > 0 || _selectedPopupVertexB > 0) && (i == _selectedPopupVertexA - 1 || i == _selectedPopupVertexB - 1))
+                 || (toolbarSelection == 0 && _creatingEdgeWithClick && _clickedVertexA > -1 && i == _clickedVertexA)
+                 || (toolbarSelection == 1 && _selectedVertexForCharacter > 0 && i == _selectedVertexForCharacter - 1))
                 {
-                    // If the vertex is selected during the creation of a edge
-                    if ((toolbarSelection == 0 && !_creatingEdgeWithClick && (_selectedPopupVertexA > 0 || _selectedPopupVertexB > 0) && (i == _selectedPopupVertexA - 1 || i == _selectedPopupVertexB - 1))
-                     || (toolbarSelection == 0 && _creatingEdgeWithClick && _clickedVertexA > -1 && i == _clickedVertexA)
-                     || (toolbarSelection == 1 && _selectedVertexForCharacter > 0 && i == _selectedVertexForCharacter - 1))
-                    {
-                        Handles.color = Settings.DebugVertexForEdgeColor;
-                    }
-                    // If the vertex is selected in the list of vertex
-                    else if ((toolbarSelection == 0 && (_selectedPopupVertexA == 0 && _selectedPopupVertexB == 0) && i == _vertices.index))
-                    {
-                        Handles.color = Settings.DebugSelectedVertexColor;
-                    }
-                    else
-                    {
-                        Handles.color = Settings.DebugVertexColor;
-                    }
+                    Handles.color = Settings.DebugVertexForEdgeColor;
+                }
+                // If the vertex is selected in the list of vertex
+                else if ((toolbarSelection == 0 && !_creatingEdgeWithClick && (_selectedPopupVertexA == 0 && _selectedPopupVertexB == 0) && i == _vertices.index))
+                {
+                    Handles.color = Settings.DebugSelectedVertexColor;
+                }
+                else
+                {
+                    Handles.color = Settings.DebugVertexColor;
+                }
 
-                    Handles.DrawSolidDisc(vertices[i].Position + Vector3.up * .1f, Vector3.up, Settings.DebugVertexDiscRadius);
+                Handles.DrawSolidDisc(vertices[i].Position + Vector3.up * .1f, Vector3.up, Settings.DebugVertexDiscRadius);
+            }
+        }
+
+        // Draw edge debugs
+        if (_edges != null)
+        {
+            Edge[] edges = Settings.CurrentLevelState.GetEdgesCopy();
+
+            int vertexAIndex;
+            int vertexBIndex;
+
+            for (int i = 0; i < edges.Length; i++)
+            {
+                if (toolbarSelection != 0 || _selectedPopupVertexA != 0 || _selectedPopupVertexB != 0 || i != _edges.index)
+                {
+                    switch (edges[i].Type)
+                    {
+                        case EdgeType.Corridor:
+                            Handles.color = Settings.DebugEdgeCorridorColor;
+                            break;
+                        case EdgeType.Door:
+                            Handles.color = Settings.DebugEdgeDoorColor;
+                            break;
+                        case EdgeType.Vent:
+                            Handles.color = Settings.DebugEdgeVentColor;
+                            break;
+                    }
+                }
+                else
+                {
+                    Handles.color = Settings.DebugSelectedEdgeColor;
+                }
+
+                vertexAIndex = edges[i].VertexA;
+                vertexBIndex = edges[i].VertexB;
+
+                Handles.DrawLine(vertices[vertexAIndex].Position + Vector3.up * .1f, vertices[vertexBIndex].Position + Vector3.up * .1f, .5f);
+            }
+        }
+
+        // Draw character debugs
+        if (toolbarSelection == 1 && _characters != null)
+        {
+            LevelStateCharacter[] characters = Settings.CurrentLevelState.GetCharacters();
+
+            Dictionary<int, int> characterCountByVertex = new Dictionary<int, int>();
+            int selectedCharacterVertex = -1;
+
+            if (_selectedCharacter > -1)
+            {
+                selectedCharacterVertex = characters[_selectedCharacter].Vertex;
+            }
+
+            foreach (LevelStateCharacter character in characters)
+            {
+                if (!characterCountByVertex.ContainsKey(character.Vertex))
+                {
+                    characterCountByVertex.Add(character.Vertex, 1);
+                }
+                else
+                {
+                    characterCountByVertex[character.Vertex] += 1;
                 }
             }
 
-            // Draw edge debugs
-            if (_edges != null)
+            foreach (KeyValuePair<int, int> vertex in characterCountByVertex)
             {
-                Edge[] edges = Settings.CurrentLevelState.GetEdgesCopy();
-
-                int vertexAIndex;
-                int vertexBIndex;
-
-                for (int i = 0; i < edges.Length; i++)
+                if (selectedCharacterVertex != vertex.Key)
                 {
-                    if (toolbarSelection != 0 || _selectedPopupVertexA != 0 || _selectedPopupVertexB != 0 || i != _edges.index)
-                    {
-                        switch (edges[i].Type)
-                        {
-                            case EdgeType.Corridor:
-                                Handles.color = Settings.DebugEdgeCorridorColor;
-                                break;
-                            case EdgeType.Door:
-                                Handles.color = Settings.DebugEdgeDoorColor;
-                                break;
-                            case EdgeType.Vent:
-                                Handles.color = Settings.DebugEdgeVentColor;
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        Handles.color = Settings.DebugSelectedEdgeColor;
-                    }
-
-                    vertexAIndex = edges[i].VertexA;
-                    vertexBIndex = edges[i].VertexB;
-
-                    Handles.DrawLine(vertices[vertexAIndex].Position + Vector3.up * .1f, vertices[vertexBIndex].Position + Vector3.up * .1f, .5f);
+                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.CharacterIcon);
                 }
+                else
+                {
+                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.SelectedCharacterIcon);
+                }
+
+                Handles.Label(vertices[vertex.Key].Position + Vector3.up * 1.0f, "X" + vertex.Value.ToString(), Settings.CharacterCounterStyle);
+            }
+        }
+    }
+
+    private void DrawGUIDebug()
+    {
+        if (_creatingVertexWithClick || _creatingEdgeWithClick)
+        {
+            Handles.BeginGUI();
+
+            GUILayout.BeginArea(new Rect(20, 20, 300, 60));
+            var rect = EditorGUILayout.BeginVertical();
+
+            GUI.color = Settings.GUIClickTextBoxColor;
+            GUI.Box(rect, GUIContent.none);
+
+            GUI.color = Settings.GUIClickTextColor;
+
+            if (_creatingVertexWithClick)
+            {
+                GUILayout.Label("Use left click to select where the vertex will be");
+            }
+            else if (_creatingEdgeWithClick && _clickedVertexA == -1)
+            {
+                GUILayout.Label("Use left click to select VertexA");
+            }
+            else if (_creatingEdgeWithClick && _clickedVertexA > -1)
+            {
+                GUILayout.Label("Use left click to select VertexB");
             }
 
-            // Draw character debugs
-            if (toolbarSelection == 1 && _characters != null)
-            {
-                LevelStateCharacter[] characters = Settings.CurrentLevelState.GetCharacters();
+            GUILayout.Label("Use right click to quit click mode");
 
-                Dictionary<int, int> characterCountByVertex = new Dictionary<int, int>();
-                int selectedCharacterVertex = -1;
+            EditorGUILayout.EndVertical();
+            GUILayout.EndArea();
 
-                if (_selectedCharacter > -1)
-                {
-                    selectedCharacterVertex = characters[_selectedCharacter].Vertex;
-                }
-
-                foreach (LevelStateCharacter character in characters)
-                {
-                    if(!characterCountByVertex.ContainsKey(character.Vertex))
-                    {
-                        characterCountByVertex.Add(character.Vertex, 1);
-                    }
-                    else
-                    {
-                        characterCountByVertex[character.Vertex] += 1;
-                    }
-                }
-
-                foreach (KeyValuePair<int, int> vertex in characterCountByVertex)
-                {
-                    if (selectedCharacterVertex != vertex.Key)
-                    {
-                        Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.CharacterIcon);
-                    }
-                    else
-                    {
-                        Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.SelectedCharacterIcon);
-                    }
-
-                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 1.0f, "X" + vertex.Value.ToString(), Settings.CharacterCounterStyle);
-                }
-            }
+            Handles.EndGUI();
         }
     }
 
@@ -615,9 +662,6 @@ public class LevelStateEditorWindow : EditorWindow
         // Disable selection in scene view
         int id = GUIUtility.GetControlID(FocusType.Passive);
         HandleUtility.AddDefaultControl(id);
-
-        // Unselect everything
-        Selection.objects = null;
 
         // Left mouse button
         if (e.type == EventType.MouseDown && e.button == 0)
