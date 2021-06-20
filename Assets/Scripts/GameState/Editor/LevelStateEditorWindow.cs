@@ -7,8 +7,8 @@ using UnityEngine;
 public class LevelStateEditorWindow : EditorWindow
 {
     #region Variables
-    private LevelState _previousLevelState;
     public static LevelStateEditorSettings Settings;
+    private LevelState _previousLevelState;
 
     private SerializedObject _serializedLevelState;
 
@@ -23,10 +23,16 @@ public class LevelStateEditorWindow : EditorWindow
     private ReorderableList _vertices;
     private ReorderableList _edges;
 
+    private Vector3 _addedOffset;
+    private LayerMask _vertexClickMask;
+    private bool _creatingVertexWithClick = false;
     private int _selectedVertex = -1;
     private int _selectedEdge = -1;
-    private int _selectedVertexA = 0;
-    private int _selectedVertexB = 0;
+    private LayerMask _edgeClickMask;
+    private bool _creatingEdgeWithClick = false;
+    private int _selectedPopupVertexA = 0;
+    private int _selectedPopupVertexB = 0;
+    private int _clickedVertexA = -1;
 
     // Characters variables
     private ReorderableList _characters;
@@ -43,7 +49,13 @@ public class LevelStateEditorWindow : EditorWindow
     {
         Settings = EditorGUIUtility.Load("Level State/LevelStateEditorSettings.asset") as LevelStateEditorSettings;
 
-        if (Settings == null)
+        if (Settings != null)
+        {
+            _addedOffset = Settings.DefaultAddedOffset;
+            _vertexClickMask = Settings.DefaultClickMask;
+            _edgeClickMask = Settings.DefaultClickMask;
+        }
+        else
         {
             Debug.LogError("Couldn't find LevelStateEditorSettings.asset file in Assets\\Editor Default Resources\\Level State");
         }
@@ -106,10 +118,15 @@ public class LevelStateEditorWindow : EditorWindow
                 // Reset selections
                 _selectedVertex = -1;
                 _selectedEdge = -1;
-                _selectedVertexA = 0;
-                _selectedVertexB = 0;
+                _selectedPopupVertexA = 0;
+                _selectedPopupVertexB = 0;
                 _selectedCharacter = -1;
                 _selectedVertexForCharacter = 0;
+
+                // Reset variables for click
+                _creatingVertexWithClick = false;
+                _creatingEdgeWithClick = false;
+                _clickedVertexA = -1;
             }
             else
             {
@@ -163,12 +180,26 @@ public class LevelStateEditorWindow : EditorWindow
         HandleVertices(_vertices);
         _vertices.DoLayoutList();
 
-        // "Add vertex" button
+        GUI.enabled = true;
+
         GUILayout.BeginHorizontal();
+        GUILayout.Label("Added offset");
+        _addedOffset = EditorGUILayout.Vector3Field("", _addedOffset, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+        GUILayout.EndHorizontal();
+
+        GUI.enabled = !_creatingVertexWithClick;
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Mask for click");
+        LayerMask tempMask = EditorGUILayout.MaskField(InternalEditorUtility.LayerMaskToConcatenatedLayersMask(_vertexClickMask), InternalEditorUtility.layers, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+        _vertexClickMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
+        GUILayout.EndHorizontal();
+
+        GUI.enabled = true;
 
         if (GUILayout.Button("Add vertex"))
         {
-            Settings.CurrentLevelState.AddVertex();
+            Settings.CurrentLevelState.AddVertex(_addedOffset);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
             EditorUtility.SetDirty(Settings.CurrentLevelState);
@@ -176,15 +207,20 @@ public class LevelStateEditorWindow : EditorWindow
 
         GUI.enabled = Selection.activeTransform;
 
-        if (GUILayout.Button("Add vertex using selection", GUILayout.Width(Screen.width / 2.0f)))
+        if (GUILayout.Button("Add vertex with selection"))
         {
-            Settings.CurrentLevelState.AddVertex(Selection.activeTransform);
+            Settings.CurrentLevelState.AddVertex(Selection.activeTransform.position + _addedOffset);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
             EditorUtility.SetDirty(Settings.CurrentLevelState);
         }
 
-        GUILayout.EndHorizontal();
+        GUI.enabled = !_creatingVertexWithClick;
+
+        if (GUILayout.Button("Add vertex with click"))
+        {
+            _creatingVertexWithClick = true;
+        }
 
         // Remove button is enabled only if a vertex is selected
         GUI.enabled = _selectedVertex > -1;
@@ -198,6 +234,7 @@ public class LevelStateEditorWindow : EditorWindow
             EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedVertex = -1;
+            _vertices.index = -1;
         }
 
         GUI.enabled = true;
@@ -246,27 +283,42 @@ public class LevelStateEditorWindow : EditorWindow
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
-        _selectedVertexA = EditorGUILayout.Popup(_selectedVertexA, ids.ToArray());
-        _selectedVertexB = EditorGUILayout.Popup(_selectedVertexB, ids.ToArray(), GUILayout.Width(Screen.width / 2.0f));
+        _selectedPopupVertexA = EditorGUILayout.Popup(_selectedPopupVertexA, ids.ToArray());
+        _selectedPopupVertexB = EditorGUILayout.Popup(_selectedPopupVertexB, ids.ToArray(), GUILayout.Width(Screen.width / 2.0f));
         GUILayout.EndHorizontal();
 
         // "Add edge" button (only available if selected 2 different vertices)
-        GUI.enabled = (_selectedVertexA != _selectedVertexB) && _selectedVertexA > 0 && _selectedVertexB > 0;
+        GUI.enabled = (_selectedPopupVertexA != _selectedPopupVertexB) && _selectedPopupVertexA > 0 && _selectedPopupVertexB > 0;
+
+        EditorGUILayout.LabelField("*Two different vertices must be selected to create an edge");
+
+        GUI.enabled = !_creatingEdgeWithClick;
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Mask for click");
+        LayerMask tempMask = EditorGUILayout.MaskField(InternalEditorUtility.LayerMaskToConcatenatedLayersMask(_edgeClickMask), InternalEditorUtility.layers, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+        _edgeClickMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
+        GUILayout.EndHorizontal();
+
+        GUI.enabled = true;
 
         if (GUILayout.Button("Add edge"))
         {
-            Settings.CurrentLevelState.AddEdge(_selectedVertexA - 1, _selectedVertexB - 1);
+            Settings.CurrentLevelState.AddEdge(_selectedPopupVertexA - 1, _selectedPopupVertexB - 1);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
             EditorUtility.SetDirty(Settings.CurrentLevelState);
 
-            _selectedVertexA = 0;
-            _selectedVertexB = 0;
+            _selectedPopupVertexA = 0;
+            _selectedPopupVertexB = 0;
         }
 
-        EditorGUILayout.LabelField("*Two different vertices must be selected to create an edge");
+        GUI.enabled = !_creatingEdgeWithClick;
 
-        EditorGUILayout.Space(10);
+        if (GUILayout.Button("Add edge with click"))
+        {
+            _creatingEdgeWithClick = true;
+        }
 
         GUI.enabled = _selectedEdge > -1;
 
@@ -279,6 +331,7 @@ public class LevelStateEditorWindow : EditorWindow
             EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedEdge = -1;
+            _edges.index = -1;
         }
 
         GUI.enabled = true;
@@ -415,7 +468,6 @@ public class LevelStateEditorWindow : EditorWindow
     }
     #endregion
 
-    #region Scene Debug Methods
     private void OnBecameVisible()
     {
         // Remove delegate listener if it has previously
@@ -433,6 +485,9 @@ public class LevelStateEditorWindow : EditorWindow
         // so that it will no longer do any drawing.
         SceneView.duringSceneGui -= OnSceneGUI;
 
+        _creatingVertexWithClick = false;
+        _creatingEdgeWithClick = false;
+
         SceneView.RepaintAll();
     }
 
@@ -440,6 +495,8 @@ public class LevelStateEditorWindow : EditorWindow
     {
         if (Settings.CurrentLevelState != null)
         {
+            HandleUserInput(Event.current, sceneView);
+
             Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
 
             // Draw vertex debugs
@@ -448,13 +505,14 @@ public class LevelStateEditorWindow : EditorWindow
                 for (int i = 0; i < vertices.Length; i++)
                 {
                     // If the vertex is selected during the creation of a edge
-                    if ((toolbarSelection == 0 && (_selectedVertexA > 0 || _selectedVertexB > 0) && (i == _selectedVertexA - 1 || i == _selectedVertexB - 1))
+                    if ((toolbarSelection == 0 && !_creatingEdgeWithClick && (_selectedPopupVertexA > 0 || _selectedPopupVertexB > 0) && (i == _selectedPopupVertexA - 1 || i == _selectedPopupVertexB - 1))
+                     || (toolbarSelection == 0 && _creatingEdgeWithClick && _clickedVertexA > -1 && i == _clickedVertexA)
                      || (toolbarSelection == 1 && _selectedVertexForCharacter > 0 && i == _selectedVertexForCharacter - 1))
                     {
                         Handles.color = Settings.DebugVertexForEdgeColor;
                     }
                     // If the vertex is selected in the list of vertex
-                    else if ((toolbarSelection == 0 && (_selectedVertexA == 0 && _selectedVertexB == 0) && i == _vertices.index))
+                    else if ((toolbarSelection == 0 && (_selectedPopupVertexA == 0 && _selectedPopupVertexB == 0) && i == _vertices.index))
                     {
                         Handles.color = Settings.DebugSelectedVertexColor;
                     }
@@ -477,13 +535,24 @@ public class LevelStateEditorWindow : EditorWindow
 
                 for (int i = 0; i < edges.Length; i++)
                 {
-                    if (toolbarSelection == 0 && _selectedVertexA == 0 && _selectedVertexB == 0 && i == _edges.index)
+                    if (toolbarSelection != 0 || _selectedPopupVertexA != 0 || _selectedPopupVertexB != 0 || i != _edges.index)
                     {
-                        Handles.color = Settings.DebugSelectedEdgeColor;
+                        switch (edges[i].Type)
+                        {
+                            case EdgeType.Corridor:
+                                Handles.color = Settings.DebugEdgeCorridorColor;
+                                break;
+                            case EdgeType.Door:
+                                Handles.color = Settings.DebugEdgeDoorColor;
+                                break;
+                            case EdgeType.Vent:
+                                Handles.color = Settings.DebugEdgeVentColor;
+                                break;
+                        }
                     }
                     else
                     {
-                        Handles.color = Settings.DebugEdgeColor;
+                        Handles.color = Settings.DebugSelectedEdgeColor;
                     }
 
                     vertexAIndex = edges[i].VertexA;
@@ -534,5 +603,104 @@ public class LevelStateEditorWindow : EditorWindow
             }
         }
     }
-    #endregion
+
+    private void HandleUserInput(Event e, SceneView sceneView)
+    {
+        if (_creatingVertexWithClick || _creatingEdgeWithClick)
+        {
+            // Disable selection in scene view
+            int id = GUIUtility.GetControlID(FocusType.Passive);
+            HandleUtility.AddDefaultControl(id);
+
+            // Unselect everything
+            Selection.objects = null;
+
+            // Left mouse button
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                LayerMask layerMask;
+
+                if (_creatingVertexWithClick)
+                {
+                    layerMask = _vertexClickMask;
+                }
+                else
+                {
+                    layerMask = _edgeClickMask;
+                }
+
+                Vector3 worldPosition;
+                bool foundPosition = GetMouseWorldPosition(e.mousePosition, sceneView, layerMask, out worldPosition);
+
+                if (_creatingVertexWithClick && foundPosition)
+                {
+                    Settings.CurrentLevelState.AddVertex(worldPosition + _addedOffset);
+                    _creatingVertexWithClick = false;
+                }
+                else if (/*_creatingEdgeWithClick && */foundPosition)
+                {
+                    int selectedVertex = GetVertexAtPosition(worldPosition);
+
+                    // if selected the first vertex
+                    if (selectedVertex > -1 && _clickedVertexA == -1)
+                    {
+                        _clickedVertexA = selectedVertex;
+                    }
+                    // if selected the second vertex
+                    else if(selectedVertex > -1 && _clickedVertexA > -1 && selectedVertex != _clickedVertexA)
+                    {
+                        Settings.CurrentLevelState.AddEdge(_clickedVertexA, selectedVertex);
+
+                        // Most be set dirty because the changes where made directly inside the ScriptableObject
+                        EditorUtility.SetDirty(Settings.CurrentLevelState);
+
+                        _creatingEdgeWithClick = false;
+                        _clickedVertexA = -1;
+                    }
+                }
+            }
+            // Left mouse button
+            else if (e.type == EventType.MouseDown && e.button == 1)
+            {
+                _creatingVertexWithClick = false;
+                _creatingEdgeWithClick = false;
+                _clickedVertexA = -1;
+            }
+        }
+    }
+
+    private bool GetMouseWorldPosition(Vector3 mousePosition, SceneView sceneView, LayerMask layerMask, out Vector3 worldPosition)
+    {
+        float ppp = EditorGUIUtility.pixelsPerPoint;
+        mousePosition.y = sceneView.camera.pixelHeight - mousePosition.y * ppp;
+        mousePosition.x *= ppp;
+
+        Ray ray = sceneView.camera.ScreenPointToRay(mousePosition);
+        RaycastHit hit;
+
+        // Create a new vertex if ray hitted
+        if (Physics.Raycast(ray, out hit, float.PositiveInfinity, layerMask))
+        {
+            worldPosition = hit.point;
+            return true;
+        }
+
+        worldPosition = Vector3.zero;
+        return false;
+    }
+
+    private int GetVertexAtPosition(Vector3 worldPosition)
+    {
+        Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
+
+        for(int i = 0; i < vertices.Length; i++)
+        {
+            if ((worldPosition - vertices[i].Position).sqrMagnitude <= Settings.DebugVertexDiscRadius)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 }

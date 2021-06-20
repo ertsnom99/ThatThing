@@ -82,15 +82,11 @@ public class LevelState : ScriptableObject
         _characters = new LevelStateCharacter[0];
     }
 
-    public void AddVertex(Transform transform = null)
+    public void AddVertex(Vector3 position)
     {
         Vertex newVertex = new Vertex();
         newVertex.Id = GenerateUniqueVertexId();
-
-        if (transform)
-        {
-            newVertex.Position = transform.position;
-        }
+        newVertex.Position = position;
 
         List<Vertex> tempVertices = new List<Vertex>(_graph.Vertices);
         tempVertices.Add(newVertex);

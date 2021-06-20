@@ -13,11 +13,17 @@ MonoBehaviour:
   m_Name: LevelStateEditorSettings
   m_EditorClassIdentifier: 
   CurrentLevelState: {fileID: 11400000, guid: 26525f2d091024b4e8d925041c45a4c3, type: 2}
+  DefaultAddedOffset: {x: 0, y: 0.1, z: 0}
+  DefaultClickMask:
+    serializedVersion: 2
+    m_Bits: 128
   DebugVertexColor: {r: 0, g: 0, b: 1, a: 0.5}
   DebugSelectedVertexColor: {r: 1, g: 0, b: 0, a: 0.5}
   DebugVertexForEdgeColor: {r: 0, g: 1, b: 0, a: 0.5}
-  DebugEdgeColor: {r: 1, g: 1, b: 0, a: 1}
-  DebugSelectedEdgeColor: {r: 1, g: 0, b: 1, a: 1}
+  DebugEdgeCorridorColor: {r: 1, g: 1, b: 0, a: 1}
+  DebugEdgeDoorColor: {r: 1, g: 0, b: 0.31866217, a: 1}
+  DebugEdgeVentColor: {r: 0, g: 1, b: 1, a: 1}
+  DebugSelectedEdgeColor: {r: 0.79146695, g: 0, b: 0.9056604, a: 1}
   DebugVertexDiscRadius: 1
   CharacterIcon: {fileID: 2800000, guid: dff036b0e96332843ba56876fac70b0c, type: 3}
   SelectedCharacterIcon: {fileID: 2800000, guid: c12cb1c3355251749b3ca819fe21263e, type: 3}

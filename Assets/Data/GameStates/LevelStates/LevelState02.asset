@@ -46,8 +46,6 @@ MonoBehaviour:
       Position: {x: -20, y: 0.1, z: 10}
     - Id: 16
       Position: {x: -10, y: 0.1, z: 10}
-    - Id: 17
-      Position: {x: 30, y: 0.1, z: 60}
     - Id: 18
       Position: {x: 10, y: 0.1, z: 60}
     - Id: 19
@@ -70,6 +68,10 @@ MonoBehaviour:
       Position: {x: -10, y: 0.1, z: 40}
     - Id: 28
       Position: {x: 0, y: 0.1, z: 60}
+    - Id: 31
+      Position: {x: -10, y: 0.1, z: 60}
+    - Id: 32
+      Position: {x: 30, y: 0.1, z: 60}
     Edges:
     - Id: 0
       VertexA: 0
@@ -94,7 +96,7 @@ MonoBehaviour:
       VertexB: 4
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 5
       VertexA: 3
       VertexB: 5
@@ -136,7 +138,7 @@ MonoBehaviour:
       VertexB: 11
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 12
       VertexA: 11
       VertexB: 12
@@ -148,7 +150,7 @@ MonoBehaviour:
       VertexB: 13
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 14
       VertexA: 10
       VertexB: 13
@@ -175,96 +177,102 @@ MonoBehaviour:
       Type: 0
     - Id: 18
       VertexA: 15
-      VertexB: 21
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 20
-      VertexA: 22
       VertexB: 20
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
+    - Id: 20
+      VertexA: 21
+      VertexB: 19
+      Cost: 1
+      Traversable: 1
+      Type: 1
     - Id: 21
-      VertexA: 20
-      VertexB: 18
+      VertexA: 19
+      VertexB: 17
       Cost: 1
       Traversable: 1
       Type: 0
     - Id: 22
-      VertexA: 18
-      VertexB: 19
+      VertexA: 17
+      VertexB: 18
       Cost: 1
       Traversable: 1
       Type: 0
     - Id: 23
       VertexA: 5
-      VertexB: 18
+      VertexB: 17
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 24
-      VertexA: 24
-      VertexB: 21
+      VertexA: 23
+      VertexB: 20
       Cost: 1
       Traversable: 1
       Type: 0
     - Id: 25
-      VertexA: 24
-      VertexB: 22
+      VertexA: 23
+      VertexB: 21
       Cost: 1
       Traversable: 1
       Type: 0
     - Id: 26
-      VertexA: 24
-      VertexB: 23
+      VertexA: 23
+      VertexB: 22
       Cost: 1
       Traversable: 1
       Type: 0
     - Id: 27
-      VertexA: 23
+      VertexA: 22
+      VertexB: 24
+      Cost: 1
+      Traversable: 1
+      Type: 1
+    - Id: 28
+      VertexA: 24
       VertexB: 25
       Cost: 1
       Traversable: 1
       Type: 0
-    - Id: 28
-      VertexA: 25
-      VertexB: 26
-      Cost: 1
-      Traversable: 1
-      Type: 0
     - Id: 29
-      VertexA: 26
+      VertexA: 25
       VertexB: 9
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 30
       VertexA: 8
-      VertexB: 27
+      VertexB: 26
       Cost: 1
       Traversable: 1
-      Type: 0
+      Type: 1
     - Id: 31
       VertexA: 7
-      VertexB: 17
-      Cost: 1
-      Traversable: 1
-      Type: 0
-    - Id: 32
-      VertexA: 17
       VertexB: 16
       Cost: 1
       Traversable: 1
-      Type: 0
-    - Id: 33
+      Type: 1
+    - Id: 34
+      VertexA: 27
+      VertexB: 9
+      Cost: 1
+      Traversable: 1
+      Type: 2
+    - Id: 35
       VertexA: 4
-      VertexB: 16
+      VertexB: 28
       Cost: 1
       Traversable: 1
       Type: 0
-  VertexIdCount: 29
-  EdgeIdCount: 34
+    - Id: 36
+      VertexA: 16
+      VertexB: 28
+      Cost: 1
+      Traversable: 1
+      Type: 0
+  VertexIdCount: 43
+  EdgeIdCount: 46
   _characters:
   - Vertex: 2
   _initialized: 1
