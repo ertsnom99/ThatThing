@@ -159,8 +159,17 @@ public class LevelState : ScriptableObject
         return idList;
     }
 
-    public void AddEdge(int vertexA, int vertexB)
+    // return if a new edge was created
+    public bool AddEdge(int vertexA, int vertexB)
     {
+        foreach(Edge edge in _graph.Edges)
+        {
+            if ((edge.VertexA == vertexA && edge.VertexB == vertexB) || (edge.VertexB == vertexA && edge.VertexA == vertexB))
+            {
+                return false;
+            }
+        }
+
         Edge newEdge = new Edge();
         newEdge.Id = GenerateUniqueEdgeId();
         newEdge.VertexA = vertexA;
@@ -172,6 +181,8 @@ public class LevelState : ScriptableObject
         tempEdges.Add(newEdge);
 
         _graph.Edges = tempEdges.ToArray();
+
+        return true;
     }
 
     private int GenerateUniqueEdgeId()

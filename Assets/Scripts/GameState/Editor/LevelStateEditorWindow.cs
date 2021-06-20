@@ -300,14 +300,15 @@ public class LevelStateEditorWindow : EditorWindow
         _edgeClickMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
         GUILayout.EndHorizontal();
 
-        GUI.enabled = true;
+        GUI.enabled = _selectedPopupVertexA > 0 && _selectedPopupVertexB >0;
 
         if (GUILayout.Button("Add edge"))
         {
-            Settings.CurrentLevelState.AddEdge(_selectedPopupVertexA - 1, _selectedPopupVertexB - 1);
-
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
+            if (Settings.CurrentLevelState.AddEdge(_selectedPopupVertexA - 1, _selectedPopupVertexB - 1))
+            {
+                // Most be set dirty because the changes where made directly inside the ScriptableObject
+                EditorUtility.SetDirty(Settings.CurrentLevelState);
+            }
 
             _selectedPopupVertexA = 0;
             _selectedPopupVertexB = 0;
@@ -606,66 +607,72 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void HandleUserInput(Event e, SceneView sceneView)
     {
-        if (_creatingVertexWithClick || _creatingEdgeWithClick)
+        if (!_creatingVertexWithClick && !_creatingEdgeWithClick)
         {
-            // Disable selection in scene view
-            int id = GUIUtility.GetControlID(FocusType.Passive);
-            HandleUtility.AddDefaultControl(id);
+            return;
+        }
 
-            // Unselect everything
-            Selection.objects = null;
+        // Disable selection in scene view
+        int id = GUIUtility.GetControlID(FocusType.Passive);
+        HandleUtility.AddDefaultControl(id);
 
-            // Left mouse button
-            if (e.type == EventType.MouseDown && e.button == 0)
+        // Unselect everything
+        Selection.objects = null;
+
+        // Left mouse button
+        if (e.type == EventType.MouseDown && e.button == 0)
+        {
+            LayerMask layerMask;
+
+            if (_creatingVertexWithClick)
             {
-                LayerMask layerMask;
+                layerMask = _vertexClickMask;
+            }
+            else
+            {
+                layerMask = _edgeClickMask;
+            }
 
-                if (_creatingVertexWithClick)
+            Vector3 worldPosition;
+            bool foundPosition = GetMouseWorldPosition(e.mousePosition, sceneView, layerMask, out worldPosition);
+
+            // Adding a vertex
+            if (_creatingVertexWithClick && foundPosition)
+            {
+                Settings.CurrentLevelState.AddVertex(worldPosition + _addedOffset);
+
+                // Most be set dirty because the changes where made directly inside the ScriptableObject
+                EditorUtility.SetDirty(Settings.CurrentLevelState);
+            }
+            // Adding a connection
+            else if (foundPosition)
+            {
+                int selectedVertex = GetVertexAtPosition(worldPosition);
+
+                // if selected the first vertex
+                if (selectedVertex > -1 && _clickedVertexA == -1)
                 {
-                    layerMask = _vertexClickMask;
+                    _clickedVertexA = selectedVertex;
                 }
-                else
+                // if selected the second vertex
+                else if (selectedVertex > -1 && _clickedVertexA > -1 && selectedVertex != _clickedVertexA)
                 {
-                    layerMask = _edgeClickMask;
-                }
-
-                Vector3 worldPosition;
-                bool foundPosition = GetMouseWorldPosition(e.mousePosition, sceneView, layerMask, out worldPosition);
-
-                if (_creatingVertexWithClick && foundPosition)
-                {
-                    Settings.CurrentLevelState.AddVertex(worldPosition + _addedOffset);
-                    _creatingVertexWithClick = false;
-                }
-                else if (/*_creatingEdgeWithClick && */foundPosition)
-                {
-                    int selectedVertex = GetVertexAtPosition(worldPosition);
-
-                    // if selected the first vertex
-                    if (selectedVertex > -1 && _clickedVertexA == -1)
+                    if (Settings.CurrentLevelState.AddEdge(_clickedVertexA, selectedVertex))
                     {
-                        _clickedVertexA = selectedVertex;
-                    }
-                    // if selected the second vertex
-                    else if(selectedVertex > -1 && _clickedVertexA > -1 && selectedVertex != _clickedVertexA)
-                    {
-                        Settings.CurrentLevelState.AddEdge(_clickedVertexA, selectedVertex);
-
                         // Most be set dirty because the changes where made directly inside the ScriptableObject
                         EditorUtility.SetDirty(Settings.CurrentLevelState);
-
-                        _creatingEdgeWithClick = false;
-                        _clickedVertexA = -1;
                     }
+
+                    _clickedVertexA = -1;
                 }
             }
-            // Left mouse button
-            else if (e.type == EventType.MouseDown && e.button == 1)
-            {
-                _creatingVertexWithClick = false;
-                _creatingEdgeWithClick = false;
-                _clickedVertexA = -1;
-            }
+        }
+        // Left mouse button
+        else if (e.type == EventType.MouseDown && e.button == 1)
+        {
+            _creatingVertexWithClick = false;
+            _creatingEdgeWithClick = false;
+            _clickedVertexA = -1;
         }
     }
 
