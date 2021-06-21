@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 [Serializable]
@@ -84,6 +85,9 @@ public class LevelState : ScriptableObject
 
     public void AddVertex(Vector3 position)
     {
+        // Record the LevelState before applying change in order to allow undos
+        Undo.RecordObject(this, "Added Vertex");
+
         Vertex newVertex = new Vertex();
         newVertex.Id = GenerateUniqueVertexId();
         newVertex.Position = position;
@@ -104,6 +108,9 @@ public class LevelState : ScriptableObject
 
     public void RemoveVertex(int index)
     {
+        // Record the LevelState before applying change in order to allow undos
+        Undo.RecordObject(this, "Removed Vertex");
+
         for (int i = _graph.Edges.Length; i > 0; i--)
         {
             // Remove any edges that uses the removed vertex
@@ -170,6 +177,9 @@ public class LevelState : ScriptableObject
             }
         }
 
+        // Record the LevelState before applying change in order to allow undos
+        Undo.RecordObject(this, "Added Edge");
+
         Edge newEdge = new Edge();
         newEdge.Id = GenerateUniqueEdgeId();
         newEdge.VertexA = vertexA;
@@ -195,6 +205,9 @@ public class LevelState : ScriptableObject
 
     public void RemoveEdge(int index)
     {
+        // Record the LevelState before applying change in order to allow undos
+        Undo.RecordObject(this, "Removed Vertex");
+
         List<Edge> tempEdges = new List<Edge>(_graph.Edges);
         tempEdges.Remove(_graph.Edges[index]);
 
@@ -203,6 +216,9 @@ public class LevelState : ScriptableObject
 
     public void AddCharacter(int vertex)
     {
+        // Record the LevelState before applying change in order to allow undos
+        Undo.RecordObject(this, "Added Character");
+
         LevelStateCharacter newCharacter = new LevelStateCharacter();
         newCharacter.Vertex = vertex;
 
@@ -214,12 +230,21 @@ public class LevelState : ScriptableObject
 
     public void RemoveCharacter(int index)
     {
+        // Record the LevelState before applying change in order to allow undos
+        Undo.RecordObject(this, "Removed Character");
+
         List<LevelStateCharacter> tempCharacters = new List<LevelStateCharacter>(_characters);
         tempCharacters.Remove(_characters[index]);
 
         _characters = tempCharacters.ToArray();
     }
     #endregion
+
+    // Returns a COPY of the array of vertices
+    public Vertex[] GetVertices()
+    {
+        return _graph.Vertices;
+    }
 
     // Returns a COPY of the array of vertices
     public Vertex[] GetVerticesCopy()

@@ -510,7 +510,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawSecenDebug()
     {
-        Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
+        Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
         
         // Draw vertex debugs
         if (_vertices != null)
@@ -528,6 +528,16 @@ public class LevelStateEditorWindow : EditorWindow
                 else if ((toolbarSelection == 0 && !_creatingEdgeWithClick && (_selectedPopupVertexA == 0 && _selectedPopupVertexB == 0) && i == _vertices.index))
                 {
                     Handles.color = Settings.DebugSelectedVertexColor;
+
+                    EditorGUI.BeginChangeCheck();
+                    Vector3 newPosition = Handles.PositionHandle(vertices[i].Position, Quaternion.identity);
+
+                    // Record Settings.CurrentLevelState before applying change in order to allow undos
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(Settings.CurrentLevelState, "Changed Vertex Position");
+                        vertices[i].Position = newPosition;
+                    }
                 }
                 else
                 {
