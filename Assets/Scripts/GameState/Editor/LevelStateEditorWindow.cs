@@ -23,6 +23,7 @@ public class LevelStateEditorWindow : EditorWindow
     private ReorderableList _vertices;
     private ReorderableList _edges;
 
+    private bool _displayIds = true;
     private Vector3 _addedOffset;
     private LayerMask _vertexClickMask;
     private bool _creatingVertexWithClick = false;
@@ -241,6 +242,11 @@ public class LevelStateEditorWindow : EditorWindow
         }
 
         GUI.enabled = true;
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Display Id");
+        _displayIds = EditorGUILayout.Toggle(_displayIds, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+        GUILayout.EndHorizontal();
 
         EditorGUILayout.Space(15);
     }
@@ -582,6 +588,15 @@ public class LevelStateEditorWindow : EditorWindow
                 vertexBIndex = edges[i].VertexB;
 
                 Handles.DrawLine(vertices[vertexAIndex].Position + Vector3.up * .1f, vertices[vertexBIndex].Position + Vector3.up * .1f, .5f);
+            }
+        }
+
+        // Display Id above vertices
+        if (toolbarSelection == 0 && _displayIds)
+        {
+            foreach(Vertex vertex in vertices)
+            {
+                Handles.Label(vertex.Position + Vector3.up * 1.0f, "Id: " + vertex.Id, Settings.VertexIdStyle);
             }
         }
 
