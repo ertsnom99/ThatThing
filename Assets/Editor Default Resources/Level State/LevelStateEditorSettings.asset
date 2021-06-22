@@ -25,6 +25,7 @@ MonoBehaviour:
   DebugEdgeVentColor: {r: 0, g: 1, b: 1, a: 1}
   DebugSelectedEdgeColor: {r: 0.79146695, g: 0, b: 0.9056604, a: 1}
   DebugVertexDiscRadius: 1
+  DebugEdgeThickness: 0.5
   VertexIdStyle:
     m_Name: 
     m_Normal:

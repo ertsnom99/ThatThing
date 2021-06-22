@@ -273,6 +273,7 @@ MonoBehaviour:
       Type: 0
   VertexIdCount: 53
   EdgeIdCount: 48
+  EdgesFolded: 010101010101010101010101010101010101010101010101010101010101010101
   _characters:
   - Vertex: 2
   _initialized: 1

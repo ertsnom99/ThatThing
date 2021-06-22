@@ -56,6 +56,9 @@ public class LevelState : ScriptableObject
     [HideInInspector]
     public int EdgeIdCount;
 
+    [HideInInspector]
+    public List<bool> EdgesFolded;
+
     [SerializeField]
     private LevelStateCharacter[] _characters;
 
@@ -77,8 +80,10 @@ public class LevelState : ScriptableObject
     {
         _graph.Vertices = new Vertex[0];
         _graph.Edges = new Edge[0];
+
         VertexIdCount = 0;
         EdgeIdCount = 0;
+        EdgesFolded = new List<bool>();
 
         _characters = new LevelStateCharacter[0];
     }
@@ -180,6 +185,7 @@ public class LevelState : ScriptableObject
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Added Edge");
 
+        // Add the new edge
         Edge newEdge = new Edge();
         newEdge.Id = GenerateUniqueEdgeId();
         newEdge.VertexA = vertexA;
@@ -191,6 +197,9 @@ public class LevelState : ScriptableObject
         tempEdges.Add(newEdge);
 
         _graph.Edges = tempEdges.ToArray();
+
+        // Add a new entry to the edge foldout list
+        EdgesFolded.Add(false);
 
         return true;
     }
@@ -208,10 +217,14 @@ public class LevelState : ScriptableObject
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Removed Vertex");
 
+        // Remove the edge
         List<Edge> tempEdges = new List<Edge>(_graph.Edges);
         tempEdges.Remove(_graph.Edges[index]);
 
         _graph.Edges = tempEdges.ToArray();
+
+        // Remove the edge foldout list entry
+        EdgesFolded.RemoveAt(index);
     }
 
     public void AddCharacter(int vertex)

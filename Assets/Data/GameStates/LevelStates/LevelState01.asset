@@ -105,6 +105,7 @@ MonoBehaviour:
       Type: 1
   VertexIdCount: 11
   EdgeIdCount: 11
+  EdgesFolded: 0101010101010101010101
   _characters:
   - Vertex: 2
   - Vertex: 2

@@ -23,17 +23,19 @@ public class LevelStateEditorWindow : EditorWindow
     private ReorderableList _vertices;
     private ReorderableList _edges;
 
-    private bool _displayIds = true;
+    private bool _showVertices = true;
     private Vector3 _addedOffset;
     private LayerMask _vertexClickMask;
     private bool _creatingVertexWithClick = false;
+    private bool _displayIds = true;
     private int _selectedVertex = -1;
-    private int _selectedEdge = -1;
+    private bool _showEdges = true;
     private LayerMask _edgeClickMask;
     private bool _creatingEdgeWithClick = false;
     private int _selectedPopupVertexA = 0;
     private int _selectedPopupVertexB = 0;
     private int _clickedVertexA = -1;
+    private int _selectedEdge = -1;
 
     // Characters variables
     private ReorderableList _characters;
@@ -44,6 +46,9 @@ public class LevelStateEditorWindow : EditorWindow
     // Dimensions
     private const float _editorMinWidth = 300;
     private const float _editorMinHeight = 300;
+
+    private const float _foldoutArrowWidth = 12.0f;
+    private const float _reorderableListElementSpaceRatio = .14f;
     #endregion
 
     private void OnEnable()
@@ -110,8 +115,8 @@ public class LevelStateEditorWindow : EditorWindow
                 _serializedLevelState = new SerializedObject(Settings.CurrentLevelState);
 
                 // Level graph serialization
-                _vertices = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Vertices"), false, true, false, false);
-                _edges = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Edges"), false, true, false, false);
+                _vertices = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Vertices"), false, false, false, false);
+                _edges = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Edges"), false, false, false, false);
 
                 // Characters serialization
                 _characters = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_characters"), false, true, false, false);
@@ -157,12 +162,15 @@ public class LevelStateEditorWindow : EditorWindow
                     break;
             }
 
-            EditorGUILayout.EndScrollView();
-
             if (EditorGUI.EndChangeCheck())
             {
                 _serializedLevelState.ApplyModifiedProperties();
             }
+
+            // Must enable so that mouse wheel make GUI scroll
+            GUI.enabled = true;
+
+            EditorGUILayout.EndScrollView();
 
             SceneView.RepaintAll();
         }
@@ -177,68 +185,83 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawVerticesSection()
     {
-        // Add list of vertices
-        HandleVertices(_vertices);
-        _vertices.DoLayoutList();
-
-        GUI.enabled = true;
-
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Added offset");
-        _addedOffset = EditorGUILayout.Vector3Field("", _addedOffset, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+        GUI.enabled = true;
+        _showVertices = EditorGUILayout.Foldout(_showVertices, "Vertices");
+        GUI.enabled = false;
+        EditorGUILayout.IntField(_vertices.count, GUILayout.Width(50.0f));
         GUILayout.EndHorizontal();
 
-        GUI.enabled = !_creatingVertexWithClick;
-
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("Mask for click");
-        LayerMask tempMask = EditorGUILayout.MaskField(InternalEditorUtility.LayerMaskToConcatenatedLayersMask(_vertexClickMask), InternalEditorUtility.layers, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
-        _vertexClickMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
-        GUILayout.EndHorizontal();
-
-        GUI.enabled = true;
-
-        if (GUILayout.Button("Add vertex"))
+        if (_showVertices)
         {
-            Settings.CurrentLevelState.AddVertex(_addedOffset);
+            EditorGUILayout.Space(5);
 
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
-        }
+            GUI.enabled = true;
 
-        GUI.enabled = Selection.activeTransform;
+            // Add list of vertices
+            HandleVertices(_vertices);
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(_foldoutArrowWidth);
+            _vertices.DoLayoutList();
+            GUILayout.EndHorizontal();
+            
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Added offset");
+            _addedOffset = EditorGUILayout.Vector3Field("", _addedOffset, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+            GUILayout.EndHorizontal();
 
-        if (GUILayout.Button("Add vertex with selection"))
-        {
-            Settings.CurrentLevelState.AddVertex(Selection.activeTransform.position + _addedOffset);
+            GUI.enabled = !_creatingVertexWithClick;
 
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
-        }
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Mask for click");
+            LayerMask tempMask = EditorGUILayout.MaskField(InternalEditorUtility.LayerMaskToConcatenatedLayersMask(_vertexClickMask), InternalEditorUtility.layers, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+            _vertexClickMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
+            GUILayout.EndHorizontal();
 
-        GUI.enabled = !_creatingVertexWithClick;
+            GUI.enabled = true;
 
-        if (GUILayout.Button("Add vertex with click"))
-        {
-            _creatingVertexWithClick = true;
+            if (GUILayout.Button("Add vertex"))
+            {
+                Settings.CurrentLevelState.AddVertex(_addedOffset);
 
-            // Unselect everything
-            Selection.objects = null;
-        }
+                // Most be set dirty because the changes where made directly inside the ScriptableObject
+                EditorUtility.SetDirty(Settings.CurrentLevelState);
+            }
 
-        // Remove button is enabled only if a vertex is selected
-        GUI.enabled = _selectedVertex > -1;
+            GUI.enabled = Selection.activeTransform;
 
-        // "Remove selected vertex" button
-        if (GUILayout.Button("Remove selected vertex"))
-        {
-            Settings.CurrentLevelState.RemoveVertex(_selectedVertex);
+            if (GUILayout.Button("Add vertex with selection"))
+            {
+                Settings.CurrentLevelState.AddVertex(Selection.activeTransform.position + _addedOffset);
 
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
+                // Most be set dirty because the changes where made directly inside the ScriptableObject
+                EditorUtility.SetDirty(Settings.CurrentLevelState);
+            }
 
-            _selectedVertex = -1;
-            _vertices.index = -1;
+            GUI.enabled = !_creatingVertexWithClick;
+
+            if (GUILayout.Button("Add vertex with click"))
+            {
+                _creatingVertexWithClick = true;
+
+                // Unselect everything
+                Selection.objects = null;
+            }
+
+            // Remove button is enabled only if a vertex is selected
+            GUI.enabled = _selectedVertex > -1;
+
+            // "Remove selected vertex" button
+            if (GUILayout.Button("Remove selected vertex"))
+            {
+                Settings.CurrentLevelState.RemoveVertex(_selectedVertex);
+
+                // Most be set dirty because the changes where made directly inside the ScriptableObject
+                EditorUtility.SetDirty(Settings.CurrentLevelState);
+
+                _selectedVertex = -1;
+                _vertices.index = -1;
+            }
         }
 
         GUI.enabled = true;
@@ -247,8 +270,6 @@ public class LevelStateEditorWindow : EditorWindow
         GUILayout.Label("Display Id");
         _displayIds = EditorGUILayout.Toggle(_displayIds, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
         GUILayout.EndHorizontal();
-
-        EditorGUILayout.Space(15);
     }
 
     // Add the correct callbacks for the _vertices ReorderableList
@@ -267,7 +288,7 @@ public class LevelStateEditorWindow : EditorWindow
 
             // Draw the necessary fields
             EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
-            EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .14f, rect.width * (1 - .2f), EditorGUIUtility.singleLineHeight), position, GUIContent.none);
+            EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * (1 - .2f), EditorGUIUtility.singleLineHeight), position, GUIContent.none);
         };
 
         ReorderableVertices.onSelectCallback = (ReorderableList vertices) =>
@@ -278,78 +299,91 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawEdgesSection()
     {
-        // Add list of edges
-        HandleEdges(_edges);
-        _edges.DoLayoutList();
-
-        // Add dropdown for vertex
-        List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
-        ids.Insert(0, "None");
-
         GUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("Vertex A (id)");
-        EditorGUILayout.LabelField("Vertex B (id)", GUILayout.Width(Screen.width / 2.0f));
+        GUI.enabled = true;
+        _showEdges = EditorGUILayout.Foldout(_showEdges, "Edges");
+        GUI.enabled = false;
+        EditorGUILayout.IntField(_edges.count, GUILayout.Width(50.0f));
         GUILayout.EndHorizontal();
 
-        GUILayout.BeginHorizontal();
-        _selectedPopupVertexA = EditorGUILayout.Popup(_selectedPopupVertexA, ids.ToArray());
-        _selectedPopupVertexB = EditorGUILayout.Popup(_selectedPopupVertexB, ids.ToArray(), GUILayout.Width(Screen.width / 2.0f));
-        GUILayout.EndHorizontal();
-
-        // "Add edge" button (only available if selected 2 different vertices)
-        GUI.enabled = (_selectedPopupVertexA != _selectedPopupVertexB) && _selectedPopupVertexA > 0 && _selectedPopupVertexB > 0;
-
-        EditorGUILayout.LabelField("*Two different vertices must be selected to create an edge");
-
-        GUI.enabled = !_creatingEdgeWithClick;
-
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("Mask for click");
-        LayerMask tempMask = EditorGUILayout.MaskField(InternalEditorUtility.LayerMaskToConcatenatedLayersMask(_edgeClickMask), InternalEditorUtility.layers, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
-        _edgeClickMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
-        GUILayout.EndHorizontal();
-
-        GUI.enabled = _selectedPopupVertexA > 0 && _selectedPopupVertexB >0;
-
-        if (GUILayout.Button("Add edge"))
+        if (_showEdges)
         {
-            if (Settings.CurrentLevelState.AddEdge(_selectedPopupVertexA - 1, _selectedPopupVertexB - 1))
+            EditorGUILayout.Space(5);
+
+            GUI.enabled = true;
+
+            // Add list of edges
+            HandleEdges(_edges);
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(_foldoutArrowWidth);
+            _edges.DoLayoutList();
+            GUILayout.EndHorizontal();
+            
+            // Add dropdown for vertex
+            List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
+            ids.Insert(0, "None");
+
+            GUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Vertex A (id)");
+            EditorGUILayout.LabelField("Vertex B (id)", GUILayout.Width(EditorGUIUtility.currentViewWidth / 2.0f));
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            _selectedPopupVertexA = EditorGUILayout.Popup(_selectedPopupVertexA, ids.ToArray());
+            _selectedPopupVertexB = EditorGUILayout.Popup(_selectedPopupVertexB, ids.ToArray(), GUILayout.Width(EditorGUIUtility.currentViewWidth / 2.0f));
+            GUILayout.EndHorizontal();
+
+            // "Add edge" button (only available if selected 2 different vertices)
+            GUI.enabled = (_selectedPopupVertexA != _selectedPopupVertexB) && _selectedPopupVertexA > 0 && _selectedPopupVertexB > 0;
+
+            EditorGUILayout.LabelField("*Two different vertices must be selected to create an edge");
+
+            GUI.enabled = !_creatingEdgeWithClick;
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Mask for click");
+            LayerMask tempMask = EditorGUILayout.MaskField(InternalEditorUtility.LayerMaskToConcatenatedLayersMask(_edgeClickMask), InternalEditorUtility.layers, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+            _edgeClickMask = InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(tempMask);
+            GUILayout.EndHorizontal();
+            
+            GUI.enabled = _selectedPopupVertexA > 0 && _selectedPopupVertexB > 0;
+
+            if (GUILayout.Button("Add edge"))
             {
-                // Most be set dirty because the changes where made directly inside the ScriptableObject
-                EditorUtility.SetDirty(Settings.CurrentLevelState);
+                if (Settings.CurrentLevelState.AddEdge(_selectedPopupVertexA - 1, _selectedPopupVertexB - 1))
+                {
+                    // Most be set dirty because the changes where made directly inside the ScriptableObject
+                    EditorUtility.SetDirty(Settings.CurrentLevelState);
+                }
+
+                _selectedPopupVertexA = 0;
+                _selectedPopupVertexB = 0;
+            }
+            
+            GUI.enabled = !_creatingEdgeWithClick;
+
+            if (GUILayout.Button("Add edge with click"))
+            {
+                _creatingEdgeWithClick = true;
+
+                // Unselect everything
+                Selection.objects = null;
             }
 
-            _selectedPopupVertexA = 0;
-            _selectedPopupVertexB = 0;
+            GUI.enabled = _selectedEdge > -1;
+            
+            // "Remove selected edge" button
+            if (GUILayout.Button("Remove selected edge"))
+            {
+                Settings.CurrentLevelState.RemoveEdge(_selectedEdge);
+
+                // Most be set dirty because the changes where made directly inside the ScriptableObject
+                EditorUtility.SetDirty(Settings.CurrentLevelState);
+
+                _selectedEdge = -1;
+                _edges.index = -1;
+            }
         }
-
-        GUI.enabled = !_creatingEdgeWithClick;
-
-        if (GUILayout.Button("Add edge with click"))
-        {
-            _creatingEdgeWithClick = true;
-
-            // Unselect everything
-            Selection.objects = null;
-        }
-
-        GUI.enabled = _selectedEdge > -1;
-
-        // "Remove selected edge" button
-        if (GUILayout.Button("Remove selected edge"))
-        {
-            Settings.CurrentLevelState.RemoveEdge(_selectedEdge);
-
-            // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
-
-            _selectedEdge = -1;
-            _edges.index = -1;
-        }
-
-        GUI.enabled = true;
-
-        EditorGUILayout.Space(15);
     }
 
     // Add the correct callbacks for the _edges ReorderableList
@@ -376,22 +410,43 @@ public class LevelStateEditorWindow : EditorWindow
             {
                 string vertexAToVertexB = "Vertex " + vertices[vertexA.intValue].Id.ToString() + " to vertex " + vertices[vertexB.intValue].Id.ToString();
 
-                // Draw the necessary fields
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
+                EditorGUI.BeginChangeCheck();
+
+                Settings.CurrentLevelState.EdgesFolded[index] = !EditorGUI.Foldout(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), !Settings.CurrentLevelState.EdgesFolded[index], "Id: " + id.intValue.ToString());
                 EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(vertexAToVertexB));
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 2.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
-                EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Type"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 3.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), type, GUIContent.none);
+
+                if(EditorGUI.EndChangeCheck())
+                {
+                    // Most be set dirty because the changes where made directly apply to the ScriptableObject
+                    EditorUtility.SetDirty(Settings.CurrentLevelState);
+                }
+
+                if (!Settings.CurrentLevelState.EdgesFolded[index])
+                {
+                    // Draw the necessary fields
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
+                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
+                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Type"));
+                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), type, GUIContent.none);
+                }
             }
         };
 
         ReorderableEdges.elementHeightCallback = (int index) =>
         {
             float height = EditorGUIUtility.standardVerticalSpacing;
-            height += EditorGUIUtility.singleLineHeight * 4.0f;
+
+            if (!Settings.CurrentLevelState.EdgesFolded[index])
+            {
+                height += EditorGUIUtility.singleLineHeight * 4.0f;
+            }
+            else
+            {
+                height += EditorGUIUtility.singleLineHeight;
+            }
+
             return height + EditorGUIUtility.standardVerticalSpacing;
         };
 
@@ -411,7 +466,7 @@ public class LevelStateEditorWindow : EditorWindow
         // "Add Character" button
         GUI.enabled = _selectedVertexForCharacter > 0;
 
-        if (GUILayout.Button("Add Character", GUILayout.Width(Screen.width / 2.0f)))
+        if (GUILayout.Button("Add Character", GUILayout.Width(EditorGUIUtility.currentViewWidth / 2.0f)))
         {
             Settings.CurrentLevelState.AddCharacter(_selectedVertexForCharacter - 1);
 
@@ -443,8 +498,6 @@ public class LevelStateEditorWindow : EditorWindow
 
             _selectedCharacter = -1;
         }
-
-        GUI.enabled = true;
     }
 
     // Add the correct callbacks for the _characters ReorderableList
@@ -550,7 +603,7 @@ public class LevelStateEditorWindow : EditorWindow
                     Handles.color = Settings.DebugVertexColor;
                 }
 
-                Handles.DrawSolidDisc(vertices[i].Position + Vector3.up * .1f, Vector3.up, Settings.DebugVertexDiscRadius);
+                Handles.DrawSolidDisc(vertices[i].Position, Vector3.up, Settings.DebugVertexDiscRadius);
             }
         }
 
@@ -587,7 +640,7 @@ public class LevelStateEditorWindow : EditorWindow
                 vertexAIndex = edges[i].VertexA;
                 vertexBIndex = edges[i].VertexB;
 
-                Handles.DrawLine(vertices[vertexAIndex].Position + Vector3.up * .1f, vertices[vertexBIndex].Position + Vector3.up * .1f, .5f);
+                Handles.DrawLine(vertices[vertexAIndex].Position, vertices[vertexBIndex].Position, Settings.DebugEdgeThickness);
             }
         }
 
@@ -596,7 +649,7 @@ public class LevelStateEditorWindow : EditorWindow
         {
             foreach(Vertex vertex in vertices)
             {
-                Handles.Label(vertex.Position + Vector3.up * 1.0f, "Id: " + vertex.Id, Settings.VertexIdStyle);
+                Handles.Label(vertex.Position, "Id: " + vertex.Id, Settings.VertexIdStyle);
             }
         }
 
@@ -713,7 +766,7 @@ public class LevelStateEditorWindow : EditorWindow
                 // Most be set dirty because the changes where made directly inside the ScriptableObject
                 EditorUtility.SetDirty(Settings.CurrentLevelState);
             }
-            // Adding a connection
+            // Adding an edge
             else if (foundPosition)
             {
                 int selectedVertex = GetVertexAtPosition(worldPosition);

@@ -20,7 +20,10 @@ public class LevelStateEditorSettings : ScriptableObject
     public Color DebugEdgeVentColor = new Color(.0f, 1.0f, 1.0f, 1.0f);
     public Color DebugSelectedEdgeColor = new Color(1.0f, .0f, 1.0f, 1.0f);
 
+    [Min(.0f)]
     public float DebugVertexDiscRadius = 1.0f;
+    [Min(.0f)]
+    public float DebugEdgeThickness = .5f;
     public GUIStyle VertexIdStyle = new GUIStyle();
 
     // Debug for characters
