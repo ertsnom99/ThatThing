@@ -271,9 +271,13 @@ MonoBehaviour:
       Cost: 1
       Traversable: 1
       Type: 0
-  VertexIdCount: 53
+  VertexIdCount: 55
   EdgeIdCount: 48
   EdgesFolded: 010101010101010101010101010101010101010101010101010101010101010101
+  CharactersFolded: 0000
   _characters:
-  - Vertex: 2
+  - Vertex: 4
+    Settings: 1
+  - Vertex: 24
+    Settings: 3
   _initialized: 1

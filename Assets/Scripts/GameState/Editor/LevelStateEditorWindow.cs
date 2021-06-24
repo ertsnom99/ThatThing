@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BehaviorDesigner.Runtime;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -53,7 +54,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void OnEnable()
     {
-        Settings = EditorGUIUtility.Load("Level State/LevelStateEditorSettings.asset") as LevelStateEditorSettings;
+        Settings = EditorGUIUtility.Load("Level State Editor/LevelStateEditorSettings.asset") as LevelStateEditorSettings;
 
         if (Settings != null)
         {
@@ -275,18 +276,12 @@ public class LevelStateEditorWindow : EditorWindow
     // Add the correct callbacks for the _vertices ReorderableList
     private void HandleVertices(ReorderableList ReorderableVertices)
     {
-        ReorderableVertices.drawHeaderCallback = (Rect rect) =>
-        {
-            EditorGUI.LabelField(rect, "Vertices");
-        };
-
         ReorderableVertices.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
-            // Get the requirement data
+            // Get the data
             SerializedProperty id = ReorderableVertices.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
             SerializedProperty position = ReorderableVertices.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Position");
 
-            // Draw the necessary fields
             EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
             EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * (1 - .2f), EditorGUIUtility.singleLineHeight), position, GUIContent.none);
         };
@@ -389,11 +384,6 @@ public class LevelStateEditorWindow : EditorWindow
     // Add the correct callbacks for the _edges ReorderableList
     private void HandleEdges(ReorderableList ReorderableEdges)
     {
-        ReorderableEdges.drawHeaderCallback = (Rect rect) =>
-        {
-            EditorGUI.LabelField(rect, "Edges");
-        };
-
         ReorderableEdges.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
             // Get the edge data
@@ -404,11 +394,11 @@ public class LevelStateEditorWindow : EditorWindow
             SerializedProperty traversable = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
             SerializedProperty type = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
 
-            Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
-
-            if (vertices.Length > vertexA.intValue && vertices.Length > vertexB.intValue)
+            if (_vertices.count > vertexA.intValue && _vertices.count > vertexB.intValue)
             {
-                string vertexAToVertexB = "Vertex " + vertices[vertexA.intValue].Id.ToString() + " to vertex " + vertices[vertexB.intValue].Id.ToString();
+                string vertexAId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexA.intValue).FindPropertyRelative("Id").intValue.ToString();
+                string vertexBId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexB.intValue).FindPropertyRelative("Id").intValue.ToString();
+                string vertexAToVertexB = "Vertex " + vertexAId + " to vertex " + vertexAId;
 
                 EditorGUI.BeginChangeCheck();
 
@@ -423,7 +413,6 @@ public class LevelStateEditorWindow : EditorWindow
 
                 if (!Settings.CurrentLevelState.EdgesFolded[index])
                 {
-                    // Draw the necessary fields
                     EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
                     EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
                     EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
@@ -458,8 +447,32 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawCharactersSection()
     {
+        if (!Settings.CharactersSettingsUsed)
+        {
+            EditorGUILayout.LabelField("No CharactersSetting is specified in the LevelStateEditorSettings!", Settings.InvalidStyle);
+            return;
+        }
+
+        GUI.enabled = false;
+
+        GUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("CharactersSettings used:", GUILayout.Width(EditorGUIUtility.currentViewWidth * .26f - _foldoutArrowWidth));
+        EditorGUILayout.ObjectField(Settings.CharactersSettingsUsed, typeof(CharactersSettings), false);
+        GUILayout.EndHorizontal();
+
+        GUI.enabled = true;
+
+        if (Settings.CharactersSettingsUsed.Settings.Length <= 0)
+        {
+            EditorGUILayout.Space(15);
+            EditorGUILayout.LabelField("The CharactersSetting used doesn't have any settings!", Settings.InvalidStyle);
+            return;
+        }
+
+        EditorGUILayout.Space(15);
+
         // Add list of edges
-        HandleCharacters(_characters);
+        HandleCharacters(_characters, Settings.CharactersSettingsUsed.GetSettingsNames());
         _characters.DoLayoutList();
 
         GUILayout.BeginHorizontal();
@@ -489,7 +502,7 @@ public class LevelStateEditorWindow : EditorWindow
         GUI.enabled = _selectedCharacter > -1;
 
         // "Remove selected edge" button
-        if (GUILayout.Button("Remove selected edge"))
+        if (GUILayout.Button("Remove selected character"))
         {
             Settings.CurrentLevelState.RemoveCharacter(_selectedCharacter);
 
@@ -497,11 +510,12 @@ public class LevelStateEditorWindow : EditorWindow
             EditorUtility.SetDirty(Settings.CurrentLevelState);
 
             _selectedCharacter = -1;
+            _characters.index = -1;
         }
     }
 
     // Add the correct callbacks for the _characters ReorderableList
-    private void HandleCharacters(ReorderableList ReorderableCharacters)
+    private void HandleCharacters(ReorderableList ReorderableCharacters, string[] settingsOptions)
     {
         ReorderableCharacters.drawHeaderCallback = (Rect rect) =>
         {
@@ -512,19 +526,53 @@ public class LevelStateEditorWindow : EditorWindow
         {
             // Get the vertex data
             SerializedProperty vertex = ReorderableCharacters.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Vertex");
+            SerializedProperty settings = ReorderableCharacters.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Settings");
 
-            Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
-
-            if (vertices.Length > vertex.intValue)
+            // Reset the selected settings in case it doesn't point to a valid one
+            if (settings.intValue >= Settings.CharactersSettingsUsed.Settings.Length)
             {
-                // Draw the necessary fields
-                EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(vertices[vertex.intValue].Id.ToString()));
+                settings.intValue = 0;
+            }
+            
+            EditorGUI.BeginChangeCheck();
+
+            string vertexId = _vertices.serializedProperty.GetArrayElementAtIndex(vertex.intValue).FindPropertyRelative("Id").intValue.ToString();
+            Settings.CurrentLevelState.CharactersFolded[index] = !EditorGUI.Foldout(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .25f, EditorGUIUtility.singleLineHeight), !Settings.CurrentLevelState.CharactersFolded[index], "Vertex(id): " + vertexId);
+            settings.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * (1 - .25f), EditorGUIUtility.singleLineHeight), settings.intValue, settingsOptions);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                // Most be set dirty because the changes where made directly apply to the ScriptableObject
+                EditorUtility.SetDirty(Settings.CurrentLevelState);
+            }
+
+            if (!Settings.CurrentLevelState.CharactersFolded[index])
+            {
+                GUI.enabled = false;
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab"));
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), Settings.CharactersSettingsUsed.Settings[settings.intValue].Prefab, typeof(GameObject), false);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab Behavior"));
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), Settings.CharactersSettingsUsed.Settings[settings.intValue].PrefabBehavior, typeof(ExternalBehaviorTree), false);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Simplified Behavior"));
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), Settings.CharactersSettingsUsed.Settings[settings.intValue].SimplifiedBehavior, typeof(ExternalBehaviorTree), false);
+                GUI.enabled = true;
             }
         };
 
         ReorderableCharacters.elementHeightCallback = (int index) =>
         {
-            return EditorGUIUtility.singleLineHeight + 2 * EditorGUIUtility.standardVerticalSpacing;
+            float height = EditorGUIUtility.standardVerticalSpacing;
+
+            if (!Settings.CurrentLevelState.CharactersFolded[index])
+            {
+                height += EditorGUIUtility.singleLineHeight * 4.0f;
+            }
+            else
+            {
+                height += EditorGUIUtility.singleLineHeight;
+            }
+
+            return height + EditorGUIUtility.standardVerticalSpacing;
         };
 
         ReorderableCharacters.onSelectCallback = (ReorderableList edges) =>
@@ -820,7 +868,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     private int GetVertexAtPosition(Vector3 worldPosition)
     {
-        Vertex[] vertices = Settings.CurrentLevelState.GetVerticesCopy();
+        Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
 
         for(int i = 0; i < vertices.Length; i++)
         {

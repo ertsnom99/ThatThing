@@ -43,6 +43,7 @@ public struct LevelStateCharacter
 {
     // Index of the vertex
     public int Vertex;
+    public int Settings;
 }
 
 [CreateAssetMenu(fileName = "LevelState", menuName = "Game State/Level State")]
@@ -58,6 +59,8 @@ public class LevelState : ScriptableObject
 
     [HideInInspector]
     public List<bool> EdgesFolded;
+    [HideInInspector]
+    public List<bool> CharactersFolded;
 
     [SerializeField]
     private LevelStateCharacter[] _characters;
@@ -68,6 +71,7 @@ public class LevelState : ScriptableObject
 
     private void OnEnable()
     {
+        //CharactersFolded = new List<bool>(new bool[_characters.Length]);
         if (!_initialized)
         {
             Initialize();
@@ -84,6 +88,7 @@ public class LevelState : ScriptableObject
         VertexIdCount = 0;
         EdgeIdCount = 0;
         EdgesFolded = new List<bool>();
+        CharactersFolded = new List<bool>();
 
         _characters = new LevelStateCharacter[0];
     }
@@ -239,6 +244,8 @@ public class LevelState : ScriptableObject
         tempCharacters.Add(newCharacter);
 
         _characters = tempCharacters.ToArray();
+
+        CharactersFolded.Add(false);
     }
 
     public void RemoveCharacter(int index)
@@ -250,6 +257,8 @@ public class LevelState : ScriptableObject
         tempCharacters.Remove(_characters[index]);
 
         _characters = tempCharacters.ToArray();
+
+        CharactersFolded.RemoveAt(index);
     }
     #endregion
 
