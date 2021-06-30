@@ -6,16 +6,23 @@ using BehaviorDesigner.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// This script requires thoses components and will be added if they aren't already there
-[RequireComponent(typeof(BehaviorManager))]
 public class LevelsManager : MonoBehaviour
 {
+    [Header("Prefab")]
     [SerializeField]
-    private GameState _DebugGameState;
+    private GameObject _simplifiedAIPrefab;
+
+    [Header("Debug")]
+    [SerializeField]
+    private GameState _debugGameState;
+    [SerializeField]
+    private CharactersSettings _debugCharactersSettings;
 
     private int _buildIndex = -1;
-
-    private BehaviorManager _behaviorManager;
+    private BehaviorTree[] _AIs;
+    private BehaviorTree[] _simplifiedAIs;
+    private const float _simplifiedThickRate = 1.0f;
+    private float _timeSinceLastTick = .0f;
 
     private static GameSave _gameSave;
 
@@ -126,8 +133,6 @@ public class LevelsManager : MonoBehaviour
 
     private void Awake()
     {
-        _behaviorManager = GetComponent<BehaviorManager>();
-
         // Store current scene buildIndex
         _buildIndex = SceneManager.GetActiveScene().buildIndex;
 
@@ -135,10 +140,27 @@ public class LevelsManager : MonoBehaviour
         // Use debug GameState if _gameSave wasn't created yet
         if (_gameSave == null)
         {
-            CreateGameSave(_DebugGameState);
+            if (!_simplifiedAIPrefab.GetComponent<BehaviorTree>())
+            {
+                Debug.LogError("The simplified AI prefab must have a BehaviorTree component!");
+                return;
+            }
+
+            if (_debugGameState == null || _debugCharactersSettings == null)
+            {
+                Debug.LogError("No debug GameState or debug CharactersSettings is set!");
+                return;
+            }
+
+            CreateGameSave(_debugGameState);
             _gameSave.PlayerLevel = _buildIndex;
         }
 #endif
+        if (_simplifiedAIPrefab == null)
+        {
+            Debug.LogError("No simplified AI prefab is set!");
+            return;
+        }
 
         UpdateScene();
         CreateAIs();
@@ -151,26 +173,76 @@ public class LevelsManager : MonoBehaviour
         // TODO: Change state of scene based on LevelState
     }
 
-    // TODO: how are AI managed?
     private void CreateAIs()
     {
-        foreach (KeyValuePair<int, LevelStateSave> LevelState in _gameSave.LevelStatesByBuildIndex)
+        GameObject AIContainer;
+
+        List<BehaviorTree> AIs = new List<BehaviorTree>();
+        List<BehaviorTree> simplifiedAIs = new List<BehaviorTree>();
+
+        foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
         {
-            if (_buildIndex == LevelState.Key)
+            if (_buildIndex == levelState.Key)
             {
-                foreach(CharacterSave character in LevelState.Value.CharacterSaves)
+                // Create AIs
+                foreach(CharacterSave character in levelState.Value.CharacterSaves)
                 {
-                    // TODO: Create characters in scene
-                    Debug.Log("In scene: " + character.CurrentVertex);
+                    CreateAI(_debugCharactersSettings.Settings[character.Settings].Prefab,
+                             character.Position,
+                             Quaternion.Euler(character.Rotation),
+                             null,
+                             _debugCharactersSettings.Settings[character.Settings].PrefabBehavior,
+                             AIs);
                 }
             }
             else
             {
-                foreach (CharacterSave character in LevelState.Value.CharacterSaves)
+                AIContainer = new GameObject("level " + levelState.Key);
+                AIContainer.transform.parent = transform;
+
+                // Create simplified AIs
+                foreach (CharacterSave character in levelState.Value.CharacterSaves)
                 {
-                    // TODO: Create characters in other scenes
-                    Debug.Log("Scene " + LevelState.Key + " : " + character.CurrentVertex);
+                    CreateAI(_simplifiedAIPrefab,
+                             Vector3.zero, 
+                             Quaternion.identity, 
+                             AIContainer.transform,
+                             _debugCharactersSettings.Settings[character.Settings].SimplifiedBehavior,
+                             simplifiedAIs);
                 }
+            }
+        }
+
+        _AIs = AIs.ToArray();
+        _simplifiedAIs = simplifiedAIs.ToArray();
+    }
+
+    private void CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, List<BehaviorTree> behaviorTreeList)
+    {
+        GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
+        BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
+        behaviorTree.ExternalBehavior = behavior;
+        behaviorTreeList.Add(behaviorTree);
+    }
+
+    private void Update()
+    {
+        // Update AIs
+        foreach (BehaviorTree AI in _AIs)
+        {
+            BehaviorManager.instance.Tick(AI);
+        }
+
+        // Update simplified AIs
+        _timeSinceLastTick += Time.deltaTime;
+
+        while (_timeSinceLastTick >= _simplifiedThickRate)
+        {
+            _timeSinceLastTick -= _simplifiedThickRate;
+
+            foreach (BehaviorTree simplifiedAI in _simplifiedAIs)
+            {
+                BehaviorManager.instance.Tick(simplifiedAI);
             }
         }
     }

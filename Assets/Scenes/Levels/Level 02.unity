@@ -1245,7 +1245,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 309ecbdf41fb0a5429496db29dcc078d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _DebugGameState: {fileID: 11400000, guid: 118aab08155f12b478b842e435e79217, type: 2}
+  _debugGameState: {fileID: 11400000, guid: 118aab08155f12b478b842e435e79217, type: 2}
+  _debugCharactersSettings: {fileID: 11400000, guid: 17a176cf65aa6844791862bbaecb4310, type: 2}
+  _simplifiedAIPrefab: {fileID: 6787028342017985559, guid: 11743cf0afda9914cb734f337a4048ba, type: 3}
 --- !u!4 &747657404
 Transform:
   m_ObjectHideFlags: 0

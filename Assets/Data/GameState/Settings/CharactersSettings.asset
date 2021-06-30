@@ -15,7 +15,7 @@ MonoBehaviour:
   Settings:
   - _name: MyTest1
     _prefab: {fileID: 6241041610774035396, guid: 381c0b7cc56a46e40b08e73a84efc2a6, type: 3}
-    _prefabBehavior: {fileID: 11400000, guid: 2aa0869f912d81a4d91d7ca904f8e496, type: 2}
+    _prefabBehavior: {fileID: 11400000, guid: 19498fee1fde3c640a5f2c1beebb6ac6, type: 2}
     _simplifiedBehavior: {fileID: 11400000, guid: 2aa0869f912d81a4d91d7ca904f8e496, type: 2}
   - _name: MyTest2
     _prefab: {fileID: 6241041610774035396, guid: 381c0b7cc56a46e40b08e73a84efc2a6, type: 3}

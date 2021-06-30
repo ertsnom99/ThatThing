@@ -407,7 +407,7 @@ public class LevelStateEditorWindow : EditorWindow
 
                 if(EditorGUI.EndChangeCheck())
                 {
-                    // Most be set dirty because the changes where made directly apply to the ScriptableObject
+                    // Most be set dirty because the changes where made directly to the ScriptableObject
                     EditorUtility.SetDirty(Settings.CurrentLevelState);
                 }
 
@@ -542,7 +542,7 @@ public class LevelStateEditorWindow : EditorWindow
 
             if (EditorGUI.EndChangeCheck())
             {
-                // Most be set dirty because the changes where made directly apply to the ScriptableObject
+                // Most be set dirty because the changes where made directly to the ScriptableObject
                 EditorUtility.SetDirty(Settings.CurrentLevelState);
             }
 

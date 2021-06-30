@@ -10,14 +10,16 @@ public struct CharacterSave
     public float Progress;
     public Vector3 Position;
     public Vector3 Rotation;
+    public int Settings;
 
-    public CharacterSave(int currentVertex, int nextVertex, float progress, Vector3 position, Vector3 rotation)
+    public CharacterSave(int currentVertex, int nextVertex, float progress, Vector3 position, Vector3 rotation, int settings)
     {
         CurrentVertex = currentVertex;
         NextVertex = nextVertex;
         Progress = progress;
         Position = position;
         Rotation = rotation;
+        Settings = settings;
     }
 }
 
@@ -76,7 +78,8 @@ public class GameSave
                                                       -1,
                                                       .0f,
                                                       vertices[levelStateCharacters[i].Vertex].Position,
-                                                      Vector3.zero);
+                                                      Vector3.zero,
+                                                      levelStateCharacters[i].Settings);
             }
 
             graph = new LevelGraph(vertices, edges);
