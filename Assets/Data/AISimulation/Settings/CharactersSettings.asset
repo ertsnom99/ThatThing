@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 607ee73f9ac3f1b4ca06933dfc907419, type: 3}
+  m_Name: CharactersSettings
+  m_EditorClassIdentifier: 
+  Settings:
+  - _name: MyTest1
+    _prefab: {fileID: 6241041610774035396, guid: 381c0b7cc56a46e40b08e73a84efc2a6, type: 3}
+    _prefabBehavior: {fileID: 11400000, guid: 19498fee1fde3c640a5f2c1beebb6ac6, type: 2}
+    _simplifiedBehavior: {fileID: 11400000, guid: 2aa0869f912d81a4d91d7ca904f8e496, type: 2}
+  SettingsFolded: 00

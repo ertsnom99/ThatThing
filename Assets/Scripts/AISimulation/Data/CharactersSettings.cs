@@ -43,25 +43,13 @@ public struct CharacterSettings
     }
 }
 
-[CreateAssetMenu(fileName = "CharactersSetting", menuName = "Game State/Settings/Characters Settings")]
+[CreateAssetMenu(fileName = "CharactersSetting", menuName = "AI Simulation/Settings/Characters Settings")]
 public class CharactersSettings : ScriptableObject
 {
     public CharacterSettings[] Settings;
 
     //[HideInInspector]
     public List<bool> SettingsFolded;
-
-    public string[] GetSettingsNames()
-    {
-        string[] settingsNames = new string[Settings.Length];
-
-        for(int i = 0; i < Settings.Length; i++)
-        {
-            settingsNames[i] = Settings[i].Name;
-        }
-
-        return settingsNames;
-    }
 
     public bool IsValid()
     {
@@ -79,5 +67,17 @@ public class CharactersSettings : ScriptableObject
         }
 
         return true;
+    }
+
+    public string[] GetSettingsNames()
+    {
+        string[] settingsNames = new string[Settings.Length];
+
+        for(int i = 0; i < Settings.Length; i++)
+        {
+            settingsNames[i] = Settings[i].Name;
+        }
+
+        return settingsNames;
     }
 }

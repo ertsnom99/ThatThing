@@ -21,6 +21,8 @@ public class GameStateEditor : Editor
     private Color _originalTextColor;
     private Color _originalBackgroundColor;
 
+    private SimulationSettings _simulationSettings;
+
     private GUIStyle _invalidStyle = new GUIStyle();
 
     private string _duplicateAssetName = "GameState";
@@ -34,7 +36,9 @@ public class GameStateEditor : Editor
         _serializedPlayerState = serializedObject.FindProperty("_playerState");
 
         _invalidStyle.normal.textColor = Color.red;
-        _invalidStyle.fontSize = 16;
+        _invalidStyle.fontSize = 20;
+        _invalidStyle.wordWrap = true;
+        _invalidStyle.fontStyle = FontStyle.Bold;
 
         _originalTextColor = GUI.color;
         _originalBackgroundColor = GUI.backgroundColor;
@@ -64,6 +68,11 @@ public class GameStateEditor : Editor
         // Initialize variables needed to detect errors
         _buildIndexes.Clear();
 
+        if (!_simulationSettings)
+        {
+            _simulationSettings = SimulationSettings.LoadFromAsset();
+        }
+
         // Add the list of LevelState by build indexes
         HandleLevelStateByBuildIndexes(_levelStateByBuildIndexes);
         _levelStateByBuildIndexes.DoLayoutList();
@@ -73,12 +82,20 @@ public class GameStateEditor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        if (!_gameState.IsValid())
+        GUI.enabled = false;
+        if (!_simulationSettings)
         {
-            GUI.enabled = false;
-            EditorGUILayout.TextArea("GameState is invalid (build index duplicates or null LevelStates)", _invalidStyle);
-            GUI.enabled = true;
+            EditorGUILayout.TextArea("GameState can't be validated because SimulationSettings doesn't exist", _invalidStyle);
         }
+        else if (!_simulationSettings.CharactersSettingsUsed)
+        {
+            EditorGUILayout.TextArea("GameState can't be validated because SimulationSettings doesn't have CharactersSettingsUsed setted", _invalidStyle);
+        }
+        else if (!_gameState.IsValid(_simulationSettings.CharactersSettingsUsed))
+        {
+            EditorGUILayout.TextArea("GameState is invalid (build index duplicates, invalid LevelState or null LevelStates)", _invalidStyle);
+        }
+        GUI.enabled = true;
 
         EditorGUILayout.Space(_sectionSpacing);
 
@@ -138,9 +155,6 @@ public class GameStateEditor : Editor
                 _buildIndexes.Add(buildIndex.intValue);
             }
 
-            // Check if the LevelState is null
-            bool levelStateSelected = levelState.objectReferenceValue;
-
             // Field for the build index
             GUI.color = buildIndexAlreadySelected ? Color.red : _originalTextColor;
             GUI.backgroundColor = buildIndexAlreadySelected ? Color.red : _originalBackgroundColor;
@@ -150,8 +164,9 @@ public class GameStateEditor : Editor
             GUI.backgroundColor = _originalBackgroundColor;
 
             // Field for the LevelState
-            GUI.color = !levelStateSelected ? Color.red : _originalTextColor;
-            GUI.backgroundColor = !levelStateSelected ? Color.red : _originalBackgroundColor;
+            bool validLevelState = levelState.objectReferenceValue && (!_simulationSettings || !_simulationSettings.CharactersSettingsUsed || ((LevelState)levelState.objectReferenceValue).IsValid(_simulationSettings.CharactersSettingsUsed));
+            GUI.color = !validLevelState ? Color.red : _originalTextColor;
+            GUI.backgroundColor = !validLevelState ? Color.red : _originalBackgroundColor;
             EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("State"));
             EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * 1.14f, rect.width * .8f, EditorGUIUtility.singleLineHeight), levelState, GUIContent.none);
             GUI.color = Color.white;

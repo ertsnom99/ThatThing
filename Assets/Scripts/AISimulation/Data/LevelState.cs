@@ -46,7 +46,7 @@ public struct LevelStateCharacter
     public int Settings;
 }
 
-[CreateAssetMenu(fileName = "LevelState", menuName = "Game State/Level State")]
+[CreateAssetMenu(fileName = "LevelState", menuName = "AI Simulation/States/Level State")]
 public class LevelState : ScriptableObject
 {
     [SerializeField]
@@ -71,12 +71,25 @@ public class LevelState : ScriptableObject
 
     private void OnEnable()
     {
-        //CharactersFolded = new List<bool>(new bool[_characters.Length]);
         if (!_initialized)
         {
             Initialize();
             _initialized = true;
         }
+    }
+
+    public bool IsValid(CharactersSettings charactersSettings)
+    {
+        // Check that all characters have valid settings
+        foreach (LevelStateCharacter character in _characters)
+        {
+            if (charactersSettings.Settings.Length <= character.Settings)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     #region Methods for the editor window
@@ -95,9 +108,10 @@ public class LevelState : ScriptableObject
 
     public void AddVertex(Vector3 position)
     {
+#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Added Vertex");
-
+#endif
         Vertex newVertex = new Vertex();
         newVertex.Id = GenerateUniqueVertexId();
         newVertex.Position = position;
@@ -118,9 +132,10 @@ public class LevelState : ScriptableObject
 
     public void RemoveVertex(int index)
     {
+#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Removed Vertex");
-
+#endif
         for (int i = _graph.Edges.Length; i > 0; i--)
         {
             // Remove any edges that uses the removed vertex
@@ -186,10 +201,10 @@ public class LevelState : ScriptableObject
                 return false;
             }
         }
-
+#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Added Edge");
-
+#endif
         // Add the new edge
         Edge newEdge = new Edge();
         newEdge.Id = GenerateUniqueEdgeId();
@@ -219,9 +234,10 @@ public class LevelState : ScriptableObject
 
     public void RemoveEdge(int index)
     {
+#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Removed Vertex");
-
+#endif
         // Remove the edge
         List<Edge> tempEdges = new List<Edge>(_graph.Edges);
         tempEdges.Remove(_graph.Edges[index]);
@@ -234,8 +250,10 @@ public class LevelState : ScriptableObject
 
     public void AddCharacter(int vertex)
     {
+#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Added Character");
+#endif
 
         LevelStateCharacter newCharacter = new LevelStateCharacter();
         newCharacter.Vertex = vertex;
@@ -250,9 +268,10 @@ public class LevelState : ScriptableObject
 
     public void RemoveCharacter(int index)
     {
+#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Removed Character");
-
+#endif
         List<LevelStateCharacter> tempCharacters = new List<LevelStateCharacter>(_characters);
         tempCharacters.Remove(_characters[index]);
 

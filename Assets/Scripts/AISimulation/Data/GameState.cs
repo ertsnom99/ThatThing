@@ -24,7 +24,7 @@ public struct LevelStateByBuildIndex
     }
 }
 
-[CreateAssetMenu(fileName = "GameState", menuName = "Game State/Game State")]
+[CreateAssetMenu(fileName = "GameState", menuName = "AI Simulation/States/Game State")]
 public class GameState : ScriptableObject
 {
     [SerializeField]
@@ -45,7 +45,7 @@ public class GameState : ScriptableObject
         private set { _levelStatesByBuildIndex = value; }
     }
 
-    public bool IsValid()
+    public bool IsValid(CharactersSettings charactersSettings)
     {
         if (!_playerState)
         {
@@ -66,6 +66,10 @@ public class GameState : ScriptableObject
             }
 
             if (!levelStateByBuildIndex.LevelState)
+            {
+                return false;
+            }
+            else if (!levelStateByBuildIndex.LevelState.IsValid(charactersSettings))
             {
                 return false;
             }

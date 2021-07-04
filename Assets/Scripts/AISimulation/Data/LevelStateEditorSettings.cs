@@ -1,10 +1,9 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "LevelStateEditorSettings", menuName = "Game State/Settings/Level State Editor Settings")]
+[CreateAssetMenu(fileName = "LevelStateEditorSettings", menuName = "AI Simulation/Settings/Level State Editor Settings")]
 public class LevelStateEditorSettings : ScriptableObject
 {
     public LevelState CurrentLevelState;
-    public CharactersSettings CharactersSettingsUsed;
 
     [Header("Styles")]
     public GUIStyle InvalidStyle = new GUIStyle();

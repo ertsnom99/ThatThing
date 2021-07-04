@@ -8,7 +8,8 @@ using UnityEngine;
 public class LevelStateEditorWindow : EditorWindow
 {
     #region Variables
-    public static LevelStateEditorSettings Settings;
+    private LevelStateEditorSettings _editorSettings;
+    private SimulationSettings _simulationSettings;
     private LevelState _previousLevelState;
 
     private SerializedObject _serializedLevelState;
@@ -44,6 +45,8 @@ public class LevelStateEditorWindow : EditorWindow
     private int _selectedCharacter = -1;
     private int _selectedVertexForCharacter = 0;
 
+    private GUIStyle _defaultInvalidStyle = new GUIStyle();
+
     // Dimensions
     private const float _editorMinWidth = 300;
     private const float _editorMinHeight = 300;
@@ -54,22 +57,15 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void OnEnable()
     {
-        Settings = EditorGUIUtility.Load("Level State Editor/LevelStateEditorSettings.asset") as LevelStateEditorSettings;
-
-        if (Settings != null)
-        {
-            _addedOffset = Settings.DefaultAddedOffset;
-            _vertexClickMask = Settings.DefaultClickMask;
-            _edgeClickMask = Settings.DefaultClickMask;
-        }
-        else
-        {
-            Debug.LogError("Couldn't find LevelStateEditorSettings.asset file in Assets\\Editor Default Resources\\Level State");
-        }
+        // Setup _defaultInvalidStyle
+        _defaultInvalidStyle.normal.textColor = Color.red;
+        _defaultInvalidStyle.fontSize = 16;
+        _defaultInvalidStyle.alignment = TextAnchor.MiddleCenter;
+        _defaultInvalidStyle.wordWrap = true;
     }
 
     // Add menu item to the main menu and inspector context menus and the static function becomes a menu command
-    [MenuItem("Level State/Editor")]
+    [MenuItem("AI Simulation/Level State Editor")]
     public static void ShowEditor()
     {
         Type inspectorType = Type.GetType("UnityEditor.InspectorWindow,UnityEditor.dll");
@@ -95,25 +91,57 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawEditor()
     {
-        // Field for the LevelState
-        EditorGUILayout.LabelField("Assign LevelState:", GUILayout.Width(200));
-        Settings.CurrentLevelState = (LevelState)EditorGUILayout.ObjectField(Settings.CurrentLevelState, typeof(LevelState), false, GUILayout.Width(200));
-        
-        // When the LecelState changed
-        if (_previousLevelState != Settings.CurrentLevelState)
+        EditorGUILayout.Space(15);
+
+        // Error if there is not editor settings
+        if (!_editorSettings)
         {
-            _serializedLevelState = null;
-            _previousLevelState = Settings.CurrentLevelState;
+            _editorSettings = EditorGUIUtility.Load("Level State Editor/LevelStateEditorSettings.asset") as LevelStateEditorSettings;
             
-            // Save the settings
-            EditorUtility.SetDirty(Settings);
+            if (_editorSettings)
+            {
+                _addedOffset = _editorSettings.DefaultAddedOffset;
+                _vertexClickMask = _editorSettings.DefaultClickMask;
+                _edgeClickMask = _editorSettings.DefaultClickMask;
+            }
+            else
+            {
+                EditorGUILayout.LabelField("Couldn't find LevelStateEditorSettings.asset file in Assets\\Editor Default Resources\\Level State!", _defaultInvalidStyle);
+                return;
+            }
         }
 
-        if (Settings.CurrentLevelState != null)
+        // Error if there is not simulation settings
+        if (!_simulationSettings)
+        {
+            _simulationSettings = SimulationSettings.LoadFromAsset();
+
+            if (!_simulationSettings)
+            {
+                EditorGUILayout.LabelField("No SimulationSettings were found!", _editorSettings.InvalidStyle);
+                return;
+            }
+        }
+        
+        // Field for the LevelState
+        EditorGUILayout.LabelField("Assign LevelState:", GUILayout.Width(200));
+        _editorSettings.CurrentLevelState = (LevelState)EditorGUILayout.ObjectField(_editorSettings.CurrentLevelState, typeof(LevelState), false, GUILayout.Width(200));
+        
+        // When the LecelState changed
+        if (_previousLevelState != _editorSettings.CurrentLevelState)
+        {
+            _serializedLevelState = null;
+            _previousLevelState = _editorSettings.CurrentLevelState;
+            
+            // Save the editor settings
+            EditorUtility.SetDirty(_editorSettings);
+        }
+
+        if (_editorSettings.CurrentLevelState != null)
         {
             if (_serializedLevelState == null)
             {
-                _serializedLevelState = new SerializedObject(Settings.CurrentLevelState);
+                _serializedLevelState = new SerializedObject(_editorSettings.CurrentLevelState);
 
                 // Level graph serialization
                 _vertices = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Vertices"), false, false, false, false);
@@ -141,7 +169,7 @@ public class LevelStateEditorWindow : EditorWindow
                 _serializedLevelState.Update();
             }
 
-            EditorGUILayout.Space(5);
+            EditorGUILayout.Space(15);
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             toolbarSelection = GUILayout.Toolbar(toolbarSelection, toolbarStrings, GUILayout.Width(300), GUILayout.Height(20));
@@ -223,20 +251,20 @@ public class LevelStateEditorWindow : EditorWindow
 
             if (GUILayout.Button("Add vertex"))
             {
-                Settings.CurrentLevelState.AddVertex(_addedOffset);
+                _editorSettings.CurrentLevelState.AddVertex(_addedOffset);
 
                 // Most be set dirty because the changes where made directly inside the ScriptableObject
-                EditorUtility.SetDirty(Settings.CurrentLevelState);
+                EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
             }
 
             GUI.enabled = Selection.activeTransform;
 
             if (GUILayout.Button("Add vertex with selection"))
             {
-                Settings.CurrentLevelState.AddVertex(Selection.activeTransform.position + _addedOffset);
+                _editorSettings.CurrentLevelState.AddVertex(Selection.activeTransform.position + _addedOffset);
 
                 // Most be set dirty because the changes where made directly inside the ScriptableObject
-                EditorUtility.SetDirty(Settings.CurrentLevelState);
+                EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
             }
 
             GUI.enabled = !_creatingVertexWithClick;
@@ -255,10 +283,10 @@ public class LevelStateEditorWindow : EditorWindow
             // "Remove selected vertex" button
             if (GUILayout.Button("Remove selected vertex"))
             {
-                Settings.CurrentLevelState.RemoveVertex(_selectedVertex);
+                _editorSettings.CurrentLevelState.RemoveVertex(_selectedVertex);
 
                 // Most be set dirty because the changes where made directly inside the ScriptableObject
-                EditorUtility.SetDirty(Settings.CurrentLevelState);
+                EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
 
                 _selectedVertex = -1;
                 _vertices.index = -1;
@@ -315,7 +343,7 @@ public class LevelStateEditorWindow : EditorWindow
             GUILayout.EndHorizontal();
             
             // Add dropdown for vertex
-            List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
+            List<string> ids = _editorSettings.CurrentLevelState.GetAllVertexIds();
             ids.Insert(0, "None");
 
             GUILayout.BeginHorizontal();
@@ -345,10 +373,10 @@ public class LevelStateEditorWindow : EditorWindow
 
             if (GUILayout.Button("Add edge"))
             {
-                if (Settings.CurrentLevelState.AddEdge(_selectedPopupVertexA - 1, _selectedPopupVertexB - 1))
+                if (_editorSettings.CurrentLevelState.AddEdge(_selectedPopupVertexA - 1, _selectedPopupVertexB - 1))
                 {
                     // Most be set dirty because the changes where made directly inside the ScriptableObject
-                    EditorUtility.SetDirty(Settings.CurrentLevelState);
+                    EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
                 }
 
                 _selectedPopupVertexA = 0;
@@ -370,10 +398,10 @@ public class LevelStateEditorWindow : EditorWindow
             // "Remove selected edge" button
             if (GUILayout.Button("Remove selected edge"))
             {
-                Settings.CurrentLevelState.RemoveEdge(_selectedEdge);
+                _editorSettings.CurrentLevelState.RemoveEdge(_selectedEdge);
 
                 // Most be set dirty because the changes where made directly inside the ScriptableObject
-                EditorUtility.SetDirty(Settings.CurrentLevelState);
+                EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
 
                 _selectedEdge = -1;
                 _edges.index = -1;
@@ -402,16 +430,16 @@ public class LevelStateEditorWindow : EditorWindow
 
                 EditorGUI.BeginChangeCheck();
 
-                Settings.CurrentLevelState.EdgesFolded[index] = !EditorGUI.Foldout(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), !Settings.CurrentLevelState.EdgesFolded[index], "Id: " + id.intValue.ToString());
+                _editorSettings.CurrentLevelState.EdgesFolded[index] = !EditorGUI.Foldout(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), !_editorSettings.CurrentLevelState.EdgesFolded[index], "Id: " + id.intValue.ToString());
                 EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(vertexAToVertexB));
 
                 if(EditorGUI.EndChangeCheck())
                 {
                     // Most be set dirty because the changes where made directly to the ScriptableObject
-                    EditorUtility.SetDirty(Settings.CurrentLevelState);
+                    EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
                 }
 
-                if (!Settings.CurrentLevelState.EdgesFolded[index])
+                if (!_editorSettings.CurrentLevelState.EdgesFolded[index])
                 {
                     EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
                     EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
@@ -427,7 +455,7 @@ public class LevelStateEditorWindow : EditorWindow
         {
             float height = EditorGUIUtility.standardVerticalSpacing;
 
-            if (!Settings.CurrentLevelState.EdgesFolded[index])
+            if (!_editorSettings.CurrentLevelState.EdgesFolded[index])
             {
                 height += EditorGUIUtility.singleLineHeight * 4.0f;
             }
@@ -447,9 +475,9 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawCharactersSection()
     {
-        if (!Settings.CharactersSettingsUsed)
+        if (!_simulationSettings.CharactersSettingsUsed)
         {
-            EditorGUILayout.LabelField("No CharactersSetting is specified in the LevelStateEditorSettings!", Settings.InvalidStyle);
+            EditorGUILayout.LabelField("No CharactersSetting is specified in the SimulationSettings!", _editorSettings.InvalidStyle);
             return;
         }
 
@@ -457,22 +485,22 @@ public class LevelStateEditorWindow : EditorWindow
 
         GUILayout.BeginHorizontal();
         EditorGUILayout.LabelField("CharactersSettings used:", GUILayout.Width(EditorGUIUtility.currentViewWidth * .26f - _foldoutArrowWidth));
-        EditorGUILayout.ObjectField(Settings.CharactersSettingsUsed, typeof(CharactersSettings), false);
+        EditorGUILayout.ObjectField(_simulationSettings.CharactersSettingsUsed, typeof(CharactersSettings), false);
         GUILayout.EndHorizontal();
 
         GUI.enabled = true;
 
-        if (Settings.CharactersSettingsUsed.Settings.Length <= 0)
+        if (_simulationSettings.CharactersSettingsUsed.Settings.Length <= 0)
         {
             EditorGUILayout.Space(15);
-            EditorGUILayout.LabelField("The CharactersSetting used doesn't have any settings!", Settings.InvalidStyle);
+            EditorGUILayout.LabelField("The CharactersSetting used doesn't have any settings!", _editorSettings.InvalidStyle);
             return;
         }
 
         EditorGUILayout.Space(15);
 
         // Add list of edges
-        HandleCharacters(_characters, Settings.CharactersSettingsUsed.GetSettingsNames());
+        HandleCharacters(_characters, _simulationSettings.CharactersSettingsUsed.GetSettingsNames());
         _characters.DoLayoutList();
 
         GUILayout.BeginHorizontal();
@@ -481,10 +509,10 @@ public class LevelStateEditorWindow : EditorWindow
 
         if (GUILayout.Button("Add Character", GUILayout.Width(EditorGUIUtility.currentViewWidth / 2.0f)))
         {
-            Settings.CurrentLevelState.AddCharacter(_selectedVertexForCharacter - 1);
+            _editorSettings.CurrentLevelState.AddCharacter(_selectedVertexForCharacter - 1);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
+            EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
 
             _selectedVertexForCharacter = 0;
         }
@@ -492,7 +520,7 @@ public class LevelStateEditorWindow : EditorWindow
         GUI.enabled = true;
 
         // Add dropdown to select a vertex
-        List<string> ids = Settings.CurrentLevelState.GetAllVertexIds();
+        List<string> ids = _editorSettings.CurrentLevelState.GetAllVertexIds();
         ids.Insert(0, "None");
 
         _selectedVertexForCharacter = EditorGUILayout.Popup(_selectedVertexForCharacter, ids.ToArray());
@@ -504,10 +532,10 @@ public class LevelStateEditorWindow : EditorWindow
         // "Remove selected edge" button
         if (GUILayout.Button("Remove selected character"))
         {
-            Settings.CurrentLevelState.RemoveCharacter(_selectedCharacter);
+            _editorSettings.CurrentLevelState.RemoveCharacter(_selectedCharacter);
 
             // Most be set dirty because the changes where made directly inside the ScriptableObject
-            EditorUtility.SetDirty(Settings.CurrentLevelState);
+            EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
 
             _selectedCharacter = -1;
             _characters.index = -1;
@@ -529,32 +557,33 @@ public class LevelStateEditorWindow : EditorWindow
             SerializedProperty settings = ReorderableCharacters.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Settings");
 
             // Reset the selected settings in case it doesn't point to a valid one
-            if (settings.intValue >= Settings.CharactersSettingsUsed.Settings.Length)
+            if (settings.intValue >= _simulationSettings.CharactersSettingsUsed.Settings.Length)
             {
                 settings.intValue = 0;
+                _serializedLevelState.ApplyModifiedProperties();
             }
-            
+
             EditorGUI.BeginChangeCheck();
 
             string vertexId = _vertices.serializedProperty.GetArrayElementAtIndex(vertex.intValue).FindPropertyRelative("Id").intValue.ToString();
-            Settings.CurrentLevelState.CharactersFolded[index] = !EditorGUI.Foldout(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .25f, EditorGUIUtility.singleLineHeight), !Settings.CurrentLevelState.CharactersFolded[index], "Vertex(id): " + vertexId);
+            _editorSettings.CurrentLevelState.CharactersFolded[index] = !EditorGUI.Foldout(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .25f, EditorGUIUtility.singleLineHeight), !_editorSettings.CurrentLevelState.CharactersFolded[index], "Vertex(id): " + vertexId);
             settings.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * (1 - .25f), EditorGUIUtility.singleLineHeight), settings.intValue, settingsOptions);
 
             if (EditorGUI.EndChangeCheck())
             {
                 // Most be set dirty because the changes where made directly to the ScriptableObject
-                EditorUtility.SetDirty(Settings.CurrentLevelState);
+                EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
             }
 
-            if (!Settings.CurrentLevelState.CharactersFolded[index])
+            if (!_editorSettings.CurrentLevelState.CharactersFolded[index])
             {
                 GUI.enabled = false;
                 EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab"));
-                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), Settings.CharactersSettingsUsed.Settings[settings.intValue].Prefab, typeof(GameObject), false);
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].Prefab, typeof(GameObject), false);
                 EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab Behavior"));
-                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), Settings.CharactersSettingsUsed.Settings[settings.intValue].PrefabBehavior, typeof(ExternalBehaviorTree), false);
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].PrefabBehavior, typeof(ExternalBehaviorTree), false);
                 EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Simplified Behavior"));
-                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), Settings.CharactersSettingsUsed.Settings[settings.intValue].SimplifiedBehavior, typeof(ExternalBehaviorTree), false);
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].SimplifiedBehavior, typeof(ExternalBehaviorTree), false);
                 GUI.enabled = true;
             }
         };
@@ -563,7 +592,7 @@ public class LevelStateEditorWindow : EditorWindow
         {
             float height = EditorGUIUtility.standardVerticalSpacing;
 
-            if (!Settings.CurrentLevelState.CharactersFolded[index])
+            if (!_editorSettings.CurrentLevelState.CharactersFolded[index])
             {
                 height += EditorGUIUtility.singleLineHeight * 4.0f;
             }
@@ -607,7 +636,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void OnSceneGUI(SceneView sceneView)
     {
-        if (Settings.CurrentLevelState != null)
+        if (_editorSettings && _editorSettings.CurrentLevelState && _simulationSettings)
         {
             HandleUserInput(Event.current, sceneView);
             DrawSecenDebug();
@@ -617,7 +646,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawSecenDebug()
     {
-        Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
+        Vertex[] vertices = _editorSettings.CurrentLevelState.GetVertices();
         
         // Draw vertex debugs
         if (_vertices != null)
@@ -629,36 +658,36 @@ public class LevelStateEditorWindow : EditorWindow
                  || (toolbarSelection == 0 && _creatingEdgeWithClick && _clickedVertexA > -1 && i == _clickedVertexA)
                  || (toolbarSelection == 1 && _selectedVertexForCharacter > 0 && i == _selectedVertexForCharacter - 1))
                 {
-                    Handles.color = Settings.DebugVertexForEdgeColor;
+                    Handles.color = _editorSettings.DebugVertexForEdgeColor;
                 }
                 // If the vertex is selected in the list of vertex
                 else if ((toolbarSelection == 0 && !_creatingEdgeWithClick && (_selectedPopupVertexA == 0 && _selectedPopupVertexB == 0) && i == _vertices.index))
                 {
-                    Handles.color = Settings.DebugSelectedVertexColor;
+                    Handles.color = _editorSettings.DebugSelectedVertexColor;
 
                     EditorGUI.BeginChangeCheck();
                     Vector3 newPosition = Handles.PositionHandle(vertices[i].Position, Quaternion.identity);
 
-                    // Record Settings.CurrentLevelState before applying change in order to allow undos
+                    // Record _editorSettings.CurrentLevelState before applying change in order to allow undos
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(Settings.CurrentLevelState, "Changed Vertex Position");
+                        Undo.RecordObject(_editorSettings.CurrentLevelState, "Changed Vertex Position");
                         vertices[i].Position = newPosition;
                     }
                 }
                 else
                 {
-                    Handles.color = Settings.DebugVertexColor;
+                    Handles.color = _editorSettings.DebugVertexColor;
                 }
 
-                Handles.DrawSolidDisc(vertices[i].Position, Vector3.up, Settings.DebugVertexDiscRadius);
+                Handles.DrawSolidDisc(vertices[i].Position, Vector3.up, _editorSettings.DebugVertexDiscRadius);
             }
         }
 
         // Draw edge debugs
         if (_edges != null)
         {
-            Edge[] edges = Settings.CurrentLevelState.GetEdgesCopy();
+            Edge[] edges = _editorSettings.CurrentLevelState.GetEdgesCopy();
 
             int vertexAIndex;
             int vertexBIndex;
@@ -670,25 +699,25 @@ public class LevelStateEditorWindow : EditorWindow
                     switch (edges[i].Type)
                     {
                         case EdgeType.Corridor:
-                            Handles.color = Settings.DebugEdgeCorridorColor;
+                            Handles.color = _editorSettings.DebugEdgeCorridorColor;
                             break;
                         case EdgeType.Door:
-                            Handles.color = Settings.DebugEdgeDoorColor;
+                            Handles.color = _editorSettings.DebugEdgeDoorColor;
                             break;
                         case EdgeType.Vent:
-                            Handles.color = Settings.DebugEdgeVentColor;
+                            Handles.color = _editorSettings.DebugEdgeVentColor;
                             break;
                     }
                 }
                 else
                 {
-                    Handles.color = Settings.DebugSelectedEdgeColor;
+                    Handles.color = _editorSettings.DebugSelectedEdgeColor;
                 }
 
                 vertexAIndex = edges[i].VertexA;
                 vertexBIndex = edges[i].VertexB;
 
-                Handles.DrawLine(vertices[vertexAIndex].Position, vertices[vertexBIndex].Position, Settings.DebugEdgeThickness);
+                Handles.DrawLine(vertices[vertexAIndex].Position, vertices[vertexBIndex].Position, _editorSettings.DebugEdgeThickness);
             }
         }
 
@@ -697,14 +726,16 @@ public class LevelStateEditorWindow : EditorWindow
         {
             foreach(Vertex vertex in vertices)
             {
-                Handles.Label(vertex.Position, "Id: " + vertex.Id, Settings.VertexIdStyle);
+                Handles.Label(vertex.Position, "Id: " + vertex.Id, _editorSettings.VertexIdStyle);
             }
         }
 
         // Draw character debugs
-        if (toolbarSelection == 1 && _characters != null)
+        bool characterSettingsValid = _simulationSettings.CharactersSettingsUsed && _simulationSettings.CharactersSettingsUsed.Settings.Length > 0;
+        
+        if (characterSettingsValid && toolbarSelection == 1 && _characters != null)
         {
-            LevelStateCharacter[] characters = Settings.CurrentLevelState.GetCharacters();
+            LevelStateCharacter[] characters = _editorSettings.CurrentLevelState.GetCharacters();
 
             Dictionary<int, int> characterCountByVertex = new Dictionary<int, int>();
             int selectedCharacterVertex = -1;
@@ -730,14 +761,14 @@ public class LevelStateEditorWindow : EditorWindow
             {
                 if (selectedCharacterVertex != vertex.Key)
                 {
-                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.CharacterIcon);
+                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, _editorSettings.CharacterIcon);
                 }
                 else
                 {
-                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, Settings.SelectedCharacterIcon);
+                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, _editorSettings.SelectedCharacterIcon);
                 }
 
-                Handles.Label(vertices[vertex.Key].Position + Vector3.up * 1.0f, "X" + vertex.Value.ToString(), Settings.CharacterCounterStyle);
+                Handles.Label(vertices[vertex.Key].Position + Vector3.up * 1.0f, "X" + vertex.Value.ToString(), _editorSettings.CharacterCounterStyle);
             }
         }
     }
@@ -751,10 +782,10 @@ public class LevelStateEditorWindow : EditorWindow
             GUILayout.BeginArea(new Rect(20, 20, 300, 60));
             var rect = EditorGUILayout.BeginVertical();
 
-            GUI.color = Settings.GUIClickTextBoxColor;
+            GUI.color = _editorSettings.GUIClickTextBoxColor;
             GUI.Box(rect, GUIContent.none);
 
-            GUI.color = Settings.GUIClickTextColor;
+            GUI.color = _editorSettings.GUIClickTextColor;
 
             if (_creatingVertexWithClick)
             {
@@ -809,10 +840,10 @@ public class LevelStateEditorWindow : EditorWindow
             // Adding a vertex
             if (_creatingVertexWithClick && foundPosition)
             {
-                Settings.CurrentLevelState.AddVertex(worldPosition + _addedOffset);
+                _editorSettings.CurrentLevelState.AddVertex(worldPosition + _addedOffset);
 
                 // Most be set dirty because the changes where made directly inside the ScriptableObject
-                EditorUtility.SetDirty(Settings.CurrentLevelState);
+                EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
             }
             // Adding an edge
             else if (foundPosition)
@@ -827,10 +858,10 @@ public class LevelStateEditorWindow : EditorWindow
                 // if selected the second vertex
                 else if (selectedVertex > -1 && _clickedVertexA > -1 && selectedVertex != _clickedVertexA)
                 {
-                    if (Settings.CurrentLevelState.AddEdge(_clickedVertexA, selectedVertex))
+                    if (_editorSettings.CurrentLevelState.AddEdge(_clickedVertexA, selectedVertex))
                     {
                         // Most be set dirty because the changes where made directly inside the ScriptableObject
-                        EditorUtility.SetDirty(Settings.CurrentLevelState);
+                        EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
                     }
 
                     _clickedVertexA = -1;
@@ -868,11 +899,11 @@ public class LevelStateEditorWindow : EditorWindow
 
     private int GetVertexAtPosition(Vector3 worldPosition)
     {
-        Vertex[] vertices = Settings.CurrentLevelState.GetVertices();
+        Vertex[] vertices = _editorSettings.CurrentLevelState.GetVertices();
 
         for(int i = 0; i < vertices.Length; i++)
         {
-            if ((worldPosition - vertices[i].Position).sqrMagnitude <= Settings.DebugVertexDiscRadius)
+            if ((worldPosition - vertices[i].Position).sqrMagnitude <= _editorSettings.DebugVertexDiscRadius)
             {
                 return i;
             }

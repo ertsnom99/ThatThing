@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PlayerState", menuName = "Game State/Player State")]
+[CreateAssetMenu(fileName = "PlayerState", menuName = "AI Simulation/States/Player State")]
 public class PlayerState : ScriptableObject
 {
     [SerializeField]

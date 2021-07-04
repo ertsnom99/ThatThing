@@ -6,29 +6,153 @@ using BehaviorDesigner.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class LevelsManager : MonoBehaviour
+public class SimulationManager : MonoBehaviour
 {
-    [Header("Prefab")]
-    [SerializeField]
-    private GameObject _simplifiedAIPrefab;
-
     [Header("Debug")]
     [SerializeField]
-    private GameState _debugGameState;
+    private bool _useDebug;
     [SerializeField]
-    private CharactersSettings _debugCharactersSettings;
+    private GameState _debugGameState;
 
     private int _buildIndex = -1;
     private BehaviorTree[] _AIs;
     private BehaviorTree[] _simplifiedAIs;
-    private const float _simplifiedThickRate = 1.0f;
     private float _timeSinceLastTick = .0f;
 
+    private static SimulationSettings _simulationSettings;
     private static GameSave _gameSave;
 
-    public static GameSave GetGameSave()
+    private void Awake()
     {
-        return _gameSave;
+        // Store current scene buildIndex
+        _buildIndex = SceneManager.GetActiveScene().buildIndex;
+#if UNITY_EDITOR
+        // Use debug
+        if (_useDebug)
+        {
+            if (_debugGameState == null)
+            {
+                Debug.LogError("No debug GameState is set!");
+                return;
+            }
+
+            _gameSave = new GameSave(_debugGameState);
+            _gameSave.PlayerLevel = _buildIndex;
+        }
+        
+        // Search for a valid SimulationSettings
+        if (!_simulationSettings)
+        {
+            _simulationSettings = SimulationSettings.LoadFromResources();
+
+            if (!_simulationSettings)
+            {
+                Debug.LogError("No SimulationSettings found!");
+                return;
+            }
+            else if (!_simulationSettings.IsValid())
+            {
+                Debug.LogError("The SimulationSettings aren't valid!");
+                return;
+            }
+        }
+
+        // Create a GameSave if none exist
+        if (_gameSave == null)
+        {
+            _gameSave = new GameSave(_simulationSettings.InitialGameState);
+            _gameSave.PlayerLevel = _buildIndex;
+        }
+#endif
+        UpdateScene();
+        CreateAIs();
+
+        // TODO: Set player (position, rotation, etc.)
+    }
+
+    private void UpdateScene()
+    {
+        // TODO: Change state of scene based on LevelState
+    }
+
+    private void CreateAIs()
+    {
+        GameObject AIContainer;
+
+        List<BehaviorTree> AIs = new List<BehaviorTree>();
+        List<BehaviorTree> simplifiedAIs = new List<BehaviorTree>();
+
+        foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+        {
+            if (_buildIndex == levelState.Key)
+            {
+                // Create AIs
+                foreach(CharacterSave character in levelState.Value.CharacterSaves)
+                {
+                    CreateAI(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
+                             character.Position,
+                             Quaternion.Euler(character.Rotation),
+                             null,
+                             _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
+                             AIs);
+                }
+            }
+            else
+            {
+                AIContainer = new GameObject("level " + levelState.Key);
+                AIContainer.transform.parent = transform;
+
+                // Create simplified AIs
+                foreach (CharacterSave character in levelState.Value.CharacterSaves)
+                {
+                    CreateAI(_simulationSettings.SimplifiedAIPrefab,
+                             Vector3.zero, 
+                             Quaternion.identity, 
+                             AIContainer.transform,
+                             _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
+                             simplifiedAIs);
+                }
+            }
+        }
+
+        _AIs = AIs.ToArray();
+        _simplifiedAIs = simplifiedAIs.ToArray();
+    }
+
+    private void CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, List<BehaviorTree> behaviorTreeList)
+    {
+        GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
+        BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
+        behaviorTree.ExternalBehavior = behavior;
+        behaviorTreeList.Add(behaviorTree);
+    }
+
+    private void Update()
+    {
+#if UNITY_EDITOR
+        if (_AIs == null || !_simulationSettings || _simplifiedAIs == null)
+        {
+            return;
+        }
+#endif
+        // Update AIs
+        foreach (BehaviorTree AI in _AIs)
+        {
+            BehaviorManager.instance.Tick(AI);
+        }
+
+        // Update simplified AIs
+        _timeSinceLastTick += Time.deltaTime;
+
+        while (_timeSinceLastTick >= _simulationSettings.SimplifiedAITickRate)
+        {
+            _timeSinceLastTick -= _simulationSettings.SimplifiedAITickRate;
+
+            foreach (BehaviorTree simplifiedAI in _simplifiedAIs)
+            {
+                BehaviorManager.instance.Tick(simplifiedAI);
+            }
+        }
     }
 
     // Takes a world position and finds the closest vertexA, the possible edge it's on (given by vertexB) and the progress on that edge.
@@ -131,127 +255,38 @@ public class LevelsManager : MonoBehaviour
         return true;
     }
 
-    private void Awake()
+    public static void SetSimulationSettings(SimulationSettings simulationSettings)
     {
-        // Store current scene buildIndex
-        _buildIndex = SceneManager.GetActiveScene().buildIndex;
+        _simulationSettings = simulationSettings;
+    }
 
-#if UNITY_EDITOR
-        // Use debug GameState if _gameSave wasn't created yet
-        if (_gameSave == null)
+    #region GameSave Methods
+    public static GameSave GetGameSave()
+    {
+        return _gameSave;
+    }
+
+    public static void SetGameSave(GameSave gameSave)
+    {
+        _gameSave = gameSave;
+    }
+
+    public static void LoadGameSave()
+    {
+        if (File.Exists(Application.persistentDataPath + "/GameState.dat"))
         {
-            if (!_simplifiedAIPrefab.GetComponent<BehaviorTree>())
-            {
-                Debug.LogError("The simplified AI prefab must have a BehaviorTree component!");
-                return;
-            }
+            BinaryFormatter bf = new BinaryFormatter();
+            AddSurrogateSelector(bf);
 
-            if (_debugGameState == null || _debugCharactersSettings == null)
-            {
-                Debug.LogError("No debug GameState or debug CharactersSettings is set!");
-                return;
-            }
+            FileStream file = File.Open(Application.persistentDataPath + "/GameState.dat", FileMode.Open);
 
-            CreateGameSave(_debugGameState);
-            _gameSave.PlayerLevel = _buildIndex;
-        }
-#endif
-        if (_simplifiedAIPrefab == null)
-        {
-            Debug.LogError("No simplified AI prefab is set!");
+            _gameSave = (GameSave)bf.Deserialize(file);
+            file.Close();
+
             return;
         }
 
-        UpdateScene();
-        CreateAIs();
-
-        // TODO: Set player (position, rotation, etc.)
-    }
-
-    private void UpdateScene()
-    {
-        // TODO: Change state of scene based on LevelState
-    }
-
-    private void CreateAIs()
-    {
-        GameObject AIContainer;
-
-        List<BehaviorTree> AIs = new List<BehaviorTree>();
-        List<BehaviorTree> simplifiedAIs = new List<BehaviorTree>();
-
-        foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
-        {
-            if (_buildIndex == levelState.Key)
-            {
-                // Create AIs
-                foreach(CharacterSave character in levelState.Value.CharacterSaves)
-                {
-                    CreateAI(_debugCharactersSettings.Settings[character.Settings].Prefab,
-                             character.Position,
-                             Quaternion.Euler(character.Rotation),
-                             null,
-                             _debugCharactersSettings.Settings[character.Settings].PrefabBehavior,
-                             AIs);
-                }
-            }
-            else
-            {
-                AIContainer = new GameObject("level " + levelState.Key);
-                AIContainer.transform.parent = transform;
-
-                // Create simplified AIs
-                foreach (CharacterSave character in levelState.Value.CharacterSaves)
-                {
-                    CreateAI(_simplifiedAIPrefab,
-                             Vector3.zero, 
-                             Quaternion.identity, 
-                             AIContainer.transform,
-                             _debugCharactersSettings.Settings[character.Settings].SimplifiedBehavior,
-                             simplifiedAIs);
-                }
-            }
-        }
-
-        _AIs = AIs.ToArray();
-        _simplifiedAIs = simplifiedAIs.ToArray();
-    }
-
-    private void CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, List<BehaviorTree> behaviorTreeList)
-    {
-        GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
-        BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
-        behaviorTree.ExternalBehavior = behavior;
-        behaviorTreeList.Add(behaviorTree);
-    }
-
-    private void Update()
-    {
-        // Update AIs
-        foreach (BehaviorTree AI in _AIs)
-        {
-            BehaviorManager.instance.Tick(AI);
-        }
-
-        // Update simplified AIs
-        _timeSinceLastTick += Time.deltaTime;
-
-        while (_timeSinceLastTick >= _simplifiedThickRate)
-        {
-            _timeSinceLastTick -= _simplifiedThickRate;
-
-            foreach (BehaviorTree simplifiedAI in _simplifiedAIs)
-            {
-                BehaviorManager.instance.Tick(simplifiedAI);
-            }
-        }
-    }
-
-    #region Static Methods
-    public static void CreateGameSave(GameState gameState)
-    {
-        // Create a new instance with copy constructor
-        _gameSave = new GameSave(gameState);
+        Debug.LogError("There is no save data!");
     }
 
     // Returns if _gameSave was saved
@@ -271,24 +306,6 @@ public class LevelsManager : MonoBehaviour
         file.Close();
 
         return true;
-    }
-
-    public static void LoadGameSave()
-    {
-        if (File.Exists(Application.persistentDataPath + "/GameState.dat"))
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            AddSurrogateSelector(bf);
-
-            FileStream file = File.Open(Application.persistentDataPath + "/GameState.dat", FileMode.Open);
-
-            _gameSave = (GameSave)bf.Deserialize(file);
-            file.Close();
-
-            return;
-        }
-        
-        Debug.LogError("There is no save data!");
     }
 
     private static void AddSurrogateSelector(BinaryFormatter bf)

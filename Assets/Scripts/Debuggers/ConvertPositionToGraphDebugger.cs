@@ -12,14 +12,14 @@ public class ConvertPositionToGraphDebugger : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        GameSave gameSave = LevelsManager.GetGameSave();
+        GameSave gameSave = SimulationManager.GetGameSave();
         int buildIndex = SceneManager.GetActiveScene().buildIndex;
 
         int vertexA;
         int vertexB;
         float progress;
 
-        if (gameSave == null || !LevelsManager.ConvertPositionToGraph(gameSave.LevelStatesByBuildIndex[buildIndex].Graph, _testPos.position, _wallMask, out vertexA, out vertexB, out progress))
+        if (gameSave == null || !SimulationManager.ConvertPositionToGraph(gameSave.LevelStatesByBuildIndex[buildIndex].Graph, _testPos.position, _wallMask, out vertexA, out vertexB, out progress))
         {
             return;
         }

@@ -33,8 +33,9 @@ public class CharactersSettingsEditor : Editor
         _settings = new ReorderableList(serializedObject, serializedObject.FindProperty("Settings"), false, true, true, true);
         
         _invalidStyle.normal.textColor = Color.red;
+        _invalidStyle.fontSize = 20;
         _invalidStyle.wordWrap = true;
-        _invalidStyle.fontSize = 16;
+        _invalidStyle.fontStyle = FontStyle.Bold;
 
         _originalTextColor = GUI.color;
         _originalBackgroundColor = GUI.backgroundColor;
@@ -95,8 +96,9 @@ public class CharactersSettingsEditor : Editor
             if (!_charactersSettings.SettingsFolded[index])
             {
                 // Field for the prefab
-                GUI.color = (!prefab.objectReferenceValue || !((GameObject)prefab.objectReferenceValue).GetComponent<BehaviorTree>()) ? Color.red : _originalTextColor;
-                GUI.backgroundColor = (!prefab.objectReferenceValue || !((GameObject)prefab.objectReferenceValue).GetComponent<BehaviorTree>()) ? Color.red : _originalBackgroundColor;
+                bool valid = prefab.objectReferenceValue && ((GameObject)prefab.objectReferenceValue).GetComponent<BehaviorTree>();
+                GUI.color = !valid ? Color.red : _originalTextColor;
+                GUI.backgroundColor = !valid ? Color.red : _originalBackgroundColor;
                 EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab"));
                 EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), prefab, GUIContent.none);
                 GUI.color = Color.white;

@@ -277,7 +277,7 @@ MonoBehaviour:
   CharactersFolded: 0000
   _characters:
   - Vertex: 4
-    Settings: 1
+    Settings: 0
   - Vertex: 24
-    Settings: 3
+    Settings: 0
   _initialized: 1
