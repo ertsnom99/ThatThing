@@ -31,9 +31,10 @@ public class LevelStateEditorWindow : EditorWindow
     private bool _creatingVertexWithClick = false;
     private bool _displayIds = true;
     private int _selectedVertex = -1;
-    private bool _showEdges = true;
+    private bool _foldEdges = true;
     private LayerMask _edgeClickMask;
     private bool _creatingEdgeWithClick = false;
+    private bool _displayEdges = true;
     private int _selectedPopupVertexA = 0;
     private int _selectedPopupVertexB = 0;
     private int _clickedVertexA = -1;
@@ -177,7 +178,7 @@ public class LevelStateEditorWindow : EditorWindow
             GUILayout.EndHorizontal();
             EditorGUILayout.Space(15);
 
-            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, false, false, GUILayout.Width(position.width), GUILayout.Height(position.height - 85));
+            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, false, false, GUILayout.Width(position.width), GUILayout.Height(position.height - 120));
 
             EditorGUI.BeginChangeCheck();
 
@@ -296,7 +297,7 @@ public class LevelStateEditorWindow : EditorWindow
         GUI.enabled = true;
 
         GUILayout.BeginHorizontal();
-        GUILayout.Label("Display Id");
+        GUILayout.Label("Display Ids");
         _displayIds = EditorGUILayout.Toggle(_displayIds, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
         GUILayout.EndHorizontal();
     }
@@ -324,12 +325,12 @@ public class LevelStateEditorWindow : EditorWindow
     {
         GUILayout.BeginHorizontal();
         GUI.enabled = true;
-        _showEdges = EditorGUILayout.Foldout(_showEdges, "Edges");
+        _foldEdges = !EditorGUILayout.Foldout(!_foldEdges, "Edges");
         GUI.enabled = false;
         EditorGUILayout.IntField(_edges.count, GUILayout.Width(50.0f));
         GUILayout.EndHorizontal();
-
-        if (_showEdges)
+        
+        if (!_foldEdges)
         {
             EditorGUILayout.Space(5);
 
@@ -407,6 +408,13 @@ public class LevelStateEditorWindow : EditorWindow
                 _edges.index = -1;
             }
         }
+
+        GUI.enabled = true;
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Display Edges");
+        _displayEdges = EditorGUILayout.Toggle(_displayEdges, GUILayout.Width(EditorGUIUtility.currentViewWidth * .75f));
+        GUILayout.EndHorizontal();
     }
 
     // Add the correct callbacks for the _edges ReorderableList
@@ -418,7 +426,6 @@ public class LevelStateEditorWindow : EditorWindow
             SerializedProperty id = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
             SerializedProperty vertexA = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("VertexA");
             SerializedProperty vertexB = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("VertexB");
-            SerializedProperty cost = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Cost");
             SerializedProperty traversable = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Traversable");
             SerializedProperty type = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Type");
 
@@ -426,7 +433,7 @@ public class LevelStateEditorWindow : EditorWindow
             {
                 string vertexAId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexA.intValue).FindPropertyRelative("Id").intValue.ToString();
                 string vertexBId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexB.intValue).FindPropertyRelative("Id").intValue.ToString();
-                string vertexAToVertexB = "Vertex " + vertexAId + " to vertex " + vertexAId;
+                string vertexAToVertexB = "Vertex " + vertexAId + " to vertex " + vertexBId;
 
                 EditorGUI.BeginChangeCheck();
 
@@ -441,12 +448,10 @@ public class LevelStateEditorWindow : EditorWindow
 
                 if (!_editorSettings.CurrentLevelState.EdgesFolded[index])
                 {
-                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Cost"));
-                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), cost, GUIContent.none);
-                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
-                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
-                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Type"));
-                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), type, GUIContent.none);
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
+                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Type"));
+                    EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), type, GUIContent.none);
                 }
             }
         };
@@ -457,7 +462,7 @@ public class LevelStateEditorWindow : EditorWindow
 
             if (!_editorSettings.CurrentLevelState.EdgesFolded[index])
             {
-                height += EditorGUIUtility.singleLineHeight * 4.0f;
+                height += EditorGUIUtility.singleLineHeight * 3.0f;
             }
             else
             {
@@ -685,7 +690,7 @@ public class LevelStateEditorWindow : EditorWindow
         }
 
         // Draw edge debugs
-        if (_edges != null)
+        if (_edges != null && _displayEdges)
         {
             Edge[] edges = _editorSettings.CurrentLevelState.GetEdgesCopy();
 
@@ -841,7 +846,7 @@ public class LevelStateEditorWindow : EditorWindow
             if (_creatingVertexWithClick && foundPosition)
             {
                 _editorSettings.CurrentLevelState.AddVertex(worldPosition + _addedOffset);
-
+                
                 // Most be set dirty because the changes where made directly inside the ScriptableObject
                 EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
             }

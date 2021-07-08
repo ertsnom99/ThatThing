@@ -97,7 +97,7 @@ public class SimulationSettingsEditorWindow : EditorWindow
             EditorGUILayout.Space(15.0f);
 
             GUI.enabled = false;
-            EditorGUILayout.TextArea("SimulationSettings are invalid (null fields, CharactersSettings not valid, InitialGameState not valid or SimplifiedAIPrefab doesn't have a BehaviorTree component)", _invalidStyle);
+            EditorGUILayout.TextArea("SimulationSettings are invalid (null fields, CharactersSettings not valid, InitialGameState not valid or SimplifiedAIPrefab doesn't have a BehaviorTree component or SImplifiedMovement component)", _invalidStyle);
             GUI.enabled = true;
         }
     }
@@ -132,7 +132,7 @@ public class SimulationSettingsEditorWindow : EditorWindow
         GUI.backgroundColor = _originalBackgroundColor;
 
         // SimplifiedAIPrefab
-        bool validSimplifiedAIPrefab = simplifiedAIPrefab.objectReferenceValue && ((GameObject)simplifiedAIPrefab.objectReferenceValue).GetComponent<BehaviorTree>();
+        bool validSimplifiedAIPrefab = simplifiedAIPrefab.objectReferenceValue && ((GameObject)simplifiedAIPrefab.objectReferenceValue).GetComponent<BehaviorTree>() && ((GameObject)simplifiedAIPrefab.objectReferenceValue).GetComponent<SimplifiedCharacterMovement>();
         GUI.color = !validSimplifiedAIPrefab ? Color.red : _originalTextColor;
         GUI.backgroundColor = !validSimplifiedAIPrefab ? Color.red : _originalBackgroundColor;
         EditorGUILayout.PropertyField(simplifiedAIPrefab);

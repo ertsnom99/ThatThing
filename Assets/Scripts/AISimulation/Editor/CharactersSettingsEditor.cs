@@ -64,7 +64,7 @@ public class CharactersSettingsEditor : Editor
         if (!_charactersSettings.IsValid())
         {
             GUI.enabled = false;
-            EditorGUILayout.TextArea("CharactersSettings is invalid (empty names, prefabs without BehaviorTree component or null fields)", _invalidStyle);
+            EditorGUILayout.TextArea("CharactersSettings is invalid (empty names, prefabs without BehaviorTree component and CharacterMovement component or null fields)", _invalidStyle);
             GUI.enabled = true;
         }
     }
@@ -81,9 +81,16 @@ public class CharactersSettingsEditor : Editor
             // Get the properties
             SerializedProperty folded = serializedObject.FindProperty("SettingsFolded").GetArrayElementAtIndex(index);
             SerializedProperty name = settings.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_name");
-            SerializedProperty prefab = settings.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_prefab");
+            SerializedProperty prefabPro = settings.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_prefab");
+            SerializedProperty maxWalkSpeed = settings.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_maxWalkSpeed");
             SerializedProperty prefabBehavior = settings.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_prefabBehavior");
             SerializedProperty simplifiedBehavior = settings.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_simplifiedBehavior");
+
+            // Max walk speed can't be smaller then 0
+            if (maxWalkSpeed.floatValue < 0)
+            {
+                maxWalkSpeed.floatValue = 0;
+            }
 
             // Field for fold and name
             folded.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), !folded.boolValue, "Name");
@@ -96,27 +103,32 @@ public class CharactersSettingsEditor : Editor
             if (!_charactersSettings.SettingsFolded[index])
             {
                 // Field for the prefab
-                bool valid = prefab.objectReferenceValue && ((GameObject)prefab.objectReferenceValue).GetComponent<BehaviorTree>();
+                GameObject prefab = (GameObject)prefabPro.objectReferenceValue;
+                bool valid = prefabPro.objectReferenceValue && prefab.GetComponent<BehaviorTree>() && prefab.GetComponent<CharacterMovement>();
                 GUI.color = !valid ? Color.red : _originalTextColor;
                 GUI.backgroundColor = !valid ? Color.red : _originalBackgroundColor;
                 EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), prefab, GUIContent.none);
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), prefabPro, GUIContent.none);
                 GUI.color = Color.white;
                 GUI.backgroundColor = _originalBackgroundColor;
-                
+
+                // Field for the max walk speed
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Max Walk Speed"));
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), maxWalkSpeed, GUIContent.none);
+
                 // Field for the prefab behavior
                 GUI.color = !prefabBehavior.objectReferenceValue ? Color.red : _originalTextColor;
                 GUI.backgroundColor = !prefabBehavior.objectReferenceValue ? Color.red : _originalBackgroundColor;
-                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab Behavior"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), prefabBehavior, GUIContent.none);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab Behavior"));
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), prefabBehavior, GUIContent.none);
                 GUI.color = Color.white;
                 GUI.backgroundColor = _originalBackgroundColor;
 
                 // Field for the simplified behavior
                 GUI.color = !simplifiedBehavior.objectReferenceValue ? Color.red : _originalTextColor;
                 GUI.backgroundColor = !simplifiedBehavior.objectReferenceValue ? Color.red : _originalBackgroundColor;
-                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Simplified Behavior"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), simplifiedBehavior, GUIContent.none);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (4.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Simplified Behavior"));
+                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (4.0f + _reorderableListElementSpaceRatio), rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), simplifiedBehavior, GUIContent.none);
                 GUI.color = Color.white;
                 GUI.backgroundColor = _originalBackgroundColor;
             }
@@ -144,7 +156,7 @@ public class CharactersSettingsEditor : Editor
 
             if (!_charactersSettings.SettingsFolded[index])
             {
-                height += EditorGUIUtility.singleLineHeight * 4.0f;
+                height += EditorGUIUtility.singleLineHeight * 5.0f;
             }
             else
             {

@@ -4,41 +4,6 @@ using UnityEditor;
 using UnityEngine;
 
 [Serializable]
-public struct Vertex
-{
-    public int Id;
-    public Vector3 Position;
-}
-
-public enum EdgeType { Corridor, Door, Vent };
-
-[Serializable]
-public struct Edge
-{
-    public int Id;
-    // Index of VertexA in LevelGraph.Vertices
-    public int VertexA;
-    // Index of VertexB in LevelGraph.Vertices
-    public int VertexB;
-    public int Cost;
-    public bool Traversable;
-    public EdgeType Type;
-}
-
-[Serializable]
-public struct LevelGraph
-{
-    public Vertex[] Vertices;
-    public Edge[] Edges;
-
-    public LevelGraph(Vertex[] vertices, Edge[] edges)
-    {
-        Vertices = vertices;
-        Edges = edges;
-    }
-}
-
-[Serializable]
 public struct LevelStateCharacter
 {
     // Index of the vertex
@@ -210,7 +175,6 @@ public class LevelState : ScriptableObject
         newEdge.Id = GenerateUniqueEdgeId();
         newEdge.VertexA = vertexA;
         newEdge.VertexB = vertexB;
-        newEdge.Cost = 1;
         newEdge.Traversable = true;
 
         List<Edge> tempEdges = new List<Edge>(_graph.Edges);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
-public struct CharacterSave
+public class CharacterState
 {
     public int CurrentVertex;
     public int NextVertex;
@@ -12,7 +12,7 @@ public struct CharacterSave
     public Vector3 Rotation;
     public int Settings;
 
-    public CharacterSave(int currentVertex, int nextVertex, float progress, Vector3 position, Vector3 rotation, int settings)
+    public CharacterState(int currentVertex, int nextVertex, float progress, Vector3 position, Vector3 rotation, int settings)
     {
         CurrentVertex = currentVertex;
         NextVertex = nextVertex;
@@ -27,12 +27,12 @@ public struct CharacterSave
 public struct LevelStateSave
 {
     public LevelGraph Graph;
-    public List<CharacterSave> CharacterSaves;
+    public List<CharacterState> CharacterSaves;
 
-    public LevelStateSave(LevelGraph graph, CharacterSave[] characters)
+    public LevelStateSave(LevelGraph graph, CharacterState[] characters)
     {
         Graph = graph;
-        CharacterSaves = new List<CharacterSave>(characters);
+        CharacterSaves = new List<CharacterState>(characters);
     }
 }
 
@@ -58,7 +58,7 @@ public class GameSave
         Vertex[] vertices;
         Edge[] edges;
         LevelStateCharacter[] levelStateCharacters;
-        CharacterSave[] characterSaves;
+        CharacterState[] characterSaves;
         LevelGraph graph;
         LevelStateSave levelState;
 
@@ -70,11 +70,11 @@ public class GameSave
             levelStateCharacters = levelStateByBuildIndex.LevelState.GetCharacters();
 
             // Convert levelStateCharacters to characterSaves
-            characterSaves = new CharacterSave[levelStateCharacters.Length];
+            characterSaves = new CharacterState[levelStateCharacters.Length];
 
             for (int i = 0; i < levelStateCharacters.Length; i++)
             {
-                characterSaves[i] = new CharacterSave(levelStateCharacters[i].Vertex,
+                characterSaves[i] = new CharacterState(levelStateCharacters[i].Vertex,
                                                       -1,
                                                       .0f,
                                                       vertices[levelStateCharacters[i].Vertex].Position,

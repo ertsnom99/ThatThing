@@ -76,199 +76,166 @@ MonoBehaviour:
     - Id: 0
       VertexA: 0
       VertexB: 1
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 1
       VertexA: 1
       VertexB: 2
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 3
       VertexA: 2
       VertexB: 3
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 4
       VertexA: 3
       VertexB: 4
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 5
       VertexA: 3
       VertexB: 5
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 6
       VertexA: 5
       VertexB: 6
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 7
       VertexA: 6
       VertexB: 7
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 8
       VertexA: 7
       VertexB: 8
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 9
       VertexA: 8
       VertexB: 9
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 10
       VertexA: 10
       VertexB: 9
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 11
       VertexA: 10
       VertexB: 11
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 12
       VertexA: 11
       VertexB: 12
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 13
       VertexA: 12
       VertexB: 13
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 14
       VertexA: 10
       VertexB: 13
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 15
       VertexA: 13
       VertexB: 14
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 16
       VertexA: 14
       VertexB: 15
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 17
       VertexA: 15
       VertexB: 1
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 18
       VertexA: 15
       VertexB: 20
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 20
       VertexA: 21
       VertexB: 19
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 21
       VertexA: 19
       VertexB: 17
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 22
       VertexA: 17
       VertexB: 18
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 23
       VertexA: 5
       VertexB: 17
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 24
       VertexA: 23
       VertexB: 20
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 25
       VertexA: 23
       VertexB: 21
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 26
       VertexA: 23
       VertexB: 22
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 27
       VertexA: 22
       VertexB: 24
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 28
       VertexA: 24
       VertexB: 25
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 29
       VertexA: 25
       VertexB: 9
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 30
       VertexA: 8
       VertexB: 26
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 31
       VertexA: 7
       VertexB: 16
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 34
       VertexA: 27
       VertexB: 9
-      Cost: 1
       Traversable: 1
       Type: 2
     - Id: 35
       VertexA: 4
       VertexB: 28
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 36
       VertexA: 16
       VertexB: 28
-      Cost: 1
       Traversable: 1
       Type: 0
   VertexIdCount: 55

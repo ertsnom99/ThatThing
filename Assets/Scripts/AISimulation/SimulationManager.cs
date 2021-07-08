@@ -22,6 +22,9 @@ public class SimulationManager : MonoBehaviour
     private static SimulationSettings _simulationSettings;
     private static GameSave _gameSave;
 
+    private const string _levelGraphVariableName = "LevelGraph";
+    private const string _characterStateVariableName = "CharacterState";
+
     private void Awake()
     {
         // Store current scene buildIndex
@@ -38,6 +41,11 @@ public class SimulationManager : MonoBehaviour
 
             _gameSave = new GameSave(_debugGameState);
             _gameSave.PlayerLevel = _buildIndex;
+
+            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+            {
+                levelState.Value.Graph.GenerateAdjMatrix();
+            }
         }
         
         // Search for a valid SimulationSettings
@@ -59,9 +67,14 @@ public class SimulationManager : MonoBehaviour
 
         // Create a GameSave if none exist
         if (_gameSave == null)
-        {
+         {
             _gameSave = new GameSave(_simulationSettings.InitialGameState);
             _gameSave.PlayerLevel = _buildIndex;
+
+            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+            {
+                levelState.Value.Graph.GenerateAdjMatrix();
+            }
         }
 #endif
         UpdateScene();
@@ -78,6 +91,7 @@ public class SimulationManager : MonoBehaviour
     private void CreateAIs()
     {
         GameObject AIContainer;
+        GameObject AI;
 
         List<BehaviorTree> AIs = new List<BehaviorTree>();
         List<BehaviorTree> simplifiedAIs = new List<BehaviorTree>();
@@ -87,14 +101,18 @@ public class SimulationManager : MonoBehaviour
             if (_buildIndex == levelState.Key)
             {
                 // Create AIs
-                foreach(CharacterSave character in levelState.Value.CharacterSaves)
+                foreach(CharacterState character in levelState.Value.CharacterSaves)
                 {
-                    CreateAI(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
+                    AI = CreateAI(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
                              character.Position,
                              Quaternion.Euler(character.Rotation),
                              null,
                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
+                             levelState.Value.Graph,
+                             character,
                              AIs);
+
+                    AI.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
                 }
             }
             else
@@ -103,14 +121,18 @@ public class SimulationManager : MonoBehaviour
                 AIContainer.transform.parent = transform;
 
                 // Create simplified AIs
-                foreach (CharacterSave character in levelState.Value.CharacterSaves)
+                foreach (CharacterState character in levelState.Value.CharacterSaves)
                 {
-                    CreateAI(_simulationSettings.SimplifiedAIPrefab,
+                    AI = CreateAI(_simulationSettings.SimplifiedAIPrefab,
                              Vector3.zero, 
                              Quaternion.identity, 
                              AIContainer.transform,
                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
+                             levelState.Value.Graph,
+                             character, 
                              simplifiedAIs);
+
+                    AI.GetComponent<SimplifiedCharacterMovement>().SetSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
                 }
             }
         }
@@ -119,12 +141,16 @@ public class SimulationManager : MonoBehaviour
         _simplifiedAIs = simplifiedAIs.ToArray();
     }
 
-    private void CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, List<BehaviorTree> behaviorTreeList)
+    private GameObject CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, LevelGraph levelGraph, CharacterState characterState, List<BehaviorTree> behaviorTreeList)
     {
         GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
         BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
         behaviorTree.ExternalBehavior = behavior;
+        behaviorTree.SetVariableValue(_levelGraphVariableName, levelGraph);
+        behaviorTree.SetVariableValue(_characterStateVariableName, characterState);
         behaviorTreeList.Add(behaviorTree);
+
+        return AI;
     }
 
     private void Update()
@@ -269,6 +295,11 @@ public class SimulationManager : MonoBehaviour
     public static void SetGameSave(GameSave gameSave)
     {
         _gameSave = gameSave;
+        
+        foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+        {
+            levelState.Value.Graph.GenerateAdjMatrix();
+        }
     }
 
     public static void LoadGameSave()
@@ -282,6 +313,11 @@ public class SimulationManager : MonoBehaviour
 
             _gameSave = (GameSave)bf.Deserialize(file);
             file.Close();
+            
+            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+            {
+                levelState.Value.Graph.GenerateAdjMatrix();
+            }
 
             return;
         }

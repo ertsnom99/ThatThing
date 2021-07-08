@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 387b15422ee2dfa46bc85f7b7b1d14e3, type: 3}
   m_Name: LevelStateEditorSettings
   m_EditorClassIdentifier: 
-  CurrentLevelState: {fileID: 11400000, guid: 7dc8379434a66064bab2cc8008b37143, type: 2}
+  CurrentLevelState: {fileID: 11400000, guid: 26525f2d091024b4e8d925041c45a4c3, type: 2}
   InvalidStyle:
     m_Name: 
     m_Normal:
@@ -80,10 +80,10 @@ MonoBehaviour:
     m_FixedHeight: 0
     m_StretchWidth: 1
     m_StretchHeight: 0
-  DefaultAddedOffset: {x: 0, y: 0, z: 0}
+  DefaultAddedOffset: {x: 0, y: 0.1, z: 0}
   DefaultClickMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 128
   DebugVertexColor: {r: 0, g: 0, b: 1, a: 0.5}
   DebugSelectedVertexColor: {r: 1, g: 0, b: 0, a: 0.5}
   DebugVertexForEdgeColor: {r: 0, g: 1, b: 0, a: 0.5}

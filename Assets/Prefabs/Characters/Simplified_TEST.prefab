@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5994961159670614292}
   - component: {fileID: 4338236729124629211}
+  - component: {fileID: -4026008028912220307}
   m_Layer: 0
   m_Name: Simplified_TEST
   m_TagString: Untagged
@@ -71,3 +72,15 @@ MonoBehaviour:
       Version: 
   gizmoViewMode: 2
   showBehaviorDesignerGizmo: 1
+--- !u!114 &-4026008028912220307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6787028342017985559}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a00510202f7438745958778c97d3031e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

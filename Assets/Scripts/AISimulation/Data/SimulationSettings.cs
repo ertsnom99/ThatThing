@@ -80,7 +80,7 @@ public class SimulationSettings : ScriptableObject
             return false;
         }
 
-        if (!_simplifiedAIPrefab || !_simplifiedAIPrefab.GetComponent<BehaviorTree>())
+        if (!_simplifiedAIPrefab || !_simplifiedAIPrefab.GetComponent<BehaviorTree>() || !_simplifiedAIPrefab.GetComponent<SimplifiedCharacterMovement>())
         {
             return false;
         }

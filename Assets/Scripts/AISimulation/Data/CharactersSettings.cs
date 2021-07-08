@@ -25,6 +25,15 @@ public struct CharacterSettings
     }
 
     [SerializeField]
+    private float _maxWalkSpeed;
+
+    public float MaxWalkSpeed
+    {
+        get { return _maxWalkSpeed; }
+        private set { _maxWalkSpeed = value; }
+    }
+
+    [SerializeField]
     private ExternalBehavior _prefabBehavior;
 
     public ExternalBehavior PrefabBehavior
@@ -48,7 +57,6 @@ public class CharactersSettings : ScriptableObject
 {
     public CharacterSettings[] Settings;
 
-    //[HideInInspector]
     public List<bool> SettingsFolded;
 
     public bool IsValid()
@@ -60,7 +68,7 @@ public class CharactersSettings : ScriptableObject
                 return false;
             }
 
-            if (!setting.Prefab.GetComponent<BehaviorTree>())
+            if (!setting.Prefab.GetComponent<BehaviorTree>() || !setting.Prefab.GetComponent<CharacterMovement>())
             {
                 return false;
             }
