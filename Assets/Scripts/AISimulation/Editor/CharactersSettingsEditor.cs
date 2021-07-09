@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BehaviorDesigner.Runtime;
 using UnityEditor;
 using UnityEditorInternal;
@@ -14,6 +15,8 @@ public class CharactersSettingsEditor : Editor
     private ReorderableList _settings;
 
     private const int _sectionSpacing = 15;
+
+    private List<string> _settingsNames = new List<string>();
 
     private Color _originalTextColor;
     private Color _originalBackgroundColor;
@@ -52,6 +55,8 @@ public class CharactersSettingsEditor : Editor
 
         EditorGUI.BeginChangeCheck();
 
+        _settingsNames.Clear();
+
         // Add the list of LevelState by build indexes
         HandleSettings(_settings);
         _settings.DoLayoutList();
@@ -64,7 +69,7 @@ public class CharactersSettingsEditor : Editor
         if (!_charactersSettings.IsValid())
         {
             GUI.enabled = false;
-            EditorGUILayout.TextArea("CharactersSettings is invalid (empty names, prefabs without BehaviorTree component and CharacterMovement component or null fields)", _invalidStyle);
+            EditorGUILayout.TextArea("CharactersSettings is invalid (empty names, duplicate names, prefabs without BehaviorTree component and CharacterMovement component or null fields)", _invalidStyle);
             GUI.enabled = true;
         }
     }
@@ -92,9 +97,17 @@ public class CharactersSettingsEditor : Editor
                 maxWalkSpeed.floatValue = 0;
             }
 
+            // Check if the settings name is already used
+            bool settingsNameAlreadyUsed = _settingsNames.Contains(name.stringValue);
+
+            if (!settingsNameAlreadyUsed)
+            {
+                _settingsNames.Add(name.stringValue);
+            }
+
             // Field for fold and name
             folded.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), !folded.boolValue, "Name");
-            GUI.color = name.stringValue == "" ? Color.red : _originalTextColor;
+            GUI.color = name.stringValue == "" || settingsNameAlreadyUsed ? Color.red : _originalTextColor;
             GUI.backgroundColor = name.stringValue == "" ? Color.red : _originalBackgroundColor;
             EditorGUI.PropertyField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * (1.0f - .25f), EditorGUIUtility.singleLineHeight), name, GUIContent.none);
             GUI.color = Color.white;

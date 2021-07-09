@@ -246,7 +246,7 @@ MonoBehaviour:
   - Vertex: 4
     Settings: 0
   - Vertex: 13
-    Settings: 0
+    Settings: 1
   - Vertex: 26
-    Settings: 0
+    Settings: 2
   _initialized: 1

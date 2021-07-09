@@ -61,9 +61,20 @@ public class CharactersSettings : ScriptableObject
 
     public bool IsValid()
     {
+        List<string> _settingsNames = new List<string>();
+
         foreach (CharacterSettings setting in Settings)
         {
             if (setting.Name == "" || setting.Prefab == null || setting.PrefabBehavior == null || setting.SimplifiedBehavior == null)
+            {
+                return false;
+            }
+
+            if (!_settingsNames.Contains(setting.Name))
+            {
+                _settingsNames.Add(setting.Name);
+            }
+            else
             {
                 return false;
             }
