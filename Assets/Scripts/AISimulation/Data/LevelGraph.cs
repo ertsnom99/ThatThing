@@ -29,13 +29,19 @@ public class LevelGraph
     public Vertex[] Vertices;
     public Edge[] Edges;
 
-    [NonSerialized]
-    public float[,] _adjMatrix;
+    private float[,] _adjMatrix;
 
     public float[,] AdjMatrix
     {
         get { return _adjMatrix; }
         private set { _adjMatrix = value; }
+    }
+
+    public LevelGraph()
+    {
+        Vertices = new Vertex[0];
+        Edges = new Edge[0];
+        _adjMatrix = new float[0, 0];
     }
 
     public LevelGraph(Vertex[] vertices, Edge[] edges)

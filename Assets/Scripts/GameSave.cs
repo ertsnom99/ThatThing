@@ -12,6 +12,16 @@ public class CharacterState
     public Vector3 Rotation;
     public int Settings;
 
+    public CharacterState()
+    {
+        CurrentVertex = 0;
+        NextVertex = -1;
+        Progress = 0;
+        Position = Vector3.zero;
+        Rotation = Vector3.zero;
+        Settings = 0;
+    }
+
     public CharacterState(int currentVertex, int nextVertex, float progress, Vector3 position, Vector3 rotation, int settings)
     {
         CurrentVertex = currentVertex;
