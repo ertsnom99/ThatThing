@@ -240,13 +240,15 @@ MonoBehaviour:
       Type: 0
   VertexIdCount: 55
   EdgeIdCount: 48
-  EdgesFolded: 010101010101010101010101010101010101010101010101010101010101010101
-  CharactersFolded: 000000
+  EdgesFolded: 010101010101010101010101010101010101010101010101010101010101000101
+  CharactersFolded: 00000000
   _characters:
   - Vertex: 4
     Settings: 0
-  - Vertex: 13
-    Settings: 1
-  - Vertex: 26
-    Settings: 2
+  - Vertex: 21
+    Settings: 0
+  - Vertex: 27
+    Settings: 0
+  - Vertex: 8
+    Settings: 0
   _initialized: 1
