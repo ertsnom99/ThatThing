@@ -40,72 +40,61 @@ MonoBehaviour:
     - Id: 0
       VertexA: 0
       VertexB: 1
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 1
       VertexA: 1
       VertexB: 2
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 2
       VertexA: 1
       VertexB: 3
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 3
       VertexA: 3
       VertexB: 4
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 4
       VertexA: 4
       VertexB: 5
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 5
       VertexA: 5
       VertexB: 6
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 6
       VertexA: 6
       VertexB: 10
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 7
       VertexA: 6
       VertexB: 7
-      Cost: 1
       Traversable: 1
       Type: 1
     - Id: 8
       VertexA: 7
       VertexB: 9
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 9
       VertexA: 7
       VertexB: 8
-      Cost: 1
       Traversable: 1
       Type: 0
     - Id: 10
       VertexA: 8
       VertexB: 2
-      Cost: 1
       Traversable: 1
       Type: 1
   VertexIdCount: 11
   EdgeIdCount: 11
-  EdgesFolded: 0101010101010101010101
+  EdgesFolded: 0001010101010101010101
   CharactersFolded: 000000
   _characters:
   - Vertex: 2

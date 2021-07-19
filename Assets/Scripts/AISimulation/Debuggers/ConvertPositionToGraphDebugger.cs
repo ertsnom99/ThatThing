@@ -19,7 +19,7 @@ public class ConvertPositionToGraphDebugger : MonoBehaviour
         int vertexB;
         float progress;
 
-        if (gameSave == null || !SimulationManager.ConvertPositionToGraph(gameSave.LevelStatesByBuildIndex[buildIndex].Graph, _testPos.position, _wallMask, out vertexA, out vertexB, out progress))
+        if (gameSave == null || !gameSave.LevelStatesByBuildIndex[buildIndex].Graph.ConvertPositionToGraph(_testPos.position, _wallMask, out vertexA, out vertexB, out progress))
         {
             return;
         }

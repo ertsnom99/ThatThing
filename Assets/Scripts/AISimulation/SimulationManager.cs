@@ -6,14 +6,8 @@ using BehaviorDesigner.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class SimulationManager : MonoBehaviour
+public partial class SimulationManager : MonoBehaviour
 {
-    [Header("Debug")]
-    [SerializeField]
-    private bool _useDebug;
-    [SerializeField]
-    private GameState _debugGameState;
-
     private int _buildIndex = -1;
     private BehaviorTree[] _AIs;
     private BehaviorTree[] _simplifiedAIs;
@@ -30,57 +24,15 @@ public class SimulationManager : MonoBehaviour
         // Store current scene buildIndex
         _buildIndex = SceneManager.GetActiveScene().buildIndex;
 #if UNITY_EDITOR
-        // Use debug
-        if (_useDebug)
-        {
-            if (_debugGameState == null)
-            {
-                Debug.LogError("No debug GameState is set!");
-                return;
-            }
-
-            _gameSave = new GameSave(_debugGameState);
-            _gameSave.PlayerLevel = _buildIndex;
-
-            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
-            {
-                levelState.Value.Graph.GenerateAdjMatrix();
-            }
-        }
-        
-        // Search for a valid SimulationSettings
-        if (!_simulationSettings)
-        {
-            _simulationSettings = SimulationSettings.LoadFromResources();
-
-            if (!_simulationSettings)
-            {
-                Debug.LogError("No SimulationSettings found!");
-                return;
-            }
-            else if (!_simulationSettings.IsValid())
-            {
-                Debug.LogError("The SimulationSettings aren't valid!");
-                return;
-            }
-        }
-
-        // Create a GameSave if none exist
-        if (_gameSave == null)
-         {
-            _gameSave = new GameSave(_simulationSettings.InitialGameState);
-            _gameSave.PlayerLevel = _buildIndex;
-
-            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
-            {
-                levelState.Value.Graph.GenerateAdjMatrix();
-            }
-        }
+        AwakeInUnityEditor();
 #endif
         UpdateScene();
         CreateAIs();
 
         // TODO: Set player (position, rotation, etc.)
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        CreateDebugWindow();
+#endif
     }
 
     private void UpdateScene()
@@ -161,6 +113,9 @@ public class SimulationManager : MonoBehaviour
             return;
         }
 #endif
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        UpdateDebugWindow();
+#endif
         // Update AIs
         foreach (BehaviorTree AI in _AIs)
         {
@@ -179,106 +134,6 @@ public class SimulationManager : MonoBehaviour
                 BehaviorManager.instance.Tick(simplifiedAI);
             }
         }
-    }
-
-    // Takes a world position and finds the closest vertexA, the possible edge it's on (given by vertexB) and the progress on that edge.
-    // Returns true if the conversion was successful. Even if the conversion is successful, vertexB could be -1, if the position
-    // was considered exactly at vertexA. 
-    public static bool ConvertPositionToGraph(LevelGraph graph, Vector3 position, LayerMask blockingMask, out int vertexA, out int vertexB, out float progress)
-    {
-        // Reset variables
-        vertexA = -1;
-        vertexB = -1;
-        progress = .0f;
-
-        int[] indexes = new int[graph.Vertices.Length];
-        float[] distances = new float[graph.Vertices.Length];
-
-        for (int i = 0; i < graph.Vertices.Length; i++)
-        {
-            indexes[i] = i;
-            distances[i] = (position - graph.Vertices[i].Position).magnitude;
-        }
-
-        // Sort all vertices by distance
-        QuickSort.QuickSortAlignedArrays(distances, indexes, 0, distances.Length - 1);
-
-        // Find closest Vertex
-        RaycastHit hit;
-
-        for (int i = 0; i < indexes.Length; i++)
-        {
-            // TODO: Use sphere sweep instead?
-            // Check if a raycast can reach vertex
-            if (!Physics.Raycast(graph.Vertices[indexes[i]].Position, (position - graph.Vertices[indexes[i]].Position).normalized, out hit, distances[i], blockingMask))
-            {
-                vertexA = indexes[i];
-                break;
-            }
-        }
-
-        // The position can't be converted to graph if no vertexA could be found
-        if (vertexA == -1)
-        {
-            return false;
-        }
-
-        int secondVertex;
-        Vector3 vertexToPos;
-        Vector3 vertexAToSecond;
-        Vector3 secondToVertexA;
-        float dotA;
-        float dotB;
-        Vector3 projectedPosition;
-
-        float distanceToPosition;
-        const float infinity = 99999;
-        float smallestDistance = infinity;
-
-        // Find closest edge connected to the first vertexA
-        foreach (Edge edge in graph.Edges)
-        {
-            if (edge.VertexA == vertexA)
-            {
-                secondVertex = edge.VertexB;
-            }
-            else if (edge.VertexB == vertexA)
-            {
-                secondVertex = edge.VertexA;
-            }
-            else
-            {
-                continue;
-            }
-
-            // Find progress along the edge
-            vertexAToSecond = graph.Vertices[secondVertex].Position - graph.Vertices[vertexA].Position;
-            vertexToPos = position - graph.Vertices[vertexA].Position;
-            dotA = Vector3.Dot(vertexAToSecond, vertexToPos);
-
-            secondToVertexA = graph.Vertices[vertexA].Position - graph.Vertices[secondVertex].Position;
-            vertexToPos = position - graph.Vertices[secondVertex].Position;
-            dotB = Vector3.Dot(secondToVertexA, vertexToPos);
-
-            // Check if position is aligned with the edge
-            if (dotA * dotB > .0f)
-            {
-                // Calculate projection directly since we already calculated the dot product
-                projectedPosition = (dotA / vertexAToSecond.sqrMagnitude) * vertexAToSecond;
-
-                // Calculate the distance between the position and the projected position 
-                distanceToPosition = (position - graph.Vertices[vertexA].Position - projectedPosition).sqrMagnitude;
-
-                if (distanceToPosition < smallestDistance)
-                {
-                    vertexB = secondVertex;
-                    progress = projectedPosition.magnitude;
-                    smallestDistance = distanceToPosition;
-                }
-            }
-        }
-
-        return true;
     }
 
     public static void SetSimulationSettings(SimulationSettings simulationSettings)
@@ -365,3 +220,96 @@ public class SimulationManager : MonoBehaviour
     }
     #endregion
 }
+#if UNITY_EDITOR
+public partial class SimulationManager
+{
+    [Header("Debug Game")]
+    [SerializeField]
+    private bool _useDebugGameState;
+    [SerializeField]
+    private GameState _debugGameState;
+
+    private void AwakeInUnityEditor()
+    {
+        // Use debug
+        if (_useDebugGameState)
+        {
+            if (_debugGameState == null)
+            {
+                Debug.LogError("No debug GameState is set!");
+                return;
+            }
+
+            _gameSave = new GameSave(_debugGameState);
+            _gameSave.PlayerLevel = _buildIndex;
+
+            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+            {
+                levelState.Value.Graph.GenerateAdjMatrix();
+            }
+        }
+
+        // Search for a valid SimulationSettings
+        if (!_simulationSettings)
+        {
+            _simulationSettings = SimulationSettings.LoadFromAsset();
+
+            if (!_simulationSettings)
+            {
+                Debug.LogError("No SimulationSettings found!");
+                return;
+            }
+            else if (!_simulationSettings.IsValid())
+            {
+                Debug.LogError("The SimulationSettings aren't valid!");
+                return;
+            }
+        }
+
+        // Create a GameSave if none exist
+        if (_gameSave == null)
+        {
+            _gameSave = new GameSave(_simulationSettings.InitialGameState);
+            _gameSave.PlayerLevel = _buildIndex;
+
+            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+            {
+                levelState.Value.Graph.GenerateAdjMatrix();
+            }
+        }
+    }
+}
+#endif
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+public partial class SimulationManager
+{
+    [Header("Debug Window")]
+    [SerializeField]
+    private GameObject _windowPrefab;
+    [SerializeField]
+    private GameObject _parent;
+    private GameObject _window;
+    [SerializeField]
+    private KeyCode _toggleKey;
+
+    private void CreateDebugWindow()
+    {
+        if (!_windowPrefab || _gameSave == null)
+        {
+            return;
+        }
+
+        _window = Instantiate(_windowPrefab, _parent.transform);
+        _window.GetComponent<DebugWindow>().SetLevelStates(_gameSave.LevelStatesByBuildIndex, _buildIndex);
+    }
+
+    private void UpdateDebugWindow()
+    {
+        // Toggle window
+        if (Input.GetKeyDown(_toggleKey))
+        {
+            _window.SetActive(!_window.activeSelf);
+        }
+    }
+}
+#endif

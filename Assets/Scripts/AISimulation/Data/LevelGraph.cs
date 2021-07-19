@@ -179,4 +179,104 @@ public class LevelGraph
         path = shortestPath.ToArray();
         return true;
     }
+
+    // Takes a world position and finds the closest vertexA, the possible edge it's on (given by vertexB) and the progress on that edge.
+    // Returns true if the conversion was successful. Even if the conversion is successful, vertexB could be -1, if the position
+    // was considered exactly at vertexA. 
+    public bool ConvertPositionToGraph(Vector3 position, LayerMask blockingMask, out int vertexA, out int vertexB, out float progress)
+    {
+        // Reset variables
+        vertexA = -1;
+        vertexB = -1;
+        progress = .0f;
+
+        int[] indexes = new int[Vertices.Length];
+        float[] distances = new float[Vertices.Length];
+
+        for (int i = 0; i < Vertices.Length; i++)
+        {
+            indexes[i] = i;
+            distances[i] = (position - Vertices[i].Position).magnitude;
+        }
+
+        // Sort all vertices by distance
+        QuickSort.QuickSortAlignedArrays(distances, indexes, 0, distances.Length - 1);
+
+        // Find closest Vertex
+        RaycastHit hit;
+
+        for (int i = 0; i < indexes.Length; i++)
+        {
+            // TODO: Use sphere sweep instead?
+            // Check if a raycast can reach vertex
+            if (!Physics.Raycast(Vertices[indexes[i]].Position, (position - Vertices[indexes[i]].Position).normalized, out hit, distances[i], blockingMask))
+            {
+                vertexA = indexes[i];
+                break;
+            }
+        }
+
+        // The position can't be converted to graph if no vertexA could be found
+        if (vertexA == -1)
+        {
+            return false;
+        }
+
+        int secondVertex;
+        Vector3 vertexToPos;
+        Vector3 vertexAToSecond;
+        Vector3 secondToVertexA;
+        float dotA;
+        float dotB;
+        Vector3 projectedPosition;
+
+        float distanceToPosition;
+        const float infinity = 99999;
+        float smallestDistance = infinity;
+
+        // Find closest edge connected to the first vertexA
+        foreach (Edge edge in Edges)
+        {
+            if (edge.VertexA == vertexA)
+            {
+                secondVertex = edge.VertexB;
+            }
+            else if (edge.VertexB == vertexA)
+            {
+                secondVertex = edge.VertexA;
+            }
+            else
+            {
+                continue;
+            }
+
+            // Find progress along the edge
+            vertexAToSecond = Vertices[secondVertex].Position - Vertices[vertexA].Position;
+            vertexToPos = position - Vertices[vertexA].Position;
+            dotA = Vector3.Dot(vertexAToSecond, vertexToPos);
+
+            secondToVertexA = Vertices[vertexA].Position - Vertices[secondVertex].Position;
+            vertexToPos = position - Vertices[secondVertex].Position;
+            dotB = Vector3.Dot(secondToVertexA, vertexToPos);
+
+            // Check if position is aligned with the edge
+            if (dotA * dotB > .0f)
+            {
+                // Calculate projection directly since we already calculated the dot product
+                projectedPosition = (dotA / vertexAToSecond.sqrMagnitude) * vertexAToSecond;
+
+                // Calculate the distance between the position and the projected position 
+                distanceToPosition = (position - Vertices[vertexA].Position - projectedPosition).sqrMagnitude;
+
+                if (distanceToPosition < smallestDistance)
+                {
+                    vertexB = secondVertex;
+                    progress = projectedPosition.magnitude;
+                    smallestDistance = distanceToPosition;
+                }
+            }
+        }
+
+        return true;
+    }
 }
