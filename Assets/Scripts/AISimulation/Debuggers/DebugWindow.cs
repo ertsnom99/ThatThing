@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,7 +17,7 @@ public class DebugWindow : MonoBehaviour
 
     // Should always be powers of 2
     [SerializeField]
-    private Vector2 _renderTextureSize = new Vector2(256.0f, 128.0f);
+    private Vector2 _renderTextureSize = new Vector2(512.0f, 256.0f);
 
     private Dictionary<int, LevelStateSave> _levelStatesByBuildIndex = new Dictionary<int, LevelStateSave>();
 
@@ -27,6 +28,7 @@ public class DebugWindow : MonoBehaviour
 
     [SerializeField]
     private RawImage _levelRenderer;
+    private RectTransform _levelRendererTransform;
 
     [SerializeField]
     private GameObject _vertexPrefab;
@@ -46,10 +48,17 @@ public class DebugWindow : MonoBehaviour
     [SerializeField]
     private Vector3 _levelGraphOffset = new Vector3(0, -1000, 0);
 
+    [SerializeField]
+    private GameObject _characterPrefab;
+
+    private Dictionary<CharacterState, GameObject> _characters = new Dictionary<CharacterState, GameObject>();
+
+    [SerializeField]
+    private Vector3 _characterPositionOffset = new Vector3(0, 1.0f, 0);
+
     private bool _dragging = false;
     private bool _overImage = false;
-
-    private const float _targetDistance = 20.0f;
+    private bool _clicked = false;
 
     [SerializeField]
     private float _zoomCameraStrength = 1.0f;
@@ -57,6 +66,10 @@ public class DebugWindow : MonoBehaviour
     private float _moveCameraSpeed = 2.0f;
     [SerializeField]
     private float _rotateCameraSpeed = 2.0f;
+
+    private const float _centerTargetDistance = 20.0f;
+    private float _targetDistance = _centerTargetDistance;
+    private bool _focusing = false;
 
     private void Awake()
     {
@@ -72,6 +85,18 @@ public class DebugWindow : MonoBehaviour
         _renderTexture = new RenderTexture((int)_renderTextureSize.x, (int)_renderTextureSize.y, 16, RenderTextureFormat.RGB565);
         _camera.targetTexture = _renderTexture;
         _camera.aspect = _renderTextureSize.x / _renderTextureSize.y;
+
+        _levelRendererTransform = _levelRenderer.transform as RectTransform;
+        DebugWindowLevelRenderer debugWindowLevelRenderer = _levelRenderer.GetComponent<DebugWindowLevelRenderer>();
+
+        if (debugWindowLevelRenderer)
+        {
+            debugWindowLevelRenderer._onBeginDragDelegate = OnBeginDrag;
+            debugWindowLevelRenderer._onEndDragDelegate = OnEndDrag;
+            debugWindowLevelRenderer._onPointerEnterDelegate = OnPointerEnter;
+            debugWindowLevelRenderer._onPointerExitDelegate = OnPointerExit;
+            debugWindowLevelRenderer._onPointerLeftClickDelegate = OnPointerLeftClick;
+        }
 
         // Display the render texture
         _levelRenderer.texture = _renderTexture;
@@ -125,6 +150,7 @@ public class DebugWindow : MonoBehaviour
 
     private void CreateLevelGraph()
     {
+        // Create vertices
         _vertices = new GameObject[_levelStatesByBuildIndex[_selectedLevel].Graph.Vertices.Length];
 
         for (int i = 0; i < _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices.Length; i++)
@@ -132,8 +158,10 @@ public class DebugWindow : MonoBehaviour
             _vertices[i] = Instantiate(_vertexPrefab, _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[i].Position + _levelGraphContainer.transform.position, Quaternion.identity, _levelGraphContainer.transform);
         }
 
+        // Create edges
         _edges = new GameObject[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length];
         _lineRenderers = new LineRenderer[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length];
+        
         Vector3 roomAPosition;
         Vector3 roomBPosition;
 
@@ -152,6 +180,21 @@ public class DebugWindow : MonoBehaviour
         }
 
         CenterCamera();
+
+        // Create characters
+        Vector3 characterPosition;
+
+        for (int i = 0; i < _levelStatesByBuildIndex[_selectedLevel].CharacterSaves.Count; i++)
+        {
+            characterPosition = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset;
+            CreateCharacter(_levelStatesByBuildIndex[_selectedLevel].CharacterSaves[i], characterPosition);
+        }
+    }
+
+    private void CreateCharacter(CharacterState characterState, Vector3 characterPosition)
+    {
+        _characters.Add(characterState, Instantiate(_characterPrefab, characterPosition, Quaternion.identity, _levelGraphContainer.transform));
+        _characters[characterState].transform.LookAt(characterPosition - _camera.transform.forward);
     }
 
     private void DeleteLevelGraph()
@@ -176,6 +219,16 @@ public class DebugWindow : MonoBehaviour
             _edges = null;
             _lineRenderers = null;
         }
+
+        if (_characters != null)
+        {
+            foreach (KeyValuePair<CharacterState, GameObject> entry in _characters)
+            {
+                Destroy(entry.Value);
+            }
+
+            _characters.Clear();
+        }
     }
 
     private void Update()
@@ -186,6 +239,32 @@ public class DebugWindow : MonoBehaviour
             for (int i = 0; i < _edges.Length; i++)
             {
                 _lineRenderers[i].material = _levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].Traversable ? _traversableEdge : _notTraversableEdge;
+            }
+        }
+
+        // Update characters
+        if (_characters != null && _selectedLevel > -1)
+        {
+            //--------HACK: NOT TESTED YET----------------------------
+            // Check if any character might have exited or entered the level
+            CharacterState[] characterExited = _characters.Keys.ToList().Except(_levelStatesByBuildIndex[_selectedLevel].CharacterSaves).ToArray();
+            CharacterState[] characterEntered = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves.Except(_characters.Keys.ToList()).ToArray();
+
+            for (int i = 0; i < characterExited.Length; i++)
+            {
+                Destroy(_characters[characterExited[i]]);
+                _characters.Remove(characterExited[i]);
+            }
+
+            for (int i = 0; i < characterEntered.Length; i++)
+            {
+                CreateCharacter(characterEntered[i], characterEntered[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset);
+            }
+            //--------------------------------------------------------
+            foreach (KeyValuePair<CharacterState, GameObject> entry in _characters)
+            {
+                entry.Value.transform.position = entry.Key.Position + _levelGraphContainer.transform.position + _characterPositionOffset;
+                entry.Value.transform.LookAt(entry.Value.transform.position - _camera.transform.forward);
             }
         }
 
@@ -229,6 +308,29 @@ public class DebugWindow : MonoBehaviour
                 MoveCamera(movement);
             }
         }
+
+        // Detect if character was selected
+        if (_clicked)
+        {
+            Vector2 positionOnRenderer;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(_levelRendererTransform, Input.mousePosition, null, out positionOnRenderer);
+            // Fix the position to fit with the coordinate system of the camera
+            positionOnRenderer += _levelRendererTransform.pivot * _levelRendererTransform.rect.size;
+
+            RaycastHit hit;
+            Ray ray = _camera.ScreenPointToRay((positionOnRenderer / _levelRendererTransform.rect.size) * _renderTextureSize);
+            
+            if (Physics.Raycast(ray, out hit, _cullingMask))
+            {
+                // TODO: Display useful information about the character
+                Debug.Log(hit.transform.gameObject.name);
+            }
+        }
+    }
+
+    private void LateUpdate()
+    {
+        _clicked = false;
     }
 
     #region Event Trigger
@@ -251,6 +353,11 @@ public class DebugWindow : MonoBehaviour
     {
         _overImage = false;
     }
+
+    public void OnPointerLeftClick()
+    {
+        _clicked = true;
+    }
     #endregion
 
     #region Cemera Methods
@@ -264,38 +371,72 @@ public class DebugWindow : MonoBehaviour
         }
 
         averagePosition /= _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices.Length;
-        PlaceCameraAtTargetDistance(averagePosition);
+        PlaceCameraAtDistance(averagePosition, _centerTargetDistance);
+
+        _focusing = true;
+        _targetDistance = _centerTargetDistance;
     }
 
-    private void PlaceCameraAtTargetDistance(Vector3 target)
+    private void PlaceCameraAtDistance(Vector3 target, float distance)
     {
-        _camera.transform.position = target - _camera.transform.forward * _targetDistance;
+        _camera.transform.position = target - _camera.transform.forward * distance;
     }
 
     private void ZoomCamera(float zoom)
     {
-        _camera.transform.position -= _camera.transform.TransformDirection(Vector3.forward) * zoom * _zoomCameraStrength;
+        Vector3 target = _camera.transform.position + _camera.transform.forward * _targetDistance;
+
+        _camera.transform.position -= _camera.transform.forward * zoom * _zoomCameraStrength;
+
+        // When focusing, the target distance must be adjusted to still rotate around the focus point
+        if (_focusing)
+        {
+            Vector3 cameraToTarget = target - _camera.transform.position;
+
+            if (Vector3.Dot(_camera.transform.forward, cameraToTarget) < 0)
+            {
+                _focusing = false;
+                _targetDistance = _centerTargetDistance;
+            }
+            else
+            {
+                _targetDistance = cameraToTarget.magnitude;
+                Debug.Log(_targetDistance);
+            }
+        }
     }
 
     private void RotateCameraAroundTarget(Vector3 mouseMovement)
     {
         Vector3 target = _camera.transform.position + _camera.transform.forward * _targetDistance;
 
-        RotateCamera(mouseMovement);
-        PlaceCameraAtTargetDistance(target);
+        RotateCamera(mouseMovement, false);
+        PlaceCameraAtDistance(target, _targetDistance);
     }
 
     private void MoveCamera(Vector3 mouseMovement)
     {
         _camera.transform.position -= _camera.transform.TransformDirection(mouseMovement) * _moveCameraSpeed;
+
+        if (_focusing)
+        {
+            _focusing = false;
+            _targetDistance = _centerTargetDistance;
+        }
     }
 
-    private void RotateCamera(Vector3 mouseMovement)
+    private void RotateCamera(Vector3 mouseMovement, bool looseFocus = true)
     {
         _pitch -= mouseMovement.y * _rotateCameraSpeed;
         _yaw += mouseMovement.x * _rotateCameraSpeed;
         
         _camera.transform.localEulerAngles = Vector3.right * _pitch + Vector3.up * _yaw;
+
+        if (_focusing && looseFocus)
+        {
+            _focusing = false;
+            _targetDistance = _centerTargetDistance;
+        }
     }
     #endregion
 }

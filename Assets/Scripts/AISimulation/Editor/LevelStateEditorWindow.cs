@@ -762,18 +762,32 @@ public class LevelStateEditorWindow : EditorWindow
                 }
             }
 
+            Vector3 iconOffset = Camera.current.transform.right * _editorSettings.IconOffset.x;
+            iconOffset += Camera.current.transform.up * _editorSettings.IconOffset.y;
+            iconOffset += Camera.current.transform.forward * _editorSettings.IconOffset.z;
+
+            Vector3 characterCounterOffset = Camera.current.transform.right * _editorSettings.CharacterCounterOffset.x;
+            characterCounterOffset += Camera.current.transform.up * _editorSettings.CharacterCounterOffset.y;
+            characterCounterOffset += Camera.current.transform.forward * _editorSettings.CharacterCounterOffset.z;
+
+            Vector3 cameraToIcon;
+            float distanceToIcon;
+
             foreach (KeyValuePair<int, int> vertex in characterCountByVertex)
             {
+                cameraToIcon = vertices[vertex.Key].Position - Camera.current.transform.position;
+                distanceToIcon = Vector3.Project(cameraToIcon, Camera.current.transform.forward).magnitude;
+
                 if (selectedCharacterVertex != vertex.Key)
                 {
-                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, _editorSettings.CharacterIcon);
+                    Handles.Label(vertices[vertex.Key].Position + iconOffset * (distanceToIcon / _editorSettings.FullOffsetDistance), _editorSettings.CharacterIcon);
                 }
                 else
                 {
-                    Handles.Label(vertices[vertex.Key].Position + Vector3.up * 2.0f, _editorSettings.SelectedCharacterIcon);
+                    Handles.Label(vertices[vertex.Key].Position + iconOffset * (distanceToIcon / _editorSettings.FullOffsetDistance), _editorSettings.SelectedCharacterIcon);
                 }
 
-                Handles.Label(vertices[vertex.Key].Position + Vector3.up * 1.0f, "X" + vertex.Value.ToString(), _editorSettings.CharacterCounterStyle);
+                Handles.Label(vertices[vertex.Key].Position + characterCounterOffset * (distanceToIcon / _editorSettings.FullOffsetDistance), "X" + vertex.Value.ToString(), _editorSettings.CharacterCounterStyle);
             }
         }
     }

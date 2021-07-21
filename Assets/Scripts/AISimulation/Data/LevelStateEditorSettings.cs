@@ -31,6 +31,9 @@ public class LevelStateEditorSettings : ScriptableObject
     [Header("Characters Debug")]
     public Texture CharacterIcon;
     public Texture SelectedCharacterIcon;
+    public float FullOffsetDistance = 20.0f;
+    public Vector3 IconOffset = new Vector3(-0.75f, 2.5f, .0f);
+    public Vector3 CharacterCounterOffset = new Vector3(-0.2f, 1.4f, .0f);
     public GUIStyle CharacterCounterStyle = new GUIStyle();
 
     [Header("GUI Debug")]

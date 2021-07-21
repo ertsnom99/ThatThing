@@ -162,6 +162,9 @@ MonoBehaviour:
     m_StretchHeight: 0
   CharacterIcon: {fileID: 2800000, guid: dff036b0e96332843ba56876fac70b0c, type: 3}
   SelectedCharacterIcon: {fileID: 2800000, guid: c12cb1c3355251749b3ca819fe21263e, type: 3}
+  FullOffsetDistance: 20
+  IconOffset: {x: -0.75, y: 2.5, z: 0}
+  CharacterCounterOffset: {x: -0.61, y: 1.4, z: 0}
   CharacterCounterStyle:
     m_Name: 
     m_Normal:
@@ -217,7 +220,7 @@ MonoBehaviour:
       m_Top: 0
       m_Bottom: 0
     m_Font: {fileID: 0}
-    m_FontSize: 0
+    m_FontSize: 23
     m_FontStyle: 0
     m_Alignment: 0
     m_WordWrap: 0
