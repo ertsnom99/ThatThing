@@ -2,6 +2,10 @@ using System.IO;
 using BehaviorDesigner.Runtime;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+#endif
 
 public class SimulationSettings : ScriptableObject
 {
@@ -93,3 +97,24 @@ public class SimulationSettings : ScriptableObject
         return true;
     }
 }
+
+#if UNITY_EDITOR
+public class SimulationSettingsBuildProcessor : IPreprocessBuildWithReport
+{
+    public int callbackOrder { get { return 0; } }
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        SimulationSettings simulationSettings = SimulationSettings.LoadFromResources();
+
+        if (!simulationSettings)
+        {
+            throw new BuildFailedException("No simulationSettings file exist!");
+        }
+
+        if (!simulationSettings.IsValid())
+        {
+            throw new BuildFailedException("The simulationSettings file is not valid!");
+        }
+    }
+}
+#endif
