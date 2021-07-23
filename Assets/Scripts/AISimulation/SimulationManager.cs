@@ -6,11 +6,11 @@ using BehaviorDesigner.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public partial class SimulationManager : MonoBehaviour
+public partial class SimulationManager : MonoSingleton<SimulationManager>
 {
     private int _buildIndex = -1;
-    private BehaviorTree[] _AIs;
-    private BehaviorTree[] _simplifiedAIs;
+    private Dictionary<CharacterState, BehaviorTree> _characters = new Dictionary<CharacterState, BehaviorTree>();
+    private Dictionary<CharacterState, BehaviorTree> _simplifiedCharacters = new Dictionary<CharacterState, BehaviorTree>();
     private float _timeSinceLastTick = .0f;
 
     private static SimulationSettings _simulationSettings;
@@ -19,8 +19,13 @@ public partial class SimulationManager : MonoBehaviour
     private const string _levelGraphVariableName = "LevelGraph";
     private const string _characterStateVariableName = "CharacterState";
 
-    private void Awake()
+    [SerializeField]
+    private LayerMask _wallMask;
+
+    protected override void Awake()
     {
+        base.Awake();
+
         // Store current scene buildIndex
         _buildIndex = SceneManager.GetActiveScene().buildIndex;
 #if UNITY_EDITOR
@@ -43,10 +48,7 @@ public partial class SimulationManager : MonoBehaviour
     private void CreateAIs()
     {
         GameObject AIContainer;
-        GameObject AI;
-
-        List<BehaviorTree> AIs = new List<BehaviorTree>();
-        List<BehaviorTree> simplifiedAIs = new List<BehaviorTree>();
+        BehaviorTree AI;
 
         foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
         {
@@ -61,10 +63,10 @@ public partial class SimulationManager : MonoBehaviour
                              null,
                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
                              levelState.Value.Graph,
-                             character,
-                             AIs);
+                             character);
 
-                    AI.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
+                    AI.gameObject.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
+                    _characters.Add(character, AI);
                 }
             }
             else
@@ -81,34 +83,30 @@ public partial class SimulationManager : MonoBehaviour
                              AIContainer.transform,
                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
                              levelState.Value.Graph,
-                             character, 
-                             simplifiedAIs);
+                             character);
 
                     AI.GetComponent<SimplifiedCharacterMovement>().SetSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
+                    _simplifiedCharacters.Add(character, AI);
                 }
             }
         }
-
-        _AIs = AIs.ToArray();
-        _simplifiedAIs = simplifiedAIs.ToArray();
     }
 
-    private GameObject CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, LevelGraph levelGraph, CharacterState characterState, List<BehaviorTree> behaviorTreeList)
+    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, LevelGraph levelGraph, CharacterState characterState)
     {
         GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
         BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
         behaviorTree.ExternalBehavior = behavior;
         behaviorTree.SetVariableValue(_levelGraphVariableName, levelGraph);
         behaviorTree.SetVariableValue(_characterStateVariableName, characterState);
-        behaviorTreeList.Add(behaviorTree);
 
-        return AI;
+        return behaviorTree;
     }
 
     private void Update()
     {
 #if UNITY_EDITOR
-        if (_AIs == null || !_simulationSettings || _simplifiedAIs == null)
+        if (!_simulationSettings)
         {
             return;
         }
@@ -117,9 +115,9 @@ public partial class SimulationManager : MonoBehaviour
         UpdateDebugWindow();
 #endif
         // Update AIs
-        foreach (BehaviorTree AI in _AIs)
+        foreach (KeyValuePair<CharacterState, BehaviorTree> entry in _characters)
         {
-            BehaviorManager.instance.Tick(AI);
+            BehaviorManager.instance.Tick(entry.Value);
         }
 
         // Update simplified AIs
@@ -128,11 +126,48 @@ public partial class SimulationManager : MonoBehaviour
         while (_timeSinceLastTick >= _simulationSettings.SimplifiedAITickRate)
         {
             _timeSinceLastTick -= _simulationSettings.SimplifiedAITickRate;
-
-            foreach (BehaviorTree simplifiedAI in _simplifiedAIs)
+            foreach (KeyValuePair<CharacterState, BehaviorTree> entry in _simplifiedCharacters)
             {
-                BehaviorManager.instance.Tick(simplifiedAI);
+                BehaviorManager.instance.Tick(entry.Value);
             }
+        }
+    }
+
+    // Update the CharacterState of all characters in the level
+    public void UpdateCharactersState()
+    {
+        LevelGraph levelGraph = _gameSave.LevelStatesByBuildIndex[_buildIndex].Graph;
+        int vertexA;
+        int vertexB;
+        Vector3 AtoB;
+        float progress;
+
+        foreach (KeyValuePair<CharacterState, BehaviorTree> entry in _characters)
+        {
+            if (levelGraph.ConvertPositionToGraph(entry.Value.transform.position, _wallMask, out vertexA, out vertexB, out progress))
+            {
+                entry.Key.CurrentVertex = vertexA;
+                entry.Key.NextVertex = vertexB;
+                entry.Key.Progress = progress;
+
+                if (vertexB > -1)
+                {
+                    AtoB = levelGraph.Vertices[vertexB].Position - levelGraph.Vertices[vertexA].Position;
+                    entry.Key.Position = Vector3.Lerp(levelGraph.Vertices[vertexA].Position, levelGraph.Vertices[vertexB].Position, progress / (AtoB).magnitude);
+                    entry.Key.Rotation = Quaternion.LookRotation(AtoB, Vector3.up).eulerAngles;
+                }
+                else
+                {
+                    entry.Key.Position = levelGraph.Vertices[vertexA].Position;
+                    entry.Key.Rotation = Vector3.zero;
+                }
+            }
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            else
+            {
+                Debug.LogError("Couldn't find the position on the graph!");
+            }
+#endif
         }
     }
 

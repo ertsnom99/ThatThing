@@ -67,7 +67,7 @@ public class DebugWindow : MonoBehaviour
     [SerializeField]
     private float _rotateCameraSpeed = 2.0f;
 
-    private const float _centerTargetDistance = 20.0f;
+    private const float _centerTargetDistance = 40.0f;
     private float _targetDistance = _centerTargetDistance;
     private bool _focusing = false;
 
@@ -401,7 +401,6 @@ public class DebugWindow : MonoBehaviour
             else
             {
                 _targetDistance = cameraToTarget.magnitude;
-                Debug.Log(_targetDistance);
             }
         }
     }

@@ -5,6 +5,11 @@ public class SimplifiedCharacterMovement : MonoBehaviour
     private float _speed = 1.0f;
     private float _lastTickTime = 0;
 
+    private void Awake()
+    {
+        _lastTickTime = Time.time;
+    }
+
     public void SetSpeed(float speed)
     {
         _speed = speed;

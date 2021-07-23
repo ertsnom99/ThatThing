@@ -95,12 +95,10 @@ MonoBehaviour:
   VertexIdCount: 11
   EdgeIdCount: 11
   EdgesFolded: 0001010101010101010101
-  CharactersFolded: 000000
+  CharactersFolded: 0000
   _characters:
   - Vertex: 2
     Settings: 0
-  - Vertex: 2
-    Settings: 0
-  - Vertex: 7
-    Settings: 0
+  - Vertex: 5
+    Settings: 2
   _initialized: 1

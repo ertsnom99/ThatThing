@@ -245,8 +245,8 @@ MonoBehaviour:
   _characters:
   - Vertex: 4
     Settings: 0
-  - Vertex: 21
-    Settings: 0
-  - Vertex: 8
-    Settings: 0
+  - Vertex: 13
+    Settings: 1
+  - Vertex: 24
+    Settings: 2
   _initialized: 1
