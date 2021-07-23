@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bd055f0a62a7e94488937168276a795, type: 3}
+  m_Name: LevelState03
+  m_EditorClassIdentifier: 
+  _graph:
+    Vertices:
+    - Id: 0
+      Position: {x: 0, y: 0.1, z: 0}
+    - Id: 1
+      Position: {x: 15, y: 0.1, z: 0}
+    - Id: 2
+      Position: {x: 30, y: 0.1, z: 0}
+    - Id: 3
+      Position: {x: 15, y: 0.1, z: 10}
+    - Id: 4
+      Position: {x: 0, y: 0.1, z: 10}
+    - Id: 5
+      Position: {x: 0, y: 0.1, z: 30}
+    - Id: 6
+      Position: {x: 20, y: 0.1, z: 30}
+    - Id: 7
+      Position: {x: 20, y: 0.1, z: 20}
+    - Id: 8
+      Position: {x: 30, y: 0.1, z: 20}
+    - Id: 9
+      Position: {x: 10, y: 0.1, z: 20}
+    - Id: 10
+      Position: {x: 30, y: 0.1, z: 30}
+    Edges:
+    - Id: 0
+      VertexA: 0
+      VertexB: 1
+      Traversable: 1
+      Type: 1
+    - Id: 1
+      VertexA: 1
+      VertexB: 2
+      Traversable: 1
+      Type: 1
+    - Id: 2
+      VertexA: 1
+      VertexB: 3
+      Traversable: 1
+      Type: 0
+    - Id: 3
+      VertexA: 3
+      VertexB: 4
+      Traversable: 1
+      Type: 1
+    - Id: 4
+      VertexA: 4
+      VertexB: 5
+      Traversable: 1
+      Type: 1
+    - Id: 5
+      VertexA: 5
+      VertexB: 6
+      Traversable: 1
+      Type: 1
+    - Id: 6
+      VertexA: 6
+      VertexB: 10
+      Traversable: 1
+      Type: 0
+    - Id: 7
+      VertexA: 6
+      VertexB: 7
+      Traversable: 1
+      Type: 1
+    - Id: 8
+      VertexA: 7
+      VertexB: 9
+      Traversable: 1
+      Type: 0
+    - Id: 9
+      VertexA: 7
+      VertexB: 8
+      Traversable: 1
+      Type: 0
+    - Id: 10
+      VertexA: 8
+      VertexB: 2
+      Traversable: 1
+      Type: 1
+  VertexIdCount: 11
+  EdgeIdCount: 11
+  EdgesFolded: 0001010101010101010101
+  CharactersFolded: 00
+  _characters:
+  - Vertex: 2
+    Settings: 1
+  _initialized: 1

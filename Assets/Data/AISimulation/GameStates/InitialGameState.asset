@@ -18,3 +18,5 @@ MonoBehaviour:
     _levelState: {fileID: 11400000, guid: 7dc8379434a66064bab2cc8008b37143, type: 2}
   - _buildIndex: 2
     _levelState: {fileID: 11400000, guid: 26525f2d091024b4e8d925041c45a4c3, type: 2}
+  - _buildIndex: 3
+    _levelState: {fileID: 11400000, guid: c89471ac0266c0a4993088078c3d49e6, type: 2}
