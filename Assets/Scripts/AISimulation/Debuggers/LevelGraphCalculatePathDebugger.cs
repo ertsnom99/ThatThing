@@ -63,8 +63,8 @@ public class LevelGraphCalculatePathDebugger : MonoBehaviour
 
     private void CreateGraph()
     {
-        _vertices = LevelState.GetVerticesCopy();
-        _edges = LevelState.GetEdgesCopy();
+        _vertices = LevelState.Graph.Vertices;
+        _edges = LevelState.Graph.Edges;
         _levelGraph = new LevelGraph(_vertices, _edges);
         _levelGraph.GenerateAdjMatrix();
     }

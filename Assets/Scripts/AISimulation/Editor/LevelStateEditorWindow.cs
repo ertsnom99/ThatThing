@@ -31,7 +31,7 @@ public class LevelStateEditorWindow : EditorWindow
     private bool _creatingVertexWithClick = false;
     private bool _displayIds = true;
     private int _selectedVertex = -1;
-    private bool _foldEdges = true;
+    private bool _showEdges = true;
     private LayerMask _edgeClickMask;
     private bool _creatingEdgeWithClick = false;
     private bool _displayEdges = true;
@@ -145,8 +145,8 @@ public class LevelStateEditorWindow : EditorWindow
                 _serializedLevelState = new SerializedObject(_editorSettings.CurrentLevelState);
 
                 // Level graph serialization
-                _vertices = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Vertices"), false, false, false, false);
-                _edges = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph.Edges"), false, false, false, false);
+                _vertices = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._vertices"), false, false, false, false);
+                _edges = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_graph._edges"), false, false, false, false);
 
                 // Characters serialization
                 _characters = new ReorderableList(_serializedLevelState, _serializedLevelState.FindProperty("_characters"), false, true, false, false);
@@ -268,7 +268,7 @@ public class LevelStateEditorWindow : EditorWindow
                 EditorUtility.SetDirty(_editorSettings.CurrentLevelState);
             }
 
-            GUI.enabled = !_creatingVertexWithClick;
+            GUI.enabled = !_creatingVertexWithClick && !_creatingEdgeWithClick;
 
             if (GUILayout.Button("Add vertex with click"))
             {
@@ -325,12 +325,12 @@ public class LevelStateEditorWindow : EditorWindow
     {
         GUILayout.BeginHorizontal();
         GUI.enabled = true;
-        _foldEdges = !EditorGUILayout.Foldout(!_foldEdges, "Edges");
+        _showEdges = EditorGUILayout.Foldout(_showEdges, "Edges");
         GUI.enabled = false;
         EditorGUILayout.IntField(_edges.count, GUILayout.Width(50.0f));
         GUILayout.EndHorizontal();
         
-        if (!_foldEdges)
+        if (_showEdges)
         {
             EditorGUILayout.Space(5);
 
@@ -384,7 +384,7 @@ public class LevelStateEditorWindow : EditorWindow
                 _selectedPopupVertexB = 0;
             }
             
-            GUI.enabled = !_creatingEdgeWithClick;
+            GUI.enabled = !_creatingEdgeWithClick && !_creatingVertexWithClick;
 
             if (GUILayout.Button("Add edge with click"))
             {
@@ -651,7 +651,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     private void DrawSecenDebug()
     {
-        Vertex[] vertices = _editorSettings.CurrentLevelState.GetVertices();
+        Vertex[] vertices = _editorSettings.CurrentLevelState.Graph.Vertices;
         
         // Draw vertex debugs
         if (_vertices != null)
@@ -692,7 +692,7 @@ public class LevelStateEditorWindow : EditorWindow
         // Draw edge debugs
         if (_edges != null && _displayEdges)
         {
-            Edge[] edges = _editorSettings.CurrentLevelState.GetEdgesCopy();
+            Edge[] edges = _editorSettings.CurrentLevelState.Graph.Edges;
 
             int vertexAIndex;
             int vertexBIndex;
@@ -740,7 +740,7 @@ public class LevelStateEditorWindow : EditorWindow
         
         if (characterSettingsValid && toolbarSelection == 1 && _characters != null)
         {
-            LevelStateCharacter[] characters = _editorSettings.CurrentLevelState.GetCharacters();
+            LevelStateCharacter[] characters = _editorSettings.CurrentLevelState.Characters;
 
             Dictionary<int, int> characterCountByVertex = new Dictionary<int, int>();
             int selectedCharacterVertex = -1;
@@ -918,7 +918,7 @@ public class LevelStateEditorWindow : EditorWindow
 
     private int GetVertexAtPosition(Vector3 worldPosition)
     {
-        Vertex[] vertices = _editorSettings.CurrentLevelState.GetVertices();
+        Vertex[] vertices = _editorSettings.CurrentLevelState.Graph.Vertices;
 
         for(int i = 0; i < vertices.Length; i++)
         {

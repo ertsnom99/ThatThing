@@ -74,10 +74,13 @@ public class GameSave
 
         foreach (LevelStateByBuildIndex levelStateByBuildIndex in gameState.LevelStatesByBuildIndex)
         {
-            // TODO: Check if doesn t affect scriptable objects
-            vertices = levelStateByBuildIndex.LevelState.GetVerticesCopy();
-            edges = levelStateByBuildIndex.LevelState.GetEdgesCopy();
-            levelStateCharacters = levelStateByBuildIndex.LevelState.GetCharacters();
+            // Copy all vertices and edges
+            vertices = new Vertex[levelStateByBuildIndex.LevelState.Graph.Vertices.Length];
+            levelStateByBuildIndex.LevelState.Graph.Vertices.CopyTo(vertices, 0);
+            edges = new Edge[levelStateByBuildIndex.LevelState.Graph.Edges.Length];
+            levelStateByBuildIndex.LevelState.Graph.Edges.CopyTo(edges, 0);
+
+            levelStateCharacters = levelStateByBuildIndex.LevelState.Characters;
 
             // Convert levelStateCharacters to characterSaves
             characterSaves = new CharacterState[levelStateCharacters.Length];

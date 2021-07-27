@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [Serializable]
 public struct LevelStateCharacter
@@ -12,11 +14,29 @@ public struct LevelStateCharacter
 }
 
 [CreateAssetMenu(fileName = "LevelState", menuName = "AI Simulation/States/Level State")]
-public class LevelState : ScriptableObject
+public partial class LevelState : ScriptableObject
 {
     [SerializeField]
     private LevelGraph _graph;
 
+    public LevelGraph Graph
+    {
+        get { return _graph; }
+        private set { _graph = value; }
+    }
+
+    [SerializeField]
+    private LevelStateCharacter[] _characters;
+
+    public LevelStateCharacter[] Characters
+    {
+        get { return _characters; }
+        private set { _characters = value; }
+    }
+}
+#if UNITY_EDITOR
+public partial class LevelState
+{
     [HideInInspector]
     public int VertexIdCount;
     [HideInInspector]
@@ -27,28 +47,16 @@ public class LevelState : ScriptableObject
     [HideInInspector]
     public List<bool> CharactersFolded;
 
-    [SerializeField]
-    private LevelStateCharacter[] _characters;
-
     [HideInInspector]
     [SerializeField]
     private bool _initialized = false;
-
-    private void OnEnable()
-    {
-        if (!_initialized)
-        {
-            Initialize();
-            _initialized = true;
-        }
-    }
 
     public bool IsValid(CharactersSettings charactersSettings)
     {
         // Check that all characters have valid settings
         foreach (LevelStateCharacter character in _characters)
         {
-            if (charactersSettings.Settings.Length <= character.Settings)
+            if (character.Settings >= charactersSettings.Settings.Length)
             {
                 return false;
             }
@@ -57,11 +65,19 @@ public class LevelState : ScriptableObject
         return true;
     }
 
-    #region Methods for the editor window
+    private void OnEnable()
+    {
+        if (!_initialized)
+        {
+            Initialize();
+        }
+    }
+
     public void Initialize()
     {
-        _graph.Vertices = new Vertex[0];
-        _graph.Edges = new Edge[0];
+        _graph = new LevelGraph();
+        _graph.ClearVertices();
+        _graph.ClearEdges();
 
         VertexIdCount = 0;
         EdgeIdCount = 0;
@@ -69,22 +85,16 @@ public class LevelState : ScriptableObject
         CharactersFolded = new List<bool>();
 
         _characters = new LevelStateCharacter[0];
+
+        _initialized = true;
     }
 
     public void AddVertex(Vector3 position)
     {
-#if UNITY_EDITOR
-        // Record the LevelState before applying change in order to allow undos
+        // Record the LevelState before applying change in order to allow undo
         Undo.RecordObject(this, "Added Vertex");
-#endif
-        Vertex newVertex = new Vertex();
-        newVertex.Id = GenerateUniqueVertexId();
-        newVertex.Position = position;
 
-        List<Vertex> tempVertices = new List<Vertex>(_graph.Vertices);
-        tempVertices.Add(newVertex);
-
-        _graph.Vertices = tempVertices.ToArray();
+        _graph.AddVertex(GenerateUniqueVertexId(), position);
     }
 
     private int GenerateUniqueVertexId()
@@ -95,31 +105,14 @@ public class LevelState : ScriptableObject
         return newId;
     }
 
-    public void RemoveVertex(int index)
+    public bool RemoveVertex(int index)
     {
-#if UNITY_EDITOR
-        // Record the LevelState before applying change in order to allow undos
+        // Record the LevelState before applying change in order to allow undo
         Undo.RecordObject(this, "Removed Vertex");
-#endif
-        for (int i = _graph.Edges.Length; i > 0; i--)
+
+        if (_graph.RemoveVertex(index))
         {
-            // Remove any edges that uses the removed vertex
-            if (_graph.Edges[i - 1].VertexA == index || _graph.Edges[i - 1].VertexB == index)
-            {
-                RemoveEdge(i - 1);
-                continue;
-            }
-
-            // Fix indexes
-            if (_graph.Edges[i - 1].VertexA > index)
-            {
-                _graph.Edges[i - 1].VertexA -= 1;
-            }
-
-            if (_graph.Edges[i - 1].VertexB > index)
-            {
-                _graph.Edges[i - 1].VertexB -= 1;
-            }
+            return false;
         }
 
         for (int i = _characters.Length; i > 0; i--)
@@ -138,16 +131,13 @@ public class LevelState : ScriptableObject
             }
         }
 
-        List<Vertex> tempVertices = new List<Vertex>(_graph.Vertices);
-        tempVertices.Remove(_graph.Vertices[index]);
-
-        _graph.Vertices = tempVertices.ToArray();
+        return true;
     }
 
     public List<string> GetAllVertexIds()
     {
         List<string> idList = new List<string>();
-        
+
         foreach (Vertex vertex in _graph.Vertices)
         {
             idList.Add(vertex.Id.ToString());
@@ -159,28 +149,21 @@ public class LevelState : ScriptableObject
     // return if a new edge was created
     public bool AddEdge(int vertexA, int vertexB)
     {
-        foreach(Edge edge in _graph.Edges)
+        foreach (Edge edge in _graph.Edges)
         {
             if ((edge.VertexA == vertexA && edge.VertexB == vertexB) || (edge.VertexB == vertexA && edge.VertexA == vertexB))
             {
                 return false;
             }
         }
-#if UNITY_EDITOR
-        // Record the LevelState before applying change in order to allow undos
+
+        // Record the LevelState before applying change in order to allow undo
         Undo.RecordObject(this, "Added Edge");
-#endif
-        // Add the new edge
-        Edge newEdge = new Edge();
-        newEdge.Id = GenerateUniqueEdgeId();
-        newEdge.VertexA = vertexA;
-        newEdge.VertexB = vertexB;
-        newEdge.Traversable = true;
 
-        List<Edge> tempEdges = new List<Edge>(_graph.Edges);
-        tempEdges.Add(newEdge);
-
-        _graph.Edges = tempEdges.ToArray();
+        if (!_graph.AddEdge(GenerateUniqueEdgeId(), vertexA, vertexB, true, EdgeType.Corridor))
+        {
+            return false;
+        }
 
         // Add a new entry to the edge foldout list
         EdgesFolded.Add(false);
@@ -196,28 +179,26 @@ public class LevelState : ScriptableObject
         return newId;
     }
 
-    public void RemoveEdge(int index)
+    public bool RemoveEdge(int index)
     {
-#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Removed Vertex");
-#endif
-        // Remove the edge
-        List<Edge> tempEdges = new List<Edge>(_graph.Edges);
-        tempEdges.Remove(_graph.Edges[index]);
 
-        _graph.Edges = tempEdges.ToArray();
+        if (_graph.RemoveEdge(index))
+        {
+            return false;
+        }
 
         // Remove the edge foldout list entry
         EdgesFolded.RemoveAt(index);
+
+        return true;
     }
 
     public void AddCharacter(int vertex)
     {
-#if UNITY_EDITOR
-        // Record the LevelState before applying change in order to allow undos
+        // Record the LevelState before applying change in order to allow undo
         Undo.RecordObject(this, "Added Character");
-#endif
 
         LevelStateCharacter newCharacter = new LevelStateCharacter();
         newCharacter.Vertex = vertex;
@@ -232,10 +213,9 @@ public class LevelState : ScriptableObject
 
     public void RemoveCharacter(int index)
     {
-#if UNITY_EDITOR
         // Record the LevelState before applying change in order to allow undos
         Undo.RecordObject(this, "Removed Character");
-#endif
+
         List<LevelStateCharacter> tempCharacters = new List<LevelStateCharacter>(_characters);
         tempCharacters.Remove(_characters[index]);
 
@@ -243,47 +223,5 @@ public class LevelState : ScriptableObject
 
         CharactersFolded.RemoveAt(index);
     }
-    #endregion
-
-    // Returns a COPY of the array of vertices
-    public Vertex[] GetVertices()
-    {
-        return _graph.Vertices;
-    }
-
-    // Returns a COPY of the array of vertices
-    public Vertex[] GetVerticesCopy()
-    {
-        Vertex[] verticesCopy = new Vertex[_graph.Vertices.Length];
-        _graph.Vertices.CopyTo(verticesCopy, 0);
-        return verticesCopy;
-    }
-
-    public int GetVerticesLength()
-    {
-        return _graph.Vertices.Length;
-    }
-
-    // Returns a COPY of the array of edges
-    public Edge[] GetEdgesCopy()
-    {
-        Edge[] edgesCopy = new Edge[_graph.Edges.Length];
-        _graph.Edges.CopyTo(edgesCopy, 0);
-        return edgesCopy;
-    }
-
-    public int GetEdgesLength()
-    {
-        return _graph.Edges.Length;
-    }
-
-    public LevelStateCharacter[] GetCharacters()
-    {
-        return _characters;
-    }
-
-    public int GetCharactersLength()
-    {
-        return _characters.Length;
-    }
 }
+#endif

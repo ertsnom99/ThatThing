@@ -24,10 +24,25 @@ public struct Edge
 }
 
 [Serializable]
-public class LevelGraph
+public partial class LevelGraph
 {
-    public Vertex[] Vertices;
-    public Edge[] Edges;
+    [SerializeField]
+    private Vertex[] _vertices;
+
+    public Vertex[] Vertices
+    {
+        get { return _vertices; }
+        private set { _vertices = value; }
+    }
+
+    [SerializeField]
+    private Edge[] _edges;
+
+    public Edge[] Edges
+    {
+        get { return _edges; }
+        private set { _edges = value; }
+    }
 
     private float[,] _adjMatrix;
 
@@ -46,8 +61,8 @@ public class LevelGraph
 
     public LevelGraph(Vertex[] vertices, Edge[] edges)
     {
-        Vertices = vertices;
-        Edges = edges;
+        _vertices = vertices;
+        _edges = edges;
         _adjMatrix = new float[vertices.Length, vertices.Length];
     }
 
@@ -280,3 +295,106 @@ public class LevelGraph
         return true;
     }
 }
+
+#if UNITY_EDITOR
+public partial class LevelGraph
+{
+    public void AddVertex(int id, Vector3 position)
+    {
+        Vertex newVertex = new Vertex();
+        newVertex.Id = id;
+        newVertex.Position = position;
+
+        List<Vertex> tempVertices = new List<Vertex>(_vertices);
+        tempVertices.Add(newVertex);
+
+        _vertices = tempVertices.ToArray();
+    }
+
+    public bool RemoveVertex(int index)
+    {
+        if (index > _vertices.Length - 1)
+        {
+            return false;
+        }
+
+        for (int i = _edges.Length; i > 0; i--)
+        {
+            // Remove any edges that uses the removed vertex
+            if (_edges[i - 1].VertexA == index || _edges[i - 1].VertexB == index)
+            {
+                RemoveEdge(i - 1);
+                continue;
+            }
+
+            // Fix indexes
+            if (_edges[i - 1].VertexA > index)
+            {
+                _edges[i - 1].VertexA -= 1;
+            }
+
+            if (_edges[i - 1].VertexB > index)
+            {
+                _edges[i - 1].VertexB -= 1;
+            }
+        }
+
+        List<Vertex> tempVertices = new List<Vertex>(_vertices);
+        tempVertices.Remove(_vertices[index]);
+
+        _vertices = tempVertices.ToArray();
+
+        return true;
+    }
+
+    public void ClearVertices()
+    {
+        _vertices = new Vertex[0];
+    }
+
+    public bool AddEdge(int id, int vertexA, int vertexB, bool traversable, EdgeType type)
+    {
+        foreach (Edge edge in _edges)
+        {
+            if ((edge.VertexA == vertexA && edge.VertexB == vertexB) || (edge.VertexB == vertexA && edge.VertexA == vertexB))
+            {
+                return false;
+            }
+        }
+
+        Edge newEdge = new Edge();
+        newEdge.Id = id;
+        newEdge.VertexA = vertexA;
+        newEdge.VertexB = vertexB;
+        newEdge.Traversable = traversable;
+        newEdge.Type = type;
+
+        List<Edge> tempEdges = new List<Edge>(_edges);
+        tempEdges.Add(newEdge);
+
+        _edges = tempEdges.ToArray();
+
+        return true;
+    }
+
+    public bool RemoveEdge(int index)
+    {
+        if (index > _edges.Length - 1)
+        {
+            return false;
+        }
+
+        List<Edge> tempEdges = new List<Edge>(_edges);
+        tempEdges.Remove(_edges[index]);
+
+        _edges = tempEdges.ToArray();
+
+        return true;
+    }
+
+    public void ClearEdges()
+    {
+        _edges = new Edge[0];
+    }
+}
+#endif

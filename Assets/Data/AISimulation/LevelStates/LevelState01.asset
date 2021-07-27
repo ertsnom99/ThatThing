@@ -13,42 +13,52 @@ MonoBehaviour:
   m_Name: LevelState01
   m_EditorClassIdentifier: 
   _graph:
-    Vertices:
+    _vertices:
     - Id: 0
       Position: {x: 0, y: 0.1, z: 0}
     - Id: 1
-      Position: {x: 15, y: 0.1, z: 0}
+      Position: {x: 10, y: 0.1, z: 0}
     - Id: 2
-      Position: {x: 30, y: 0.1, z: 0}
+      Position: {x: 20, y: 0.1, z: 0}
     - Id: 3
-      Position: {x: 15, y: 0.1, z: 10}
+      Position: {x: 20, y: 0.1, z: 10}
     - Id: 4
-      Position: {x: 0, y: 0.1, z: 10}
+      Position: {x: 10, y: 0.1, z: 10}
     - Id: 5
-      Position: {x: 0, y: 0.1, z: 30}
+      Position: {x: 0, y: 0.1, z: 10}
     - Id: 6
-      Position: {x: 20, y: 0.1, z: 30}
+      Position: {x: 0, y: 0.1, z: 20}
     - Id: 7
-      Position: {x: 20, y: 0.1, z: 20}
+      Position: {x: 0, y: 0.1, z: 30}
     - Id: 8
-      Position: {x: 30, y: 0.1, z: 20}
+      Position: {x: 10, y: 0.1, z: 30}
     - Id: 9
-      Position: {x: 10, y: 0.1, z: 20}
+      Position: {x: 20, y: 0.1, z: 30}
     - Id: 10
       Position: {x: 30, y: 0.1, z: 30}
-    Edges:
+    - Id: 11
+      Position: {x: 10, y: 0.1, z: 20}
+    - Id: 12
+      Position: {x: 20, y: 0.1, z: 20}
+    - Id: 13
+      Position: {x: 30, y: 0.1, z: 20}
+    - Id: 14
+      Position: {x: 30, y: 0.1, z: 10}
+    - Id: 15
+      Position: {x: 30, y: 0.1, z: 0}
+    _edges:
     - Id: 0
-      VertexA: 0
-      VertexB: 1
+      VertexA: 14
+      VertexB: 15
       Traversable: 1
-      Type: 1
+      Type: 0
     - Id: 1
-      VertexA: 1
-      VertexB: 2
+      VertexA: 2
+      VertexB: 15
       Traversable: 1
       Type: 1
     - Id: 2
-      VertexA: 1
+      VertexA: 2
       VertexB: 3
       Traversable: 1
       Type: 0
@@ -56,49 +66,81 @@ MonoBehaviour:
       VertexA: 3
       VertexB: 4
       Traversable: 1
-      Type: 1
+      Type: 0
     - Id: 4
+      VertexA: 4
+      VertexB: 1
+      Traversable: 1
+      Type: 0
+    - Id: 5
+      VertexA: 0
+      VertexB: 1
+      Traversable: 1
+      Type: 1
+    - Id: 6
+      VertexA: 1
+      VertexB: 2
+      Traversable: 1
+      Type: 0
+    - Id: 7
       VertexA: 4
       VertexB: 5
       Traversable: 1
       Type: 1
-    - Id: 5
+    - Id: 8
       VertexA: 5
       VertexB: 6
       Traversable: 1
+      Type: 0
+    - Id: 9
+      VertexA: 14
+      VertexB: 13
+      Traversable: 1
       Type: 1
-    - Id: 6
-      VertexA: 6
+    - Id: 10
+      VertexA: 13
+      VertexB: 12
+      Traversable: 1
+      Type: 0
+    - Id: 11
+      VertexA: 12
+      VertexB: 11
+      Traversable: 1
+      Type: 0
+    - Id: 12
+      VertexA: 12
+      VertexB: 9
+      Traversable: 1
+      Type: 1
+    - Id: 13
+      VertexA: 9
       VertexB: 10
       Traversable: 1
       Type: 0
-    - Id: 7
-      VertexA: 6
-      VertexB: 7
-      Traversable: 1
-      Type: 1
-    - Id: 8
-      VertexA: 7
-      VertexB: 9
-      Traversable: 1
-      Type: 0
-    - Id: 9
-      VertexA: 7
+    - Id: 14
+      VertexA: 9
       VertexB: 8
       Traversable: 1
       Type: 0
-    - Id: 10
+    - Id: 15
       VertexA: 8
-      VertexB: 2
+      VertexB: 7
       Traversable: 1
       Type: 1
-  VertexIdCount: 11
-  EdgeIdCount: 11
-  EdgesFolded: 0001010101010101010101
-  CharactersFolded: 0000
+    - Id: 16
+      VertexA: 7
+      VertexB: 6
+      Traversable: 1
+      Type: 1
   _characters:
-  - Vertex: 2
+  - Vertex: 3
     Settings: 0
-  - Vertex: 5
+  - Vertex: 6
+    Settings: 1
+  - Vertex: 11
     Settings: 2
+  VertexIdCount: 16
+  EdgeIdCount: 17
+  EdgesFolded: 0101010101010101010101010101010101
+  CharactersFolded: 000000
   _initialized: 1

@@ -333,6 +333,14 @@ public class DebugWindow : MonoBehaviour
         _clicked = false;
     }
 
+    public void SetContainerActive(bool active)
+    {
+        if (_levelGraphContainer)
+        {
+            _levelGraphContainer.SetActive(active);
+        }
+    }
+
     #region Event Trigger
     public void OnBeginDrag()
     {

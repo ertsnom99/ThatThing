@@ -323,7 +323,7 @@ public partial class SimulationManager
     private GameObject _windowPrefab;
     [SerializeField]
     private GameObject _parent;
-    private GameObject _window;
+    private DebugWindow _debugWindow;
     [SerializeField]
     private KeyCode _toggleKey;
 
@@ -334,8 +334,8 @@ public partial class SimulationManager
             return;
         }
 
-        _window = Instantiate(_windowPrefab, _parent.transform);
-        _window.GetComponent<DebugWindow>().SetLevelStates(_gameSave.LevelStatesByBuildIndex, _buildIndex);
+        _debugWindow = Instantiate(_windowPrefab, _parent.transform).GetComponent<DebugWindow>();
+        _debugWindow.SetLevelStates(_gameSave.LevelStatesByBuildIndex, _buildIndex);
     }
 
     private void UpdateDebugWindow()
@@ -343,7 +343,8 @@ public partial class SimulationManager
         // Toggle window
         if (Input.GetKeyDown(_toggleKey))
         {
-            _window.SetActive(!_window.activeSelf);
+            _debugWindow.gameObject.SetActive(!_debugWindow.gameObject.activeSelf);
+            _debugWindow.SetContainerActive(_debugWindow.gameObject.activeSelf);
         }
     }
 }
