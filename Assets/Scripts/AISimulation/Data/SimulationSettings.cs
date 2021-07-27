@@ -7,7 +7,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 #endif
 
-public class SimulationSettings : ScriptableObject
+public partial class SimulationSettings : ScriptableObject
 {
     [SerializeField]
     private CharactersSettings _charactersSettingsUsed;
@@ -46,7 +46,16 @@ public class SimulationSettings : ScriptableObject
     }
 
     private const string _simulationSettingsFileName = "SimulationSettings";
+
+    public static SimulationSettings LoadFromResources()
+    {
+        return Resources.Load<SimulationSettings>(_simulationSettingsFileName);
+    }
+}
+
 #if UNITY_EDITOR
+public partial class SimulationSettings
+{
     private const string _pathToSimulationSetting = "Assets/Data/AISimulation/Resources/";
 
     public static SimulationSettings CreateAsset()
@@ -65,11 +74,6 @@ public class SimulationSettings : ScriptableObject
     public static SimulationSettings LoadFromAsset()
     {
         return (SimulationSettings)AssetDatabase.LoadAssetAtPath(_pathToSimulationSetting + _simulationSettingsFileName + ".asset", typeof(SimulationSettings));
-    }
-#endif
-    public static SimulationSettings LoadFromResources()
-    {
-        return Resources.Load<SimulationSettings>(_simulationSettingsFileName);
     }
 
     public bool IsValid()
@@ -98,7 +102,6 @@ public class SimulationSettings : ScriptableObject
     }
 }
 
-#if UNITY_EDITOR
 public class SimulationSettingsBuildProcessor : IPreprocessBuildWithReport
 {
     public int callbackOrder { get { return 0; } }

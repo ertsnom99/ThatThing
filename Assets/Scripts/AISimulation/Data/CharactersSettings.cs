@@ -53,10 +53,13 @@ public struct CharacterSettings
 }
 
 [CreateAssetMenu(fileName = "CharactersSetting", menuName = "AI Simulation/Settings/Characters Settings")]
-public class CharactersSettings : ScriptableObject
+public partial class CharactersSettings : ScriptableObject
 {
     public CharacterSettings[] Settings;
-
+}
+#if UNITY_EDITOR
+public partial class CharactersSettings
+{
     public List<bool> SettingsFolded;
 
     public bool IsValid()
@@ -92,7 +95,7 @@ public class CharactersSettings : ScriptableObject
     {
         string[] settingsNames = new string[Settings.Length];
 
-        for(int i = 0; i < Settings.Length; i++)
+        for (int i = 0; i < Settings.Length; i++)
         {
             settingsNames[i] = Settings[i].Name;
         }
@@ -100,3 +103,4 @@ public class CharactersSettings : ScriptableObject
         return settingsNames;
     }
 }
+#endif

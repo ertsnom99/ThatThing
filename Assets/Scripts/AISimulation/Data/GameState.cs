@@ -25,7 +25,7 @@ public struct LevelStateByBuildIndex
 }
 
 [CreateAssetMenu(fileName = "GameState", menuName = "AI Simulation/States/Game State")]
-public class GameState : ScriptableObject
+public partial class GameState : ScriptableObject
 {
     [SerializeField]
     private PlayerState _playerState;
@@ -44,7 +44,10 @@ public class GameState : ScriptableObject
         get { return _levelStatesByBuildIndex; }
         private set { _levelStatesByBuildIndex = value; }
     }
-
+}
+#if UNITY_EDITOR
+public partial class GameState
+{
     public bool IsValid(CharactersSettings charactersSettings)
     {
         if (!_playerState)
@@ -54,7 +57,7 @@ public class GameState : ScriptableObject
 
         List<int> _buildIndexes = new List<int>();
 
-        foreach(LevelStateByBuildIndex levelStateByBuildIndex in _levelStatesByBuildIndex)
+        foreach (LevelStateByBuildIndex levelStateByBuildIndex in _levelStatesByBuildIndex)
         {
             if (!_buildIndexes.Contains(levelStateByBuildIndex.BuildIndex))
             {
@@ -78,3 +81,4 @@ public class GameState : ScriptableObject
         return true;
     }
 }
+#endif
