@@ -11,26 +11,6 @@ public class CharacterState
     public Vector3 Position;
     public Vector3 Rotation;
     public int Settings;
-
-    public CharacterState()
-    {
-        CurrentVertex = 0;
-        NextVertex = -1;
-        Progress = 0;
-        Position = Vector3.zero;
-        Rotation = Vector3.zero;
-        Settings = 0;
-    }
-
-    public CharacterState(int currentVertex, int nextVertex, float progress, Vector3 position, Vector3 rotation, int settings)
-    {
-        CurrentVertex = currentVertex;
-        NextVertex = nextVertex;
-        Progress = progress;
-        Position = position;
-        Rotation = rotation;
-        Settings = settings;
-    }
 }
 
 [Serializable]
@@ -38,12 +18,6 @@ public struct LevelStateSave
 {
     public LevelGraph Graph;
     public List<CharacterState> CharacterSaves;
-
-    public LevelStateSave(LevelGraph graph, CharacterState[] characters)
-    {
-        Graph = graph;
-        CharacterSaves = new List<CharacterState>(characters);
-    }
 }
 
 [Serializable]
@@ -56,7 +30,7 @@ public class GameSave
 
     public Dictionary<int, LevelStateSave> LevelStatesByBuildIndex = new Dictionary<int, LevelStateSave>();
 
-    // Copy constructor.
+    // Copy constructor
     public GameSave(GameState gameState)
     {
         // Copy PlayerState
@@ -80,26 +54,34 @@ public class GameSave
             edges = new Edge[levelStateByBuildIndex.LevelState.Graph.Edges.Length];
             levelStateByBuildIndex.LevelState.Graph.Edges.CopyTo(edges, 0);
 
-            levelStateCharacters = levelStateByBuildIndex.LevelState.Characters;
+            // Copy the graph
+            graph = new LevelGraph(vertices, edges);
 
             // Convert levelStateCharacters to characterSaves
+            levelStateCharacters = levelStateByBuildIndex.LevelState.Characters;
             characterSaves = new CharacterState[levelStateCharacters.Length];
 
             for (int i = 0; i < levelStateCharacters.Length; i++)
             {
-                characterSaves[i] = new CharacterState(levelStateCharacters[i].Vertex,
-                                                      -1,
-                                                      .0f,
-                                                      vertices[levelStateCharacters[i].Vertex].Position,
-                                                      Vector3.zero,
-                                                      levelStateCharacters[i].Settings);
+                characterSaves[i] = new CharacterState
+                {
+                    CurrentVertex = levelStateCharacters[i].Vertex,
+                    NextVertex = -1,
+                    Progress = .0f,
+                    Position = vertices[levelStateCharacters[i].Vertex].Position,
+                    Rotation = Vector3.zero,
+                    Settings = levelStateCharacters[i].Settings
+                };
             }
 
-            graph = new LevelGraph(vertices, edges);
-            levelState = new LevelStateSave(graph, characterSaves);
+            // Add a new LevelStateSave to the dictionary
+            levelState = new LevelStateSave
+            {
+                Graph = graph,
+                CharacterSaves = new List<CharacterState>(characterSaves)
+            };
 
             LevelStatesByBuildIndex.Add(levelStateByBuildIndex.BuildIndex, levelState);
         }
-        // TODO: Check if GameSave is correct
     }
 }

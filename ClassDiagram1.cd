@@ -1,35 +1,35 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="SharedCharacterState" Collapsed="true">
-    <Position X="24" Y="12.25" Width="1.5" />
+    <Position X="27.25" Y="7.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\AI\SharedCharacterState.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SharedLevelGraph" Collapsed="true">
-    <Position X="25.75" Y="12.25" Width="1.5" />
+    <Position X="27.25" Y="8.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\AI\SharedLevelGraph.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="MoveToVertex" Collapsed="true">
-    <Position X="29.25" Y="11.25" Width="1.5" />
+    <Position X="22.25" Y="6.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAQAADAAAgEAIAIAACAgIACgAAAAAAAAMAAAQ=</HashCode>
       <FileName>Assets\Scripts\AISimulation\AI\Tasks\Movement\MoveToVertex.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SimplifiedMoveToVertex" Collapsed="true">
-    <Position X="29.25" Y="12.25" Width="1.5" />
+    <Position X="24" Y="6.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AgAAAAAAQAAAAAAAAAICAAEAAAAAAAAAgAAAAAEAAAA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\AI\Tasks\Movement\SimplifiedMoveToVertex.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="ChooseVertex" Collapsed="true">
-    <Position X="27.5" Y="9.25" Width="1.5" />
+    <Position X="22.25" Y="5.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AgAAAAAAAAABAAAAAAIAAAAAAAAAAAAAAAAAAAEAAAA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\AI\Tasks\Test\ChooseVertex.cs</FileName>
@@ -72,7 +72,7 @@
     </ShowAsCollectionAssociation>
   </Class>
   <Class Name="LevelStateEditorSettings" Collapsed="true">
-    <Position X="25.75" Y="11.25" Width="1.5" />
+    <Position X="36" Y="13.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAIAAAAQAIAAgAQAAAAAAIBhJABgACADIAAgAAAAAAI=</HashCode>
       <FileName>Assets\Scripts\AISimulation\Data\LevelStateEditorSettings.cs</FileName>
@@ -97,7 +97,7 @@
     </ShowAsAssociation>
   </Class>
   <Class Name="SimulationSettingsBuildProcessor" Collapsed="true" BaseTypeListCollapsed="true">
-    <Position X="31.25" Y="12.25" Width="1.5" />
+    <Position X="34.25" Y="13.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAEAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\Data\SimulationSettings.cs</FileName>
@@ -105,21 +105,21 @@
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
   <Class Name="ConvertPositionToGraphDebugger" Collapsed="true">
-    <Position X="29.25" Y="9.25" Width="1.5" />
+    <Position X="36.25" Y="7.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAEAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAQAAEAA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\Debuggers\ConvertPositionToGraphDebugger.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="DebugWindow" Collapsed="true">
-    <Position X="31" Y="9.25" Width="1.5" />
+    <Position X="30.25" Y="7.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AgYCIQAyAYCCDAAAYAtgcEAACiAhACAEQQgApaCQIFA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\Debuggers\DebugWindow.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="DebugWindowLevelRenderer" Collapsed="true" BaseTypeListCollapsed="true">
-    <Position X="22.25" Y="10.25" Width="1.5" />
+    <Position X="30.25" Y="8.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAgAAAAAAAQBAEIAAAAAgACAACAAAASAAAAI=</HashCode>
       <FileName>Assets\Scripts\AISimulation\Debuggers\DebugWindowLevelRenderer.cs</FileName>
@@ -127,42 +127,39 @@
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
   <Class Name="LevelGraphCalculatePathDebugger" Collapsed="true">
-    <Position X="31" Y="10.25" Width="1.5" />
+    <Position X="36.25" Y="8.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAQAAIAAAAAAAAAAAADAAAAACBAEAAAAAAgAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\Debuggers\LevelGraphCalculatePathDebugger.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SimplifiedCharacterMovement" Collapsed="true">
-    <Position X="27.5" Y="12.25" Width="1.5" />
+    <Position X="24" Y="7.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAgAAAAAAAAAAAQAAAAABAAAAAAAAAABAAAAAAAAEA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\SimplifiedCharacterMovement.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SimulationManager" Collapsed="true">
-    <Position X="19.75" Y="10.75" Width="1.5" />
+    <Position X="25" Y="10.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>UAYCABAAgAAAAxEIAAAACBIQAgEASSAAAgAAAQAFAEA=</HashCode>
       <FileName>Assets\Scripts\AISimulation\SimulationManager.cs</FileName>
     </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="_simulationSettings" />
+      <Field Name="_gameSave" />
+    </ShowAsAssociation>
   </Class>
   <Class Name="CharacterMovement" Collapsed="true">
-    <Position X="22.25" Y="9.25" Width="1.5" />
+    <Position X="22.25" Y="7.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AgQFQAAIAoKAAAQAAAA0AACBEAgAAECANEAEASQBAlA=</HashCode>
       <FileName>Assets\Scripts\Character\Movement\CharacterMovement.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="CharacterState" Collapsed="true">
-    <Position X="19.25" Y="16.25" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>CAAAAAIAAAAAAIAgAAAAAAAAAAAAAAAAgAAAAACAAAA=</HashCode>
-      <FileName>Assets\Scripts\GameSave.cs</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="GameSave" Collapsed="true">
-    <Position X="20.5" Y="14" Width="1.5" />
+    <Position X="21" Y="15.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAQAIAABAAAAAAAAAAAAAAAAAAAAAAAAIA=</HashCode>
       <FileName>Assets\Scripts\GameSave.cs</FileName>
@@ -172,21 +169,21 @@
     </ShowAsCollectionAssociation>
   </Class>
   <Class Name="LevelMenu" Collapsed="true">
-    <Position X="22.25" Y="11.25" Width="1.5" />
+    <Position X="33.25" Y="8.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAgACAAAAAAEAAAAAAAAQAACAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\Menus\LevelMenu.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="MainMenu" Collapsed="true">
-    <Position X="27.5" Y="11.25" Width="1.5" />
+    <Position X="33.25" Y="7.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAgAAABAAAAAAAAAAAAAAAACAAAgAAAAAAAAUA=</HashCode>
       <FileName>Assets\Scripts\Menus\MainMenu.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="QuickSort" Collapsed="true">
-    <Position X="24" Y="11.25" Width="1.5" />
+    <Position X="18.75" Y="8" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAIAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\Utilities\QuickSort.cs</FileName>
@@ -235,7 +232,7 @@
     </TypeIdentifier>
   </Class>
   <Class Name="Vector3SerializationSurrogate" Collapsed="true" BaseTypeListCollapsed="true">
-    <Position X="22.25" Y="12.25" Width="1.5" />
+    <Position X="18.25" Y="15.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAgAAIAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\Utilities\Vector3SerializationSurrogate.cs</FileName>
@@ -249,9 +246,16 @@
       <FileName>Assets\Scripts\AISimulation\Data\LevelGraph.cs</FileName>
     </TypeIdentifier>
     <ShowAsCollectionAssociation>
-      <Field Name="_edges" />
       <Field Name="_vertices" />
+      <Field Name="_edges" />
     </ShowAsCollectionAssociation>
+  </Class>
+  <Class Name="CharacterState" Collapsed="true">
+    <Position X="19.75" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAAAAAIAAAAAAIAgAAAAAAAAAAAAAAAAgAAAAACAAAA=</HashCode>
+      <FileName>Assets\Scripts\GameSave.cs</FileName>
+    </TypeIdentifier>
   </Class>
   <Struct Name="CharacterSettings" Collapsed="true">
     <Position X="32" Y="16" Width="1.5" />
@@ -295,14 +299,14 @@
     </TypeIdentifier>
   </Struct>
   <Struct Name="Inputs" Collapsed="true">
-    <Position X="31.25" Y="11.25" Width="1.5" />
+    <Position X="22.25" Y="8.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>gAAAAAABAABAAAAAAAAAAAIAAAAAAAAIAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\Controller\Inputs.cs</FileName>
     </TypeIdentifier>
   </Struct>
   <Struct Name="LevelStateSave" Collapsed="true">
-    <Position X="20.5" Y="15.25" Width="1.5" />
+    <Position X="21" Y="16.25" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgAAAAAAAAAAAA=</HashCode>
       <FileName>Assets\Scripts\GameSave.cs</FileName>
