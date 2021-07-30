@@ -246,12 +246,8 @@ MonoBehaviour:
   _characters:
   - Vertex: 7
     Settings: 0
-  - Vertex: 17
-    Settings: 2
-  - Vertex: 2
-    Settings: 1
   VertexIdCount: 31
   EdgeIdCount: 35
   EdgesFolded: 0101010101010101010101010101010101010101010101010101010101010101010100
-  CharactersFolded: 000000
+  CharactersFolded: 00
   _initialized: 1

@@ -9,8 +9,6 @@ public struct Vertex
     public Vector3 Position;
 }
 
-public enum EdgeType { Corridor, Door, Vent };
-
 [Serializable]
 public struct Edge
 {
@@ -21,6 +19,15 @@ public struct Edge
     public int VertexB;
     public bool Traversable;
     public EdgeType Type;
+}
+
+public enum EdgeType { Corridor, Door, Vent };
+
+public struct PathSegment
+{
+    public int VertexIndex;
+    public float Distance;
+    public Vector3 Position;
 }
 
 [Serializable]
@@ -52,10 +59,15 @@ public partial class LevelGraph
         private set { _adjMatrix = value; }
     }
 
+    // Variables used in CalculatePath()
+    private List<int> _vertexIndices = new List<int>();
+    private float[] _distances;
+    private List<PathSegment> _shortestPath = new List<PathSegment>();
+
     public LevelGraph()
     {
-        Vertices = new Vertex[0];
-        Edges = new Edge[0];
+        _vertices = new Vertex[0];
+        _edges = new Edge[0];
         _adjMatrix = new float[0, 0];
     }
 
@@ -66,19 +78,19 @@ public partial class LevelGraph
         _adjMatrix = new float[vertices.Length, vertices.Length];
     }
 
-    public void GenerateAdjMatrix()
+    public void InitializeForPathCalculation()
     {
-        if (Vertices == null || Edges == null)
+        if (_vertices == null || _edges == null)
         {
             return;
         }
 
         // Initialize _adjMatrix
-        _adjMatrix = new float[Vertices.Length, Vertices.Length];
+        _adjMatrix = new float[_vertices.Length, _vertices.Length];
         
-        for (int i = 0; i < Vertices.Length; i++)
+        for (int i = 0; i < _vertices.Length; i++)
         {
-            for (int j = 0; j < Vertices.Length; j++)
+            for (int j = 0; j < _vertices.Length; j++)
             {
                 _adjMatrix[i, j] = -1;
             }
@@ -87,86 +99,92 @@ public partial class LevelGraph
         // Populate _adjMatrix
         float distance;
 
-        for (int i = 0; i < Edges.Length; i++)
+        for (int i = 0; i < _edges.Length; i++)
         {
-            distance = Edges[i].Traversable ? (Vertices[Edges[i].VertexB].Position - Vertices[Edges[i].VertexA].Position).magnitude : -1;
-            _adjMatrix[Edges[i].VertexA, Edges[i].VertexB] = distance;
-            _adjMatrix[Edges[i].VertexB, Edges[i].VertexA] = distance;
+            distance = _edges[i].Traversable ? (_vertices[_edges[i].VertexB].Position - _vertices[_edges[i].VertexA].Position).magnitude : -1;
+            _adjMatrix[_edges[i].VertexA, _edges[i].VertexB] = distance;
+            _adjMatrix[_edges[i].VertexB, _edges[i].VertexA] = distance;
         }
+
+        // Create _distances array
+        _distances = new float[_vertices.Length];
     }
 
-    public bool CalculatePath(int sourceVertex, int targetVertex, out int[] path)
+    public bool CalculatePath(int sourceVertex, int targetVertex, out PathSegment[] path)
     {
-        path = new int[0];
+        path = new PathSegment[0];
 
         if (_adjMatrix == null)
         {
             return false;
         }
 
-        // Initialise the distances
-        float[] distances = new float[Vertices.Length];
-        List<int> q = new List<int>(0);
+        // Clear the distances
+        _vertexIndices.Clear();
 
-        for (int i = 0; i < Vertices.Length; i++)
+        for (int i = 0; i < _vertices.Length; i++)
         {
-            distances[i] = 999999;
-            q.Add(i);
+            _distances[i] = 999999;
+            _vertexIndices.Add(i);
         }
 
-        distances[sourceVertex] = 0;
+        _distances[sourceVertex] = 0;
 
         int vertexIndex;
+        PathSegment pathSection;
         float alt;
 
-        while(q.Count > 0)
+        // Calculate shortest distances for all vertices
+        while(_vertexIndices.Count > 0)
         {
             // Find the closest vertex to source
-            vertexIndex = q[0];
+            vertexIndex = _vertexIndices[0];
 
-            for(int i = 1; i < q.Count; i++)
+            for(int i = 1; i < _vertexIndices.Count; i++)
             {
-                if (distances[q[i]] < distances[vertexIndex])
+                if (_distances[_vertexIndices[i]] < _distances[vertexIndex])
                 {
-                    vertexIndex = q[i];
+                    vertexIndex = _vertexIndices[i];
                 }
-
             }
             
             // Remove closest vertex
-            q.Remove(vertexIndex);
+            _vertexIndices.Remove(vertexIndex);
 
-            // Set shortest distance for all neighbors of v
-            for (int i = 0; i < Vertices.Length; i++)
+            // Set shortest distance for all neighbors of the closest vertex
+            for (int i = 0; i < _vertices.Length; i++)
             {
                 // Skip vertex i if not a neighbor or already removed from Q
-                if (_adjMatrix[vertexIndex, i] < 0 || !q.Contains(i))
+                if (_adjMatrix[vertexIndex, i] < 0 || !_vertexIndices.Contains(i))
                 {
                     continue;
                 }
 
                 // Update distance if shorter path found
-                alt = distances[vertexIndex] + _adjMatrix[vertexIndex, i];
+                alt = _distances[vertexIndex] + _adjMatrix[vertexIndex, i];
 
-                if (alt < distances[i])
+                if (alt < _distances[i])
                 {
-                    distances[i] = alt;
+                    _distances[i] = alt;
                 }
             }
         }
         
         // Find shortest path
         int currentVertex = targetVertex;
-        List<int> shortestPath = new List<int>();
-        shortestPath.Add(targetVertex);
+        _shortestPath.Clear();
+
+        pathSection.VertexIndex = targetVertex;
+        pathSection.Distance = _distances[targetVertex];
+        pathSection.Position = _vertices[targetVertex].Position;
+        _shortestPath.Add(pathSection);
 
         // Start from to target vertex and find path back to the source vertex
         while (currentVertex != sourceVertex)
         {
-            alt = 999999;
             vertexIndex = -1;
 
-            for (int i = 0; i < Vertices.Length; i++)
+            for (int i = 0; i < _vertices.Length; i++)
             {
                 // Can't move to a vertex at distance of 0, because it may cause infinite loops
                 if (_adjMatrix[currentVertex, i] <= 0)
@@ -174,16 +192,20 @@ public partial class LevelGraph
                     continue;
                 }
 
-                if (distances[i] < alt)
+                if (_distances[i] + _adjMatrix[currentVertex, i] == _distances[currentVertex])
                 {
-                    alt = distances[i];
                     vertexIndex = i;
+                    break;
                 }
             }
             
             if (vertexIndex != -1)
             {
-                shortestPath.Insert(0, vertexIndex);
+                pathSection.VertexIndex = vertexIndex;
+                pathSection.Distance = _distances[vertexIndex];
+                pathSection.Position = _vertices[vertexIndex].Position;
+                _shortestPath.Insert(0, pathSection);
+
                 currentVertex = vertexIndex;
                 continue;
             }
@@ -191,7 +213,7 @@ public partial class LevelGraph
             return false;
         }
 
-        path = shortestPath.ToArray();
+        path = _shortestPath.ToArray();
         return true;
     }
 
@@ -205,17 +227,17 @@ public partial class LevelGraph
         vertexB = -1;
         progress = .0f;
 
-        int[] indexes = new int[Vertices.Length];
-        float[] distances = new float[Vertices.Length];
+        int[] indexes = new int[_vertices.Length];
+        float[] distances = new float[_vertices.Length];
 
-        for (int i = 0; i < Vertices.Length; i++)
+        for (int i = 0; i < _vertices.Length; i++)
         {
             indexes[i] = i;
-            distances[i] = (position - Vertices[i].Position).magnitude;
+            distances[i] = (position - _vertices[i].Position).magnitude;
         }
 
         // Sort all vertices by distance
-        QuickSort.QuickSortAlignedArrays(distances, indexes, 0, distances.Length - 1);
+        FastAlgorithms.QuickSortAlignedArrays(distances, indexes, 0, distances.Length - 1);
 
         // Find closest Vertex
         RaycastHit hit;
@@ -224,7 +246,7 @@ public partial class LevelGraph
         {
             // TODO: Use sphere sweep instead?
             // Check if a raycast can reach vertex
-            if (!Physics.Raycast(Vertices[indexes[i]].Position, (position - Vertices[indexes[i]].Position).normalized, out hit, distances[i], blockingMask))
+            if (!Physics.Raycast(_vertices[indexes[i]].Position, (position - _vertices[indexes[i]].Position).normalized, out hit, distances[i], blockingMask))
             {
                 vertexA = indexes[i];
                 break;
@@ -250,7 +272,7 @@ public partial class LevelGraph
         float smallestDistance = infinity;
 
         // Find closest edge connected to the first vertexA
-        foreach (Edge edge in Edges)
+        foreach (Edge edge in _edges)
         {
             if (edge.VertexA == vertexA)
             {
@@ -266,12 +288,12 @@ public partial class LevelGraph
             }
 
             // Find progress along the edge
-            vertexAToSecond = Vertices[secondVertex].Position - Vertices[vertexA].Position;
-            vertexToPos = position - Vertices[vertexA].Position;
+            vertexAToSecond = _vertices[secondVertex].Position - _vertices[vertexA].Position;
+            vertexToPos = position - _vertices[vertexA].Position;
             dotA = Vector3.Dot(vertexAToSecond, vertexToPos);
 
-            secondToVertexA = Vertices[vertexA].Position - Vertices[secondVertex].Position;
-            vertexToPos = position - Vertices[secondVertex].Position;
+            secondToVertexA = _vertices[vertexA].Position - _vertices[secondVertex].Position;
+            vertexToPos = position - _vertices[secondVertex].Position;
             dotB = Vector3.Dot(secondToVertexA, vertexToPos);
 
             // Check if position is aligned with the edge
@@ -281,7 +303,7 @@ public partial class LevelGraph
                 projectedPosition = (dotA / vertexAToSecond.sqrMagnitude) * vertexAToSecond;
 
                 // Calculate the distance between the position and the projected position 
-                distanceToPosition = (position - Vertices[vertexA].Position - projectedPosition).sqrMagnitude;
+                distanceToPosition = (position - _vertices[vertexA].Position - projectedPosition).sqrMagnitude;
 
                 if (distanceToPosition < smallestDistance)
                 {

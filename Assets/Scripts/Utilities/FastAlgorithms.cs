@@ -1,7 +1,8 @@
-public static class QuickSort
+public static class FastAlgorithms
 {
     // Algorithm from https://www.tutorialspoint.com/chash-program-to-perform-quick-sort-using-recursion with small modifications to
     // keep arrays aligned and handle case where two value are the same
+    // O(n * log(n))
     public static void QuickSortAlignedArrays(float[] toSort, int[] aligned, int left, int right)
     {
         int pivot;
@@ -53,5 +54,65 @@ public static class QuickSort
                 return right;
             }
         }
+    }
+
+    // Algorithm from https://en.wikipedia.org/wiki/Binary_search_algorithm
+    // O(log(n))
+    public static int BinarySearch(int[] path, int x)
+    {
+        int l = 0;
+        int r = path.Length - 1;
+
+        while (l <= r)
+        {
+            int mid = l + (r - l) / 2;
+
+            if (path[mid] == x)
+            {
+                return mid;
+            }
+
+            if (path[mid] > x)
+            {
+                // element is in left subarray
+                r = mid - 1;
+            }
+            else
+            {
+                // element is in right subarray
+                l = mid + 1;
+            }
+        }
+
+        return -1;
+    }
+
+    public static int BinarySearch(float[] path, float x)
+    {
+        int l = 0;
+        int r = path.Length - 1;
+
+        while (l <= r)
+        {
+            int mid = l + (r - l) / 2;
+
+            if (path[mid] == x)
+            {
+                return mid;
+            }
+
+            if (path[mid] > x)
+            {
+                // element is in left subarray
+                r = mid - 1;
+            }
+            else
+            {
+                // element is in right subarray
+                l = mid + 1;
+            }
+        }
+
+        return -1;
     }
 }

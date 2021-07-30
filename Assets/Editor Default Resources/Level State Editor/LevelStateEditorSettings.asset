@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 387b15422ee2dfa46bc85f7b7b1d14e3, type: 3}
   m_Name: LevelStateEditorSettings
   m_EditorClassIdentifier: 
-  CurrentLevelState: {fileID: 11400000, guid: 93f10afe138cfc141871421f8460af7a, type: 2}
+  CurrentLevelState: {fileID: 11400000, guid: 26525f2d091024b4e8d925041c45a4c3, type: 2}
   InvalidStyle:
     m_Name: 
     m_Normal:

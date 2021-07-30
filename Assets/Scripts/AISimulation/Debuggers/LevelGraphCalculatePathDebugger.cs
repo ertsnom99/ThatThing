@@ -35,7 +35,7 @@ public class LevelGraphCalculatePathDebugger : MonoBehaviour
             return;    
         }
 
-        int[] path = new int[0];
+        PathSegment[] path = new PathSegment[0];
 
         if (_levelGraph.CalculatePath(from, to, out path))
         {
@@ -49,8 +49,8 @@ public class LevelGraphCalculatePathDebugger : MonoBehaviour
 
             for(int i = 1; i < path.Length; i++)
             {
-                pathLength = (_vertices[path[i]].Position - _vertices[path[i - 1]].Position).magnitude;
-                Debug.DrawLine(_vertices[path[i-1]].Position, _vertices[path[i]].Position);
+                pathLength = (path[i].Position - path[i - 1].Position).magnitude;
+                Debug.DrawLine(path[i-1].Position, path[i].Position);
             }
 
             Debug.Log("PAth length: " + pathLength);
@@ -66,6 +66,6 @@ public class LevelGraphCalculatePathDebugger : MonoBehaviour
         _vertices = LevelState.Graph.Vertices;
         _edges = LevelState.Graph.Edges;
         _levelGraph = new LevelGraph(_vertices, _edges);
-        _levelGraph.GenerateAdjMatrix();
+        _levelGraph.InitializeForPathCalculation();
     }
 }

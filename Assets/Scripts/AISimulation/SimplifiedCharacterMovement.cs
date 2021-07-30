@@ -20,7 +20,7 @@ public class SimplifiedCharacterMovement : MonoBehaviour
         }
     }
 
-    public void MoveOnGraph(LevelGraph levelGraph, int[] path, CharacterState characterState)
+    public void MoveOnGraph(PathSegment[] path, CharacterState characterState)
     {
         if (path.Length < 2)
         {
@@ -28,52 +28,65 @@ public class SimplifiedCharacterMovement : MonoBehaviour
         }
 
         int pathVertexIndex = 0;
-        float distanceToVertex;
+
         float distanceToTravel = _speed * (Time.time - _lastTickTime);
+        distanceToTravel += characterState.Progress;
+
         _lastTickTime = Time.time;
 
-        // Keep moving to the next vertex until cannot reach next vertex or the last vertex is reached
-        while (distanceToTravel > 0 && pathVertexIndex != (path.Length - 1))
+        if (distanceToTravel >= path[path.Length - 1].Distance)
         {
-            distanceToVertex = (levelGraph.Vertices[path[pathVertexIndex + 1]].Position - levelGraph.Vertices[path[pathVertexIndex]].Position).magnitude;
+            pathVertexIndex = path.Length - 1;
 
-            // Remove the progress already done for the first edge
-            if (pathVertexIndex == 0)
-            {
-                distanceToVertex -= characterState.Progress;
-            }
-
-            if (distanceToVertex <= distanceToTravel)
-            {
-                distanceToTravel -= distanceToVertex;
-                pathVertexIndex += 1;
-                continue;
-            }
-
-            break;
-        }
-
-        // If reached the last vertex
-        if (pathVertexIndex == (path.Length - 1))
-        {
-            characterState.CurrentVertex = path[pathVertexIndex];
+            characterState.CurrentVertex = path[pathVertexIndex].VertexIndex;
             characterState.NextVertex = -1;
             characterState.Progress = 0;
-            characterState.Position = levelGraph.Vertices[characterState.CurrentVertex].Position;
-            Vector3 direction = (levelGraph.Vertices[characterState.CurrentVertex].Position - levelGraph.Vertices[path[path.Length - 2]].Position).normalized;
+            characterState.Position = path[pathVertexIndex].Position;
+            Vector3 direction = (path[pathVertexIndex].Position - path[pathVertexIndex - 1].Position).normalized;
             characterState.Rotation = Quaternion.LookRotation(direction, Vector3.up).eulerAngles;
         }
         else
         {
-            characterState.CurrentVertex = path[pathVertexIndex];
-            characterState.NextVertex = path[pathVertexIndex + 1];
-            characterState.Progress = pathVertexIndex == 0 ? distanceToTravel + characterState.Progress : distanceToTravel;
-            Vector3 currentVertexPosition = levelGraph.Vertices[characterState.CurrentVertex].Position;
-            Vector3 nextVertexPosition = levelGraph.Vertices[characterState.NextVertex].Position;
+            pathVertexIndex = BinarySearchPathSection(path, distanceToTravel);
+            
+            characterState.CurrentVertex = path[pathVertexIndex].VertexIndex;
+            characterState.NextVertex = path[pathVertexIndex + 1].VertexIndex;
+            characterState.Progress = distanceToTravel - path[pathVertexIndex].Distance;
+            Vector3 currentVertexPosition = path[pathVertexIndex].Position;
+            Vector3 nextVertexPosition = path[pathVertexIndex + 1].Position;
             float progressRatio = characterState.Progress / (nextVertexPosition - currentVertexPosition).magnitude;
             Vector3 position = (1 - progressRatio) * currentVertexPosition + progressRatio * nextVertexPosition;
             characterState.Position = position;
             characterState.Rotation = Quaternion.LookRotation((nextVertexPosition - currentVertexPosition).normalized, Vector3.up).eulerAngles;
         }
+    }
+
+    private int BinarySearchPathSection(PathSegment[] path, float dist)
+    {
+        int l = 0;
+        int r = path.Length - 1;
+
+        while (l <= r)
+        {
+            int mid = l + (r - l) / 2;
+
+            if (path[mid].Distance == dist || (mid < path.Length - 1 && path[mid].Distance < dist && dist < path[mid + 1].Distance))
+            {
+                return mid;
+            }
+
+            if (path[mid].Distance > dist)
+            {
+                // element is in left subarray
+                r = mid - 1;
+            }
+            else
+            {
+                // element is in right subarray
+                l = mid + 1;
+            }
+        }
+
+        return -1;
     }
 }

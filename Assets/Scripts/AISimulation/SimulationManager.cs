@@ -188,7 +188,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         
         foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
         {
-            levelState.Value.Graph.GenerateAdjMatrix();
+            levelState.Value.Graph.InitializeForPathCalculation();
         }
     }
 
@@ -206,7 +206,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
             
             foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
             {
-                levelState.Value.Graph.GenerateAdjMatrix();
+                levelState.Value.Graph.InitializeForPathCalculation();
             }
 
             return;
@@ -280,7 +280,7 @@ public partial class SimulationManager
 
             foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
             {
-                levelState.Value.Graph.GenerateAdjMatrix();
+                levelState.Value.Graph.InitializeForPathCalculation();
             }
         }
 
@@ -309,7 +309,7 @@ public partial class SimulationManager
 
             foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
             {
-                levelState.Value.Graph.GenerateAdjMatrix();
+                levelState.Value.Graph.InitializeForPathCalculation();
             }
         }
     }

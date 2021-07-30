@@ -9,8 +9,8 @@ public class SimplifiedMoveToVertex : Action
     public SharedCharacterState CharacterState;
     public SharedInt TargetVertex;
 
-    private int[] _path = new int[0];
-    private List<int> _fixedPath = new List<int>();
+    private PathSegment[] _path = new PathSegment[0];
+    private List<PathSegment> _fixedPath = new List<PathSegment>();
 
     private SimplifiedCharacterMovement _simplifiedMovement;
 
@@ -28,7 +28,8 @@ public class SimplifiedMoveToVertex : Action
 
         int from = CharacterState.Value.CurrentVertex;
         int next = CharacterState.Value.NextVertex;
-        float distance;
+        float distance = 0;
+        PathSegment pathSection;
 
         // Fix CharacterState if the edge became not traversable
         if (next >= 0 && LevelGraph.Value.AdjMatrix[from, next] < 0)
@@ -55,11 +56,26 @@ public class SimplifiedMoveToVertex : Action
             {
                 _fixedPath.Clear();
                 _fixedPath.InsertRange(0, _path);
-                _fixedPath.Insert(0, CharacterState.Value.CurrentVertex);
+
+                // Adjust distance                
+                for (int i = 0; i < _fixedPath.Count; i++)
+                {
+                    pathSection.VertexIndex = _fixedPath[i].VertexIndex;
+                    pathSection.Distance = _fixedPath[i].Distance + distance;
+                    pathSection.Position = _fixedPath[i].Position;
+                    _fixedPath[i] = pathSection;
+                }
+                
+                // Add missing path section
+                pathSection.VertexIndex = CharacterState.Value.CurrentVertex;
+                pathSection.Distance = 0;
+                pathSection.Position = LevelGraph.Value.Vertices[CharacterState.Value.CurrentVertex].Position;
+                _fixedPath.Insert(0, pathSection);
+
                 _path = _fixedPath.ToArray();
             }
-            // Character is going in the wrong direction
-            else if (CharacterState.Value.NextVertex >= 0 && CharacterState.Value.NextVertex != _path[1])
+            // Character is going in the wrong direction (ex: TargetVertex changed)
+            else if (CharacterState.Value.NextVertex >= 0 && CharacterState.Value.NextVertex != _path[1].VertexIndex)
             {
                 from = CharacterState.Value.CurrentVertex;
                 next = CharacterState.Value.NextVertex;
@@ -72,11 +88,26 @@ public class SimplifiedMoveToVertex : Action
 
                 _fixedPath.Clear();
                 _fixedPath.InsertRange(0, _path);
-                _fixedPath.Insert(0, CharacterState.Value.CurrentVertex);
+
+                // Adjust distance                
+                for (int i = 0; i < _fixedPath.Count; i++)
+                {
+                    pathSection.VertexIndex = _fixedPath[i].VertexIndex;
+                    pathSection.Distance = _fixedPath[i].Distance + distance;
+                    pathSection.Position = _fixedPath[i].Position;
+                    _fixedPath[i] = pathSection;
+                }
+
+                // Add missing path section
+                pathSection.VertexIndex = CharacterState.Value.CurrentVertex;
+                pathSection.Distance = 0;
+                pathSection.Position = LevelGraph.Value.Vertices[CharacterState.Value.CurrentVertex].Position;
+                _fixedPath.Insert(0, pathSection);
+
                 _path = _fixedPath.ToArray();
             }
 
-            _simplifiedMovement.MoveOnGraph(LevelGraph.Value, _path, CharacterState.Value);
+            _simplifiedMovement.MoveOnGraph(_path, CharacterState.Value);
 
             // Target reached
             if (CharacterState.Value.CurrentVertex == TargetVertex.Value)
