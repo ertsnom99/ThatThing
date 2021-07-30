@@ -62,6 +62,7 @@ public partial class LevelGraph
     // Variables used in CalculatePath()
     private List<int> _vertexIndices = new List<int>();
     private float[] _distances;
+    private int[] _parents;
     private List<PathSegment> _shortestPath = new List<PathSegment>();
 
     public LevelGraph()
@@ -108,6 +109,7 @@ public partial class LevelGraph
 
         // Create _distances array
         _distances = new float[_vertices.Length];
+        _parents = new int[_vertices.Length];
     }
 
     public bool CalculatePath(int sourceVertex, int targetVertex, out PathSegment[] path)
@@ -125,6 +127,7 @@ public partial class LevelGraph
         for (int i = 0; i < _vertices.Length; i++)
         {
             _distances[i] = 999999;
+            _parents[i] = -1;
             _vertexIndices.Add(i);
         }
 
@@ -166,6 +169,7 @@ public partial class LevelGraph
                 if (alt < _distances[i])
                 {
                     _distances[i] = alt;
+                    _parents[i] = vertexIndex;
                 }
             }
         }
@@ -180,41 +184,25 @@ public partial class LevelGraph
         _shortestPath.Add(pathSection);
 
         // Start from to target vertex and find path back to the source vertex
-        while (currentVertex != sourceVertex)
+        while (_parents[currentVertex] != -1)
         {
-            vertexIndex = -1;
+            vertexIndex = _parents[currentVertex];
 
-            for (int i = 0; i < _vertices.Length; i++)
-            {
-                // Can't move to a vertex at distance of 0, because it may cause infinite loops
-                if (_adjMatrix[currentVertex, i] <= 0)
-                {
-                    continue;
-                }
+            pathSection.VertexIndex = vertexIndex;
+            pathSection.Distance = _distances[vertexIndex];
+            pathSection.Position = _vertices[vertexIndex].Position;
+            _shortestPath.Insert(0, pathSection);
 
-                if (_distances[i] + _adjMatrix[currentVertex, i] == _distances[currentVertex])
-                {
-                    vertexIndex = i;
-                    break;
-                }
-            }
-            
-            if (vertexIndex != -1)
-            {
-                pathSection.VertexIndex = vertexIndex;
-                pathSection.Distance = _distances[vertexIndex];
-                pathSection.Position = _vertices[vertexIndex].Position;
-                _shortestPath.Insert(0, pathSection);
-
-                currentVertex = vertexIndex;
-                continue;
-            }
-
-            return false;
+            currentVertex = vertexIndex;
         }
 
-        path = _shortestPath.ToArray();
-        return true;
+        if (currentVertex == sourceVertex)
+        {
+            path = _shortestPath.ToArray();
+            return true;
+        }
+
+        return false;
     }
 
     // Takes a world position and finds the closest vertexA, the possible edge it's on (given by vertexB) and the progress on that edge.
