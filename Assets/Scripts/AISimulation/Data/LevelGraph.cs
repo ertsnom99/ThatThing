@@ -59,11 +59,12 @@ public partial class LevelGraph
         private set { _adjMatrix = value; }
     }
 
-    // Variables used in CalculatePath()
+    // Variables used in CalculatePath() and ConvertPositionToGraph()
     private List<int> _vertexIndices = new List<int>();
     private float[] _distances;
     private int[] _parents;
     private List<PathSegment> _shortestPath = new List<PathSegment>();
+    private int[] _indexes;
 
     public LevelGraph()
     {
@@ -107,9 +108,10 @@ public partial class LevelGraph
             _adjMatrix[_edges[i].VertexB, _edges[i].VertexA] = distance;
         }
 
-        // Create _distances array
+        // Create necessary arrays for CalculatePath() and ConvertPositionToGraph()
         _distances = new float[_vertices.Length];
         _parents = new int[_vertices.Length];
+        _indexes = new int[_vertices.Length];
     }
 
     public bool CalculatePath(int sourceVertex, int targetVertex, out PathSegment[] path)
@@ -215,28 +217,25 @@ public partial class LevelGraph
         vertexB = -1;
         progress = .0f;
 
-        int[] indexes = new int[_vertices.Length];
-        float[] distances = new float[_vertices.Length];
-
         for (int i = 0; i < _vertices.Length; i++)
         {
-            indexes[i] = i;
-            distances[i] = (position - _vertices[i].Position).magnitude;
+            _indexes[i] = i;
+            _distances[i] = (position - _vertices[i].Position).magnitude;
         }
 
         // Sort all vertices by distance
-        FastAlgorithms.QuickSortAlignedArrays(distances, indexes, 0, distances.Length - 1);
+        FastAlgorithms.QuickSortAlignedArrays(_distances, _indexes, 0, _distances.Length - 1);
 
         // Find closest Vertex
         RaycastHit hit;
 
-        for (int i = 0; i < indexes.Length; i++)
+        for (int i = 0; i < _indexes.Length; i++)
         {
             // TODO: Use sphere sweep instead?
             // Check if a raycast can reach vertex
-            if (!Physics.Raycast(_vertices[indexes[i]].Position, (position - _vertices[indexes[i]].Position).normalized, out hit, distances[i], blockingMask))
+            if (!Physics.Raycast(_vertices[_indexes[i]].Position, (position - _vertices[_indexes[i]].Position).normalized, out hit, _distances[i], blockingMask))
             {
-                vertexA = indexes[i];
+                vertexA = _indexes[i];
                 break;
             }
         }
