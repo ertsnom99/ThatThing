@@ -12,7 +12,7 @@ public class LevelStateEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        GUI.enabled = false;
+        //GUI.enabled = false;
         DrawDefaultInspector();
         GUI.enabled = true;
 

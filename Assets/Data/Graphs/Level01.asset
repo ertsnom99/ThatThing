@@ -1,0 +1,136 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d19a5d45d8ccfa949b181b871333d9cd, type: 3}
+  m_Name: Level01
+  m_EditorClassIdentifier: 
+  _vertices:
+  - Id: 0
+    Position: {x: 0, y: 0.1, z: 0}
+  - Id: 1
+    Position: {x: 10, y: 0.1, z: 0}
+  - Id: 2
+    Position: {x: 20, y: 0.1, z: 0}
+  - Id: 3
+    Position: {x: 20, y: 0.1, z: 10}
+  - Id: 4
+    Position: {x: 10, y: 0.1, z: 10}
+  - Id: 5
+    Position: {x: 0, y: 0.1, z: 10}
+  - Id: 6
+    Position: {x: 0, y: 0.1, z: 20}
+  - Id: 7
+    Position: {x: 0, y: 0.1, z: 30}
+  - Id: 8
+    Position: {x: 10, y: 0.1, z: 30}
+  - Id: 9
+    Position: {x: 20, y: 0.1, z: 30}
+  - Id: 10
+    Position: {x: 30, y: 0.1, z: 30}
+  - Id: 11
+    Position: {x: 20, y: 0.1, z: 20}
+  - Id: 12
+    Position: {x: 10, y: 0.1, z: 20}
+  - Id: 13
+    Position: {x: 30, y: 0.1, z: 20}
+  - Id: 14
+    Position: {x: 30, y: 0.1, z: 10}
+  - Id: 15
+    Position: {x: 30, y: 0.1, z: 0}
+  _edges:
+  - Id: 0
+    VertexA: 0
+    VertexB: 1
+    Direction: 0
+    Traversable: 1
+  - Id: 1
+    VertexA: 1
+    VertexB: 2
+    Direction: 0
+    Traversable: 1
+  - Id: 2
+    VertexA: 2
+    VertexB: 15
+    Direction: 0
+    Traversable: 1
+  - Id: 3
+    VertexA: 15
+    VertexB: 14
+    Direction: 0
+    Traversable: 1
+  - Id: 4
+    VertexA: 14
+    VertexB: 13
+    Direction: 0
+    Traversable: 1
+  - Id: 5
+    VertexA: 13
+    VertexB: 11
+    Direction: 0
+    Traversable: 1
+  - Id: 6
+    VertexA: 11
+    VertexB: 12
+    Direction: 0
+    Traversable: 1
+  - Id: 7
+    VertexA: 11
+    VertexB: 9
+    Direction: 0
+    Traversable: 1
+  - Id: 8
+    VertexA: 9
+    VertexB: 10
+    Direction: 0
+    Traversable: 1
+  - Id: 9
+    VertexA: 9
+    VertexB: 8
+    Direction: 0
+    Traversable: 1
+  - Id: 10
+    VertexA: 8
+    VertexB: 7
+    Direction: 0
+    Traversable: 1
+  - Id: 11
+    VertexA: 7
+    VertexB: 6
+    Direction: 0
+    Traversable: 1
+  - Id: 12
+    VertexA: 6
+    VertexB: 5
+    Direction: 0
+    Traversable: 1
+  - Id: 13
+    VertexA: 5
+    VertexB: 4
+    Direction: 0
+    Traversable: 1
+  - Id: 14
+    VertexA: 4
+    VertexB: 3
+    Direction: 0
+    Traversable: 1
+  - Id: 15
+    VertexA: 3
+    VertexB: 2
+    Direction: 0
+    Traversable: 1
+  - Id: 16
+    VertexA: 4
+    VertexB: 1
+    Direction: 0
+    Traversable: 1
+  VertexIdCount: 16
+  EdgeIdCount: 17
+  EdgesFolded: 0101010101000101010101010101010101

@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using BehaviorDesigner.Runtime;
+using GraphCreator;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -92,7 +93,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         }
     }
 
-    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, LevelGraph levelGraph, CharacterState characterState)
+    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, Graph levelGraph, CharacterState characterState)
     {
         GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
         BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
@@ -136,7 +137,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
     // Update the CharacterState of all characters in the level
     public void UpdateCharactersState()
     {
-        LevelGraph levelGraph = _gameSave.LevelStatesByBuildIndex[_buildIndex].Graph;
+        Graph levelGraph = _gameSave.LevelStatesByBuildIndex[_buildIndex].Graph;
         int vertexA;
         int vertexB;
         Vector3 AtoB;
@@ -188,7 +189,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         
         foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
         {
-            levelState.Value.Graph.InitializeForPathCalculation();
+            levelState.Value.Graph.Initialize();
         }
     }
 
@@ -206,7 +207,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
             
             foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
             {
-                levelState.Value.Graph.InitializeForPathCalculation();
+                levelState.Value.Graph.Initialize();
             }
 
             return;
@@ -277,11 +278,6 @@ public partial class SimulationManager
 
             _gameSave = new GameSave(_debugGameState);
             _gameSave.PlayerLevel = _buildIndex;
-
-            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
-            {
-                levelState.Value.Graph.InitializeForPathCalculation();
-            }
         }
 
         // Search for a valid SimulationSettings
@@ -306,11 +302,6 @@ public partial class SimulationManager
         {
             _gameSave = new GameSave(_simulationSettings.InitialGameState);
             _gameSave.PlayerLevel = _buildIndex;
-
-            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
-            {
-                levelState.Value.Graph.InitializeForPathCalculation();
-            }
         }
     }
 }

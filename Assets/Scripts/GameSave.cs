@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GraphCreator;
 using UnityEngine;
 
 [Serializable]
@@ -16,7 +17,7 @@ public class CharacterState
 [Serializable]
 public struct LevelStateSave
 {
-    public LevelGraph Graph;
+    public Graph Graph;
     public List<CharacterState> CharacterSaves;
 }
 
@@ -37,13 +38,13 @@ public class GameSave
         PlayerLevel = gameState.PlayerState.Level;
         PlayerPosition = gameState.PlayerState.Position;
         PlayerRotatin = gameState.PlayerState.Rotation;
-
+        
         // Copy LevelStates
         Vertex[] vertices;
         Edge[] edges;
         LevelStateCharacter[] levelStateCharacters;
         CharacterState[] characterSaves;
-        LevelGraph graph;
+        Graph graph;
         LevelStateSave levelState;
 
         foreach (LevelStateByBuildIndex levelStateByBuildIndex in gameState.LevelStatesByBuildIndex)
@@ -53,9 +54,10 @@ public class GameSave
             levelStateByBuildIndex.LevelState.Graph.Vertices.CopyTo(vertices, 0);
             edges = new Edge[levelStateByBuildIndex.LevelState.Graph.Edges.Length];
             levelStateByBuildIndex.LevelState.Graph.Edges.CopyTo(edges, 0);
-
+            
             // Copy the graph
-            graph = new LevelGraph(vertices, edges);
+            graph = ScriptableObject.CreateInstance<Graph>();
+            graph.Initialize(vertices, edges);
 
             // Convert levelStateCharacters to characterSaves
             levelStateCharacters = levelStateByBuildIndex.LevelState.Characters;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using GraphCreator;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -17,9 +18,9 @@ public struct LevelStateCharacter
 public partial class LevelState : ScriptableObject
 {
     [SerializeField]
-    private LevelGraph _graph;
+    private Graph _graph;
 
-    public LevelGraph Graph
+    public Graph Graph
     {
         get { return _graph; }
         private set { _graph = value; }
@@ -75,7 +76,7 @@ public partial class LevelState
 
     public void Initialize()
     {
-        _graph = new LevelGraph();
+        _graph = new Graph();
         _graph.ClearVertices();
         _graph.ClearEdges();
 
@@ -94,7 +95,7 @@ public partial class LevelState
         // Record the LevelState before applying change in order to allow undo
         Undo.RecordObject(this, "Added Vertex");
 
-        _graph.AddVertex(GenerateUniqueVertexId(), position);
+        _graph.AddVertex(position);
     }
 
     private int GenerateUniqueVertexId()
@@ -160,7 +161,7 @@ public partial class LevelState
         // Record the LevelState before applying change in order to allow undo
         Undo.RecordObject(this, "Added Edge");
 
-        if (!_graph.AddEdge(GenerateUniqueEdgeId(), vertexA, vertexB, true, EdgeType.Corridor))
+        if (!_graph.AddEdge(vertexA, vertexB, EdgeDirection.Bidirectional, true))
         {
             return false;
         }

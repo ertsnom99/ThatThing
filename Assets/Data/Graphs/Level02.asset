@@ -1,0 +1,281 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d19a5d45d8ccfa949b181b871333d9cd, type: 3}
+  m_Name: Level02
+  m_EditorClassIdentifier: 
+  _vertices:
+  - Id: 0
+    Position: {x: 0, y: 0, z: 0}
+  - Id: 1
+    Position: {x: 0, y: 0.1, z: 10}
+  - Id: 2
+    Position: {x: 20, y: 0.1, z: 10}
+  - Id: 3
+    Position: {x: 20, y: 0.1, z: 20}
+  - Id: 4
+    Position: {x: 20, y: 0.1, z: 30}
+  - Id: 5
+    Position: {x: 20, y: 0.1, z: 50}
+  - Id: 6
+    Position: {x: 10, y: 0.1, z: 50}
+  - Id: 7
+    Position: {x: 0, y: 0.1, z: 50}
+  - Id: 8
+    Position: {x: -10, y: 0.1, z: 50}
+  - Id: 9
+    Position: {x: -20, y: 0.1, z: 50}
+  - Id: 10
+    Position: {x: -20, y: 0.1, z: 30}
+  - Id: 11
+    Position: {x: -20, y: 0.1, z: 10}
+  - Id: 12
+    Position: {x: -10, y: 0.1, z: 10}
+  - Id: 13
+    Position: {x: 10, y: 0.1, z: 30}
+  - Id: 14
+    Position: {x: 10, y: 0.1, z: 40}
+  - Id: 15
+    Position: {x: 10, y: 0.1, z: 20}
+  - Id: 16
+    Position: {x: 0, y: 0.1, z: 20}
+  - Id: 17
+    Position: {x: -10, y: 0.1, z: 20}
+  - Id: 18
+    Position: {x: -10, y: 0.1, z: 30}
+  - Id: 19
+    Position: {x: 0, y: 0.1, z: 30}
+  - Id: 20
+    Position: {x: 0, y: 0.1, z: 40}
+  - Id: 21
+    Position: {x: -10, y: 0.1, z: 40}
+  - Id: 22
+    Position: {x: -30, y: 0.1, z: 30}
+  - Id: 23
+    Position: {x: -30, y: 0.1, z: 50}
+  - Id: 24
+    Position: {x: 30, y: 0.1, z: 20}
+  - Id: 25
+    Position: {x: 30, y: 0.1, z: 60}
+  - Id: 26
+    Position: {x: 10, y: 0.1, z: 60}
+  - Id: 27
+    Position: {x: 0, y: 0.1, z: 60}
+  - Id: 28
+    Position: {x: -10, y: 0.1, z: 60}
+  _edges:
+  - Id: 0
+    VertexA: 0
+    VertexB: 1
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 1
+    VertexA: 1
+    VertexB: 2
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 2
+    VertexA: 2
+    VertexB: 3
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 3
+    VertexA: 3
+    VertexB: 4
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 4
+    VertexA: 4
+    VertexB: 5
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 5
+    VertexA: 5
+    VertexB: 6
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 6
+    VertexA: 6
+    VertexB: 7
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 7
+    VertexA: 7
+    VertexB: 8
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 8
+    VertexA: 8
+    VertexB: 9
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 9
+    VertexA: 9
+    VertexB: 10
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 10
+    VertexA: 10
+    VertexB: 11
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 11
+    VertexA: 11
+    VertexB: 12
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 12
+    VertexA: 12
+    VertexB: 1
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 13
+    VertexA: 4
+    VertexB: 13
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 14
+    VertexA: 13
+    VertexB: 14
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 15
+    VertexA: 13
+    VertexB: 15
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 16
+    VertexA: 15
+    VertexB: 16
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 17
+    VertexA: 16
+    VertexB: 17
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 18
+    VertexA: 17
+    VertexB: 18
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 19
+    VertexA: 18
+    VertexB: 19
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 20
+    VertexA: 19
+    VertexB: 16
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 21
+    VertexA: 17
+    VertexB: 12
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 22
+    VertexA: 19
+    VertexB: 20
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 23
+    VertexA: 20
+    VertexB: 21
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 24
+    VertexA: 21
+    VertexB: 8
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 25
+    VertexA: 10
+    VertexB: 22
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 26
+    VertexA: 22
+    VertexB: 23
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 27
+    VertexA: 23
+    VertexB: 9
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 28
+    VertexA: 3
+    VertexB: 24
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 29
+    VertexA: 24
+    VertexB: 25
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 30
+    VertexA: 25
+    VertexB: 26
+    Direction: 0
+    Type: 0
+    Traversable: 1
+  - Id: 31
+    VertexA: 26
+    VertexB: 6
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 32
+    VertexA: 7
+    VertexB: 27
+    Direction: 0
+    Type: 1
+    Traversable: 1
+  - Id: 33
+    VertexA: 8
+    VertexB: 28
+    Direction: 0
+    Type: 2
+    Traversable: 1
+  VertexIdCount: 29
+  EdgeIdCount: 34
+  EdgesFolded: 01010101010101010101010101010101010101010101010101010101010101010101

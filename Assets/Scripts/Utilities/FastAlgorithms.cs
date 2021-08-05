@@ -6,13 +6,16 @@ public static class FastAlgorithms
     public static void QuickSortAlignedArrays(float[] toSort, int[] aligned, int left, int right)
     {
         int pivot;
+
         if (left < right)
         {
             pivot = PartitionAlignedArrays(toSort, aligned, left, right);
+
             if (pivot > 1)
             {
                 QuickSortAlignedArrays(toSort, aligned, left, pivot - 1);
             }
+
             if (pivot + 1 < right)
             {
                 QuickSortAlignedArrays(toSort, aligned, pivot + 1, right);
@@ -24,16 +27,19 @@ public static class FastAlgorithms
     {
         float pivot;
         pivot = toSort[left];
+
         while (true)
         {
             while (toSort[left] < pivot)
             {
                 left++;
             }
+
             while (toSort[right] > pivot)
             {
                 right--;
             }
+
             if (left < right)
             {
                 if (toSort[left] == toSort[right])

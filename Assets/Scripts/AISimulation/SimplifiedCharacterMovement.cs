@@ -1,3 +1,4 @@
+using GraphCreator;
 using UnityEngine;
 
 public class SimplifiedCharacterMovement : MonoBehaviour

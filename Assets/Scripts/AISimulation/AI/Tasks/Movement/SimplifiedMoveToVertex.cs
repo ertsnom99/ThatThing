@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using BehaviorDesigner.Runtime;
 using BehaviorDesigner.Runtime.Tasks;
+using GraphCreator;
 
 [TaskCategory("AI Simulation")]
 public class SimplifiedMoveToVertex : Action
