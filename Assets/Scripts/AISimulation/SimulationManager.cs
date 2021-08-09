@@ -137,15 +137,15 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
     // Update the CharacterState of all characters in the level
     public void UpdateCharactersState()
     {
-        Graph levelGraph = _gameSave.LevelStatesByBuildIndex[_buildIndex].Graph;
-        int vertexA;
-        int vertexB;
-        Vector3 AtoB;
-        float progress;
-
+        Graph graph = _gameSave.LevelStatesByBuildIndex[_buildIndex].Graph;
+        
         foreach (KeyValuePair<CharacterState, BehaviorTree> entry in _characters)
         {
-            if (levelGraph.ConvertPositionToGraph(entry.Value.transform.position, _wallMask, out vertexA, out vertexB, out progress))
+            int vertexA;
+            int vertexB;
+            float progress;
+
+            if (graph.ConvertPositionToGraph(entry.Value.transform.position, _wallMask, out vertexA, out vertexB, out progress))
             {
                 entry.Key.CurrentVertex = vertexA;
                 entry.Key.NextVertex = vertexB;
@@ -153,13 +153,13 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 
                 if (vertexB > -1)
                 {
-                    AtoB = levelGraph.Vertices[vertexB].Position - levelGraph.Vertices[vertexA].Position;
-                    entry.Key.Position = Vector3.Lerp(levelGraph.Vertices[vertexA].Position, levelGraph.Vertices[vertexB].Position, progress / (AtoB).magnitude);
+                    Vector3 AtoB = graph.Vertices[vertexB].Position - graph.Vertices[vertexA].Position;
+                    entry.Key.Position = Vector3.Lerp(graph.Vertices[vertexA].Position, graph.Vertices[vertexB].Position, progress / (AtoB).magnitude);
                     entry.Key.Rotation = Quaternion.LookRotation(AtoB, Vector3.up).eulerAngles;
                 }
                 else
                 {
-                    entry.Key.Position = levelGraph.Vertices[vertexA].Position;
+                    entry.Key.Position = graph.Vertices[vertexA].Position;
                     entry.Key.Rotation = Vector3.zero;
                 }
             }

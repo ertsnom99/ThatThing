@@ -31,8 +31,7 @@ namespace GraphCreator
 
             if (path != "")
             {
-                int index = path.LastIndexOf("/");
-                path = path.Substring(0, index);
+                path = path.Substring(0, path.LastIndexOf("/"));
 
                 // Can<t duplicate if the name is empty or the file already exist
                 GUI.enabled = _duplicateAssetName != "" && !File.Exists(Application.dataPath + path.Remove(0, 6) + "/" + _duplicateAssetName + ".asset");

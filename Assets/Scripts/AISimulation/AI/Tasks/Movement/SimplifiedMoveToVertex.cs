@@ -30,7 +30,6 @@ public class SimplifiedMoveToVertex : Action
         int from = CharacterState.Value.CurrentVertex;
         int next = CharacterState.Value.NextVertex;
         float distance = 0;
-        PathSegment pathSection;
 
         // Fix CharacterState if the edge became not traversable
         if (next >= 0 && LevelGraph.Value.AdjMatrix[from, next] < 0)
@@ -51,6 +50,8 @@ public class SimplifiedMoveToVertex : Action
 
         if (LevelGraph.Value.CalculatePathWithDijkstra(from, TargetVertex.Value, out _path))
         {
+            PathSegment pathSection;
+
             // Adjust the path if necessary
             // Path wasn't calculated starting at CurrentVertex (in case edge was not traversable)
             if (CharacterState.Value.CurrentVertex != from)

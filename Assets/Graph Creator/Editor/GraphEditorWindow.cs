@@ -556,16 +556,11 @@ namespace GraphCreator
             // Draw edge debugs
             if (_edges != null && _displayEdges)
             {
-                int vertexAIndex;
-                int vertexBIndex;
-                Vector3 direction = Vector3.zero;
-                Vector3 startVertex = Vector3.zero;
-
                 for (int i = 0; i < _editorSettings.CurrentGraph.Edges.Length; i++)
                 {
                     // Draw basic line
-                    vertexAIndex = _editorSettings.CurrentGraph.Edges[i].VertexA;
-                    vertexBIndex = _editorSettings.CurrentGraph.Edges[i].VertexB;
+                    int vertexAIndex = _editorSettings.CurrentGraph.Edges[i].VertexA;
+                    int vertexBIndex = _editorSettings.CurrentGraph.Edges[i].VertexB;
 
                     if (i == _edges.index)
                     {
@@ -581,6 +576,9 @@ namespace GraphCreator
                     }
 
                     Handles.DrawLine(vertices[vertexAIndex].Position, vertices[vertexBIndex].Position, _editorSettings.DebugEdgeThickness);
+
+                    Vector3 direction = Vector3.zero;
+                    Vector3 startVertex = Vector3.zero;
 
                     // Draw arrows if necessary
                     switch (_editorSettings.CurrentGraph.Edges[i].Direction)

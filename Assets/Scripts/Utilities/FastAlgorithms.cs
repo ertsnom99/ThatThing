@@ -5,11 +5,9 @@ public static class FastAlgorithms
     // O(n * log(n))
     public static void QuickSortAlignedArrays(float[] toSort, int[] aligned, int left, int right)
     {
-        int pivot;
-
         if (left < right)
         {
-            pivot = PartitionAlignedArrays(toSort, aligned, left, right);
+            int pivot = PartitionAlignedArrays(toSort, aligned, left, right);
 
             if (pivot > 1)
             {
@@ -25,8 +23,7 @@ public static class FastAlgorithms
 
     private static int PartitionAlignedArrays(float[] toSort, int[] aligned, int left, int right)
     {
-        float pivot;
-        pivot = toSort[left];
+        float pivot = toSort[left];
 
         while (true)
         {

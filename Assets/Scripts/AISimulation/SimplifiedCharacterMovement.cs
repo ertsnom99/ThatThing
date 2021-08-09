@@ -28,8 +28,6 @@ public class SimplifiedCharacterMovement : MonoBehaviour
             return;
         }
 
-        int pathVertexIndex = 0;
-
         float distanceToTravel = _speed * (Time.time - _lastTickTime);
         distanceToTravel += characterState.Progress;
 
@@ -37,7 +35,7 @@ public class SimplifiedCharacterMovement : MonoBehaviour
 
         if (distanceToTravel >= path[path.Length - 1].Distance)
         {
-            pathVertexIndex = path.Length - 1;
+            int pathVertexIndex = path.Length - 1;
 
             characterState.CurrentVertex = path[pathVertexIndex].VertexIndex;
             characterState.NextVertex = -1;
@@ -48,7 +46,7 @@ public class SimplifiedCharacterMovement : MonoBehaviour
         }
         else
         {
-            pathVertexIndex = BinarySearchPathSection(path, distanceToTravel);
+            int pathVertexIndex = BinarySearchPathSection(path, distanceToTravel);
             
             characterState.CurrentVertex = path[pathVertexIndex].VertexIndex;
             characterState.NextVertex = path[pathVertexIndex + 1].VertexIndex;

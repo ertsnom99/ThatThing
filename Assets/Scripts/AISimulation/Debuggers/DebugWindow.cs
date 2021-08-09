@@ -163,13 +163,10 @@ public class DebugWindow : MonoBehaviour
         _edges = new GameObject[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length];
         _lineRenderers = new LineRenderer[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length];
         
-        Vector3 roomAPosition;
-        Vector3 roomBPosition;
-
         for (int i = 0; i < _levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length; i++)
         {
-            roomAPosition = _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].VertexA].Position + _levelGraphContainer.transform.position;
-            roomBPosition = _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].VertexB].Position + _levelGraphContainer.transform.position;
+            Vector3 roomAPosition = _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].VertexA].Position + _levelGraphContainer.transform.position;
+            Vector3 roomBPosition = _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].VertexB].Position + _levelGraphContainer.transform.position;
 
             _lineRenderers[i] = Instantiate(_edgePrefab, roomAPosition, Quaternion.identity, _levelGraphContainer.transform).GetComponent<LineRenderer>();
             _edges[i] = _lineRenderers[i].gameObject;
@@ -183,11 +180,9 @@ public class DebugWindow : MonoBehaviour
         CenterCamera();
 
         // Create characters
-        Vector3 characterPosition;
-
         for (int i = 0; i < _levelStatesByBuildIndex[_selectedLevel].CharacterSaves.Count; i++)
         {
-            characterPosition = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset;
+            Vector3 characterPosition = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset;
             CreateCharacter(_levelStatesByBuildIndex[_selectedLevel].CharacterSaves[i], characterPosition);
         }
     }

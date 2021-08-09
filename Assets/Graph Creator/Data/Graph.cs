@@ -100,12 +100,9 @@ namespace GraphCreator
                 }
             }
 
-            // Populate _adjMatrix
-            float distance;
-
             for (int i = 0; i < _edges.Length; i++)
             {
-                distance = _edges[i].Traversable ? (_vertices[_edges[i].VertexB].Position - _vertices[_edges[i].VertexA].Position).magnitude : -1;
+                float distance = _edges[i].Traversable ? (_vertices[_edges[i].VertexB].Position - _vertices[_edges[i].VertexA].Position).magnitude : -1;
 
                 if (distance == -1)
                 {
@@ -163,15 +160,11 @@ namespace GraphCreator
 
             _distances[sourceVertex] = 0;
 
-            int vertexIndex;
-            PathSegment pathSection;
-            float alt;
-
             // Calculate shortest distances for all vertices
             while(_vertexIndices.Count > 0)
             {
                 // Find the closest vertex to source
-                vertexIndex = _vertexIndices[0];
+                int vertexIndex = _vertexIndices[0];
 
                 for(int i = 1; i < _vertexIndices.Count; i++)
                 {
@@ -194,7 +187,7 @@ namespace GraphCreator
                     }
 
                     // Update distance if shorter path found
-                    alt = _distances[vertexIndex] + _adjMatrix[vertexIndex, i];
+                    float alt = _distances[vertexIndex] + _adjMatrix[vertexIndex, i];
 
                     if (alt < _distances[i])
                     {
@@ -208,6 +201,7 @@ namespace GraphCreator
             int currentVertex = targetVertex;
             _shortestPath.Clear();
 
+            PathSegment pathSection;
             pathSection.VertexIndex = targetVertex;
             pathSection.Distance = _distances[targetVertex];
             pathSection.Position = _vertices[targetVertex].Position;
@@ -216,7 +210,7 @@ namespace GraphCreator
             // Start from to target vertex and find path back to the source vertex
             while (_parents[currentVertex] != -1)
             {
-                vertexIndex = _parents[currentVertex];
+                int vertexIndex = _parents[currentVertex];
 
                 pathSection.VertexIndex = vertexIndex;
                 pathSection.Distance = _distances[vertexIndex];
@@ -377,21 +371,14 @@ namespace GraphCreator
                 return false;
             }
 
-            int secondVertex;
-            Vector3 vertexToPos;
-            Vector3 vertexAToSecond;
-            Vector3 secondToVertexA;
-            float dotA;
-            float dotB;
-            Vector3 projectedPosition;
-
-            float distanceToPosition;
             const float infinity = 99999;
             float smallestDistance = infinity;
 
             // Find closest edge connected to the first vertexA
             foreach (Edge edge in _edges)
             {
+                int secondVertex;
+
                 if (edge.VertexA == vertexA)
                 {
                     secondVertex = edge.VertexB;
@@ -406,22 +393,22 @@ namespace GraphCreator
                 }
 
                 // Find progress along the edge
-                vertexAToSecond = _vertices[secondVertex].Position - _vertices[vertexA].Position;
-                vertexToPos = position - _vertices[vertexA].Position;
-                dotA = Vector3.Dot(vertexAToSecond, vertexToPos);
+                Vector3 vertexAToSecond = _vertices[secondVertex].Position - _vertices[vertexA].Position;
+                Vector3 vertexToPos = position - _vertices[vertexA].Position;
+                float dotA = Vector3.Dot(vertexAToSecond, vertexToPos);
 
-                secondToVertexA = _vertices[vertexA].Position - _vertices[secondVertex].Position;
+                Vector3 secondToVertexA = _vertices[vertexA].Position - _vertices[secondVertex].Position;
                 vertexToPos = position - _vertices[secondVertex].Position;
-                dotB = Vector3.Dot(secondToVertexA, vertexToPos);
+                float dotB = Vector3.Dot(secondToVertexA, vertexToPos);
 
                 // Check if position is aligned with the edge
                 if (dotA * dotB > .0f)
                 {
                     // Calculate projection directly since we already calculated the dot product
-                    projectedPosition = (dotA / vertexAToSecond.sqrMagnitude) * vertexAToSecond;
+                    Vector3 projectedPosition = (dotA / vertexAToSecond.sqrMagnitude) * vertexAToSecond;
 
                     // Calculate the distance between the position and the projected position 
-                    distanceToPosition = (position - _vertices[vertexA].Position - projectedPosition).sqrMagnitude;
+                    float distanceToPosition = (position - _vertices[vertexA].Position - projectedPosition).sqrMagnitude;
 
                     if (distanceToPosition < smallestDistance)
                     {
@@ -437,11 +424,9 @@ namespace GraphCreator
 
         private void QuickSortIndexesByDistance(float[] toSort, int[] aligned, int left, int right)
         {
-            int pivot;
-
             if (left < right)
             {
-                pivot = PartitionAlignedArrays(toSort, aligned, left, right);
+                int pivot = PartitionAlignedArrays(toSort, aligned, left, right);
 
                 if (pivot > 1)
                 {
@@ -457,8 +442,7 @@ namespace GraphCreator
 
         private int PartitionAlignedArrays(float[] toSort, int[] aligned, int left, int right)
         {
-            float pivot;
-            pivot = toSort[left];
+            float pivot = toSort[left];
 
             while (true)
             {

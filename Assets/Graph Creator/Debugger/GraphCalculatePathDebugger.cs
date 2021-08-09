@@ -6,11 +6,14 @@ namespace GraphCreator
     {
         private enum PathFindingAlgorithm { Dijkstra, AStar }
 
-        public Graph Graph;
+        [SerializeField]
+        private Graph Graph;
         [SerializeField]
         private PathFindingAlgorithm AlgorithmUsed;
-        public int FromId = 0;
-        public int ToId = 1;
+        [SerializeField]
+        private int FromId = 0;
+        [SerializeField]
+        private int ToId = 1;
 
         private void Awake()
         {
