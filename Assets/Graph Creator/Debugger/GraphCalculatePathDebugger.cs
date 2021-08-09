@@ -4,7 +4,11 @@ namespace GraphCreator
 {
     public class GraphCalculatePathDebugger : MonoBehaviour
     {
+        private enum PathFindingAlgorithm { Dijkstra, AStar }
+
         public Graph Graph;
+        [SerializeField]
+        private PathFindingAlgorithm AlgorithmUsed;
         public int FromId = 0;
         public int ToId = 1;
 
@@ -44,9 +48,20 @@ namespace GraphCreator
                 return;    
             }
 
+            bool pathFound = false;
             PathSegment[] path = new PathSegment[0];
 
-            if (Graph.CalculatePath(from, to, out path))
+            switch (AlgorithmUsed)
+            {
+                case PathFindingAlgorithm.Dijkstra:
+                    pathFound = Graph.CalculatePathWithDijkstra(from, to, out path);
+                    break;
+                case PathFindingAlgorithm.AStar:
+                    pathFound = Graph.CalculatePathWithAStar(from, to, out path);
+                    break;
+            }
+
+            if (pathFound)
             {
                 if (path.Length == 1)
                 {
@@ -66,7 +81,7 @@ namespace GraphCreator
             }
             else
             {
-                Debug.Log("No path!");
+                Debug.Log("No path with " + AlgorithmUsed + "!");
             }
         }
     }

@@ -49,7 +49,7 @@ public class SimplifiedMoveToVertex : Action
             from = CharacterState.Value.NextVertex;
         }
 
-        if (LevelGraph.Value.CalculatePath(from, TargetVertex.Value, out _path))
+        if (LevelGraph.Value.CalculatePathWithDijkstra(from, TargetVertex.Value, out _path))
         {
             // Adjust the path if necessary
             // Path wasn't calculated starting at CurrentVertex (in case edge was not traversable)

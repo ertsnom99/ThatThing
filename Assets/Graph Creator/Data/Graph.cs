@@ -38,6 +38,7 @@ namespace GraphCreator
     [CreateAssetMenu(fileName = "Graph", menuName = "Graph Creator/Graph", order = 2)]
     public partial class Graph : ScriptableObject
     {
+
         [SerializeField]
         private Vertex[] _vertices = new Vertex[0];
 
@@ -63,12 +64,22 @@ namespace GraphCreator
             get { return _adjMatrix; }
             private set { _adjMatrix = value; }
         }
+        private struct AStarNode
+        {
+            public int VertexIndex;
+            public float GCost;
+            public float HCost;
+            public float FCost;
+            public int Parent;
+        }
 
-        // Variables used in CalculatePath() and ConvertPositionToGraph()
-        private List<int> _vertexIndices = new List<int>();
+        // Variables used in path calculation and ConvertPositionToGraph()
+        private List<PathSegment> _shortestPath = new List<PathSegment>();
         private float[] _distances;
         private int[] _parents;
-        private List<PathSegment> _shortestPath = new List<PathSegment>();
+        private List<int> _vertexIndices = new List<int>();
+        private List<AStarNode> _visitedVertex = new List<AStarNode>();
+        private List<AStarNode> _activeVertex = new List<AStarNode>();
         private int[] _indexes;
 
         public void Initialize()
@@ -130,7 +141,7 @@ namespace GraphCreator
             Initialize();
         }
 
-        public bool CalculatePath(int sourceVertex, int targetVertex, out PathSegment[] path)
+        public bool CalculatePathWithDijkstra(int sourceVertex, int targetVertex, out PathSegment[] path)
         {
             path = new PathSegment[0];
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -219,6 +230,104 @@ namespace GraphCreator
             {
                 path = _shortestPath.ToArray();
                 return true;
+            }
+
+            return false;
+        }
+
+        public bool CalculatePathWithAStar(int sourceVertex, int targetVertex, out PathSegment[] path)
+        {
+            path = new PathSegment[0];
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            if (_adjMatrix == null)
+            {
+                Debug.LogError("The AdjMatrix is null! Was the Graph Initialized?");
+                return false;
+            }
+#endif
+            _visitedVertex.Clear();
+            _activeVertex.Clear();
+
+            // Add starting node
+            _activeVertex.Add(new AStarNode { VertexIndex = sourceVertex, GCost = 0, HCost = 0, FCost = 0, Parent = -1 });
+
+            while(_activeVertex.Count > 0)
+            {
+                int current = 0;
+
+                // Find active node with lowest F cost
+                for (int i = 1; i < _activeVertex.Count; i++)
+                {
+                    if (_activeVertex[i].FCost < _activeVertex[current].FCost
+                    || (_activeVertex[i].FCost == _activeVertex[current].FCost || _activeVertex[i].HCost < _activeVertex[current].HCost))
+                    {
+                        current = i;
+                    }
+                }
+
+                // Add node to visited ones and remove it from active ones
+                _visitedVertex.Add(_activeVertex[current]);
+                _activeVertex.RemoveAt(current);
+                current = _visitedVertex.Count - 1;
+
+                // Create the path if reached the target vertex
+                if (_visitedVertex[current].VertexIndex == targetVertex)
+                {
+                    PathSegment pathSection;
+                    _shortestPath.Clear();
+
+                    while(true)
+                    {
+                        pathSection.VertexIndex = _visitedVertex[current].VertexIndex;
+                        pathSection.Distance = _visitedVertex[current].GCost;
+                        pathSection.Position = _vertices[_visitedVertex[current].VertexIndex].Position;
+                        _shortestPath.Insert(0, pathSection);
+
+                        if (_visitedVertex[current].VertexIndex == sourceVertex)
+                        {
+                            path = _shortestPath.ToArray();
+                            return true;
+                        }
+
+                        current = _visitedVertex[current].Parent;
+                    }
+                }
+
+                // Check all neighbours
+                for (int i = 0; i < _vertices.Length; i++)
+                {
+                    // Skip neighbour if not traversable or already visited
+                    if (_adjMatrix[_visitedVertex[current].VertexIndex, i] == -1 || _visitedVertex.FindIndex(node => node.VertexIndex == i) > -1)
+                    {
+                        continue;
+                    }
+
+                    int activeIndex = _activeVertex.FindIndex(node => node.VertexIndex == i);
+                    float GCost = _adjMatrix[_visitedVertex[current].VertexIndex, i] + _visitedVertex[current].GCost;
+                    float HCost = (_vertices[i].Position - _vertices[_visitedVertex[current].VertexIndex].Position).magnitude;
+
+                    // Add the neighbour 
+                    if (activeIndex == -1)
+                    {
+                        _activeVertex.Add(new AStarNode { VertexIndex = i,
+                                                          GCost = GCost,
+                                                          HCost = HCost,
+                                                          FCost = GCost+ HCost,
+                                                          Parent = current });
+
+                        continue;
+                    }
+
+                    // Update the neighbour 
+                    if (_activeVertex[activeIndex].FCost > GCost + HCost)
+                    {
+                        _activeVertex[activeIndex] = new AStarNode { VertexIndex = i,
+                                                                     GCost = GCost,
+                                                                     HCost = HCost,
+                                                                     FCost = GCost + HCost,
+                                                                     Parent = current };
+                    }
+                }
             }
 
             return false;
