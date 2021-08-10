@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GraphCreator
 {
-    public class GraphCalculatePathDebugger : MonoBehaviour
+    public class PathfindingDebugger : MonoBehaviour
     {
         private enum PathFindingAlgorithm { Dijkstra, AStar }
 
