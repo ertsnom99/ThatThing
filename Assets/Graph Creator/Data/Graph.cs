@@ -138,7 +138,7 @@ namespace GraphCreator
             Initialize();
         }
 
-        public bool CalculatePathWithDijkstra(int sourceVertex, int targetVertex, out PathSegment[] path)
+        public bool CalculatePathWithDijkstra(int sourceVertexIndex, int targetVertexIndex, out PathSegment[] path)
         {
             path = new PathSegment[0];
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -158,7 +158,7 @@ namespace GraphCreator
                 _vertexIndices.Add(i);
             }
 
-            _distances[sourceVertex] = 0;
+            _distances[sourceVertexIndex] = 0;
 
             // Calculate shortest distances for all vertices
             while(_vertexIndices.Count > 0)
@@ -198,13 +198,13 @@ namespace GraphCreator
             }
         
             // Find shortest path
-            int currentVertex = targetVertex;
+            int currentVertex = targetVertexIndex;
             _shortestPath.Clear();
 
             PathSegment pathSection;
-            pathSection.VertexIndex = targetVertex;
-            pathSection.Distance = _distances[targetVertex];
-            pathSection.Position = _vertices[targetVertex].Position;
+            pathSection.VertexIndex = targetVertexIndex;
+            pathSection.Distance = _distances[targetVertexIndex];
+            pathSection.Position = _vertices[targetVertexIndex].Position;
             _shortestPath.Add(pathSection);
 
             // Start from to target vertex and find path back to the source vertex
@@ -220,7 +220,7 @@ namespace GraphCreator
                 currentVertex = vertexIndex;
             }
 
-            if (currentVertex == sourceVertex)
+            if (currentVertex == sourceVertexIndex)
             {
                 path = _shortestPath.ToArray();
                 return true;
@@ -229,7 +229,7 @@ namespace GraphCreator
             return false;
         }
 
-        public bool CalculatePathWithAStar(int sourceVertex, int targetVertex, out PathSegment[] path)
+        public bool CalculatePathWithAStar(int sourceVertexIndex, int targetVertexIndex, out PathSegment[] path)
         {
             path = new PathSegment[0];
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -243,7 +243,7 @@ namespace GraphCreator
             _activeVertex.Clear();
 
             // Add starting node
-            _activeVertex.Add(new AStarNode { VertexIndex = sourceVertex, GCost = 0, HCost = 0, FCost = 0, Parent = -1 });
+            _activeVertex.Add(new AStarNode { VertexIndex = sourceVertexIndex, GCost = 0, HCost = 0, FCost = 0, Parent = -1 });
 
             while(_activeVertex.Count > 0)
             {
@@ -265,7 +265,7 @@ namespace GraphCreator
                 current = _visitedVertex.Count - 1;
 
                 // Create the path if reached the target vertex
-                if (_visitedVertex[current].VertexIndex == targetVertex)
+                if (_visitedVertex[current].VertexIndex == targetVertexIndex)
                 {
                     PathSegment pathSection;
                     _shortestPath.Clear();
@@ -277,7 +277,7 @@ namespace GraphCreator
                         pathSection.Position = _vertices[_visitedVertex[current].VertexIndex].Position;
                         _shortestPath.Insert(0, pathSection);
 
-                        if (_visitedVertex[current].VertexIndex == sourceVertex)
+                        if (_visitedVertex[current].VertexIndex == sourceVertexIndex)
                         {
                             path = _shortestPath.ToArray();
                             return true;

@@ -89,7 +89,6 @@ MonoBehaviour:
   DebugVertexColor: {r: 0, g: 0, b: 1, a: 0.5}
   DebugSelectedVertexColor: {r: 1, g: 0, b: 0, a: 0.5}
   DebugVertexDiscRadius: 1
-  DebugEdgeThickness: 0.5
   VertexIdStyle:
     m_Name: 
     m_Normal:
@@ -161,6 +160,7 @@ MonoBehaviour:
   DebugIntraversableEdgeColor: {r: 1, g: 0, b: 0, a: 1}
   DebugSelectedEdgeColor: {r: 1, g: 0, b: 1, a: 1}
   DebugSelectedEdgeVertexColor: {r: 1, g: 0.5019608, b: 0, a: 0.5}
+  DebugEdgeThickness: 0.5
   DebugEdgeArrowCount: 5
   DebugEdgeArrowHeadLength: 1
   DebugEdgeArrowHeadAngle: 40

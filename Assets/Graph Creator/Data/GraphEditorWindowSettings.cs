@@ -5,7 +5,7 @@ namespace GraphCreator
     [CreateAssetMenu(fileName = "GraphEditorWindowSettings", menuName = "Graph Creator/Graph Editor Window Settings", order = 1)]
     public class GraphEditorWindowSettings : ScriptableObject
     {
-        [Header("Graph")]
+        [HideInInspector]
         public Graph CurrentGraph;
 
         [Header("Defaults")]
@@ -22,8 +22,6 @@ namespace GraphCreator
         public Color DebugSelectedVertexColor = new Color(1.0f, .0f, .0f, .5f);
         [Min(.0f)]
         public float DebugVertexDiscRadius = 1.0f;
-        [Min(.0f)]
-        public float DebugEdgeThickness = .5f;
         public GUIStyle VertexIdStyle = new GUIStyle();
 
         [Header("Edge Debug")]
@@ -31,6 +29,8 @@ namespace GraphCreator
         public Color DebugIntraversableEdgeColor = new Color(1.0f, .0f, .0f, 1.0f);
         public Color DebugSelectedEdgeColor = new Color(1.0f, .0f, 1.0f, 1.0f);
         public Color DebugSelectedEdgeVertexColor = new Color(1.0f, .5f, .0f, .5f);
+        [Min(.0f)]
+        public float DebugEdgeThickness = .5f;
         [Min(1)]
         public int DebugEdgeArrowCount = 5;
         public float DebugEdgeArrowHeadLength = 1.0f;
