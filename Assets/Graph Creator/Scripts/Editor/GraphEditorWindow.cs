@@ -110,7 +110,7 @@ namespace GraphCreator
                 }
                 else
                 {
-                    EditorGUILayout.LabelField("Couldn't find GraphEditorWindowSettings.asset file in Assets\\Editor Default Resources\\Graph Creator!", _defaultInvalidStyle);
+                    EditorGUILayout.LabelField("Couldn't find GraphEditorWindowSettings.asset file in Assets\\Editor Default Resources\\Graph Creator. Please, create it.", _defaultInvalidStyle);
                     return;
                 }
             }
