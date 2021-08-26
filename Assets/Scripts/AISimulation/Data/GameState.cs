@@ -38,6 +38,15 @@ public partial struct LevelStateByBuildIndex
 [Serializable]
 public partial struct CharacterState
 {
+    [SerializeField]
+    private int _id;
+
+    public int ID
+    {
+        get { return _id; }
+        private set { _id = value; }
+    }
+
     // Index of the vertex
     [SerializeField]
     private int _vertex;
@@ -136,6 +145,8 @@ public partial struct CharacterState
 
 public partial class GameState
 {
+    [HideInInspector]
+    public int CharacterIdCount = 0;
     [HideInInspector]
     public bool DisplayCharacterCounters;
 

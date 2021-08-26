@@ -15,7 +15,8 @@ public class GameStateEditor : Editor
     private SerializedProperty _script;
     private SerializedProperty _serializedPlayerState;
     private SerializedProperty _levelStatesByBuildIndex;
-    private SerializedProperty _showCharacterCounters;
+    private SerializedProperty _characterIdCount;
+    private SerializedProperty _displayCharacterCounters;
     private ReorderableList _levelStateByBuildIndexList;
     private List<ReorderableList> _characterStates = new List<ReorderableList>();
 
@@ -49,14 +50,11 @@ public class GameStateEditor : Editor
         _script = serializedObject.FindProperty("m_Script");
         _serializedPlayerState = serializedObject.FindProperty("_playerState");
         _levelStatesByBuildIndex = serializedObject.FindProperty("_levelStatesByBuildIndex");
-        _showCharacterCounters = serializedObject.FindProperty("DisplayCharacterCounters");
-
+        _characterIdCount = serializedObject.FindProperty("CharacterIdCount");
+        _displayCharacterCounters = serializedObject.FindProperty("DisplayCharacterCounters");
+        
         _levelStateByBuildIndexList = new ReorderableList(serializedObject, _levelStatesByBuildIndex, false, true, true, true);
-
-        for(int i = 0; i < _levelStateByBuildIndexList.count; i++)
-        {
-            _characterStates.Add(new ReorderableList(serializedObject, _levelStatesByBuildIndex.GetArrayElementAtIndex(i).FindPropertyRelative("_characterStates"), false, true, true, true));
-        }
+        CreateCharacterStates();
 
         _invalidStyle.normal.textColor = Color.red;
         _invalidStyle.fontSize = 20;
@@ -83,6 +81,14 @@ public class GameStateEditor : Editor
         SceneView.RepaintAll();
     }
 
+    private void CreateCharacterStates()
+    {
+        for (int i = 0; i < _levelStateByBuildIndexList.count; i++)
+        {
+            _characterStates.Add(new ReorderableList(serializedObject, _levelStatesByBuildIndex.GetArrayElementAtIndex(i).FindPropertyRelative("_characterStates"), false, true, true, true));
+        }
+    }
+
     private void OnDisable()
     {
         // When the window is destroyed, remove the delegate
@@ -94,6 +100,7 @@ public class GameStateEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        // TODO: Remove these lines
         //DrawDefaultInspector();
         //return;
 
@@ -137,7 +144,7 @@ public class GameStateEditor : Editor
         HandleLevelStatesByBuildIndex(_levelStateByBuildIndexList);
         _levelStateByBuildIndexList.DoLayoutList();
 
-        EditorGUILayout.PropertyField(_showCharacterCounters);
+        EditorGUILayout.PropertyField(_displayCharacterCounters);
 
         // TODO: Add the list of connections
 
@@ -277,7 +284,7 @@ public class GameStateEditor : Editor
         levelStatesByBuildIndex.elementHeightCallback = (int index) =>
         {
             // Space before the CharacterState list (without Graph field)
-            float height = (EditorGUIUtility.standardVerticalSpacing * 2.0f) + EditorGUIUtility.singleLineHeight;
+            float height = EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight * 2.0f;
 
             // If LevelStateByBuildIndex is folded
             if (levelStatesByBuildIndex.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded").boolValue)
@@ -297,7 +304,7 @@ public class GameStateEditor : Editor
             // Minimum space taken by the ReorderabelList
             height += EditorGUIUtility.singleLineHeight * 3.0f;
 
-            if (_characterStates[index].serializedProperty.arraySize == 0)
+            if (_characterStates[index].count == 0)
             {
                 // Space for empty ReorderabelList
                 height += EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight;
@@ -305,7 +312,7 @@ public class GameStateEditor : Editor
             else
             {
                 // Space based on how many characters there is and if they are folded/valid or not
-                for (int i = 0; i < _characterStates[index].serializedProperty.arraySize; i++)
+                for (int i = 0; i < _characterStates[index].count; i++)
                 {
                     height += EditorGUIUtility.standardVerticalSpacing * 2.0f;
 
@@ -314,11 +321,11 @@ public class GameStateEditor : Editor
 
                     if (folded || settings < 0 || settings >= _simulationSettings.CharactersSettingsUsed.Settings.Length)
                     {
-                        height += EditorGUIUtility.singleLineHeight * 2.11f;
+                        height += EditorGUIUtility.singleLineHeight * 3.11f;
                     }
                     else
                     {
-                        height += EditorGUIUtility.singleLineHeight * 5.11f;
+                        height += EditorGUIUtility.singleLineHeight * 6.11f;
                     }
                 }
             }
@@ -331,17 +338,21 @@ public class GameStateEditor : Editor
             // Add new levelStateByBuildIndex
             ReorderableList.defaultBehaviours.DoAddButton(list);
 
+            // Clear the CharacterStates of the new LevelStatesByBuildIndex
+            _levelStatesByBuildIndex.GetArrayElementAtIndex(_levelStatesByBuildIndex.arraySize - 1).FindPropertyRelative("_characterStates").arraySize = 0;
+            
             // Create a new ReorderableList and store it
             _characterStates.Add(new ReorderableList(serializedObject, _levelStatesByBuildIndex.GetArrayElementAtIndex(_levelStatesByBuildIndex.arraySize - 1).FindPropertyRelative("_characterStates"), false, true, true, true));
         };
 
         levelStatesByBuildIndex.onRemoveCallback = list =>
         {
-            // Create a new ReorderableList and store it
-            _characterStates.RemoveAt(list.index);
-            
             // Remove selected levelStateByBuildIndex
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
+
+            // Recreate all CharacterState ReorderableLists (necessary to avoid out of bounds error)
+            _characterStates.Clear();
+            CreateCharacterStates();
         };
     }
 
@@ -355,15 +366,20 @@ public class GameStateEditor : Editor
         characterStates.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
             // Get the properties
+            int id = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_id").intValue;
             SerializedProperty vertex = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_vertex");
             SerializedProperty settings = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_settings");
-            
+
+            // Id
+            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("ID"));
+            EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(id.ToString()));
+
             // Dropdown for vertex
             bool validVertex = vertex.intValue >= 0 && vertex.intValue < vertexOptions.Length;
             GUI.color = !validVertex ? Color.red : _originalTextColor;
             GUI.backgroundColor = !validVertex ? Color.red : _originalBackgroundColor;
-            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Vertex"));
-            vertex.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .8f, EditorGUIUtility.singleLineHeight), vertex.intValue, vertexOptions);
+            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * (1.1f + _reorderableListElementSpaceRatio), rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Vertex"));
+            vertex.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), vertex.intValue, vertexOptions);
             GUI.color = Color.white;
             GUI.backgroundColor = _originalBackgroundColor;
 
@@ -373,8 +389,8 @@ public class GameStateEditor : Editor
             bool validSettings = settings.intValue >= 0 && settings.intValue < settingsOptions.Length;
             GUI.color = !validSettings ? Color.red : _originalTextColor;
             GUI.backgroundColor = !validSettings ? Color.red : _originalBackgroundColor;
-            foldedProperty.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * (1.1f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), !foldedProperty.boolValue, "Settings");
-            settings.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), settings.intValue, settingsOptions);
+            foldedProperty.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * (2.1f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), !foldedProperty.boolValue, "Settings");
+            settings.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), settings.intValue, settingsOptions);
             GUI.color = Color.white;
             GUI.backgroundColor = _originalBackgroundColor;
 
@@ -382,12 +398,12 @@ public class GameStateEditor : Editor
             if (!foldedProperty.boolValue && settings.intValue >= 0 && settings.intValue < _simulationSettings.CharactersSettingsUsed.Settings.Length)
             {
                 GUI.enabled = false;
-                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab"));
-                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].Prefab, typeof(GameObject), false);
-                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab Behavior"));
-                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].PrefabBehavior, typeof(ExternalBehaviorTree), false);
-                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (4.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Simplified Behavior"));
-                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (4.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].SimplifiedBehavior, typeof(ExternalBehaviorTree), false);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab"));
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].Prefab, typeof(GameObject), false);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (4.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab Behavior"));
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (4.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].PrefabBehavior, typeof(ExternalBehaviorTree), false);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (5.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Simplified Behavior"));
+                EditorGUI.ObjectField(new Rect(rect.x + rect.width * .25f, rect.y + EditorGUIUtility.singleLineHeight * (5.0f + _reorderableListElementSpaceRatio), rect.width * .75f, EditorGUIUtility.singleLineHeight), _simulationSettings.CharactersSettingsUsed.Settings[settings.intValue].SimplifiedBehavior, typeof(ExternalBehaviorTree), false);
                 GUI.enabled = true;
             }
         };
@@ -401,14 +417,23 @@ public class GameStateEditor : Editor
 
             if (folded || settings < 0 || settings >= _simulationSettings.CharactersSettingsUsed.Settings.Length)
             {
-                height += EditorGUIUtility.singleLineHeight * 2.0f;
+                height += EditorGUIUtility.singleLineHeight * 3.0f;
             }
             else
             {
-                height += EditorGUIUtility.singleLineHeight * 5.0f;
+                height += EditorGUIUtility.singleLineHeight * 6.0f;
             }
 
             return height;
+        };
+
+        characterStates.onAddCallback = list =>
+        {
+            // Add new levelStateByBuildIndex
+            ReorderableList.defaultBehaviours.DoAddButton(list);
+
+            list.serializedProperty.GetArrayElementAtIndex(list.count - 1).FindPropertyRelative("_id").intValue = _characterIdCount.intValue;
+            _characterIdCount.intValue++;
         };
     }
 
