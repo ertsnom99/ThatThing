@@ -10,15 +10,15 @@ using UnityEngine.SceneManagement;
 public partial class SimulationManager : MonoSingleton<SimulationManager>
 {
     private int _buildIndex = -1;
-    private Dictionary<CharacterState, BehaviorTree> _characters = new Dictionary<CharacterState, BehaviorTree>();
-    private Dictionary<CharacterState, BehaviorTree> _simplifiedCharacters = new Dictionary<CharacterState, BehaviorTree>();
+    private Dictionary<CharacterSave, BehaviorTree> _characters = new Dictionary<CharacterSave, BehaviorTree>();
+    private Dictionary<CharacterSave, BehaviorTree> _simplifiedCharacters = new Dictionary<CharacterSave, BehaviorTree>();
     private float _timeSinceLastTick = .0f;
 
     private static SimulationSettings _simulationSettings;
     private static GameSave _gameSave;
 
     private const string _levelGraphVariableName = "LevelGraph";
-    private const string _characterStateVariableName = "CharacterState";
+    private const string _characterSaveVariableName = "CharacterSave";
 
     [SerializeField]
     private LayerMask _wallMask;
@@ -56,15 +56,15 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
             if (_buildIndex == levelState.Key)
             {
                 // Create AIs
-                foreach(CharacterState character in levelState.Value.CharacterSaves)
+                foreach(CharacterSave character in levelState.Value.CharacterSaves)
                 {
                     AI = CreateAI(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
-                             character.Position,
-                             Quaternion.Euler(character.Rotation),
-                             null,
-                             _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
-                             levelState.Value.Graph,
-                             character);
+                                  character.Position,
+                                  Quaternion.Euler(character.Rotation),
+                                  null,
+                                  _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
+                                  levelState.Value.Graph,
+                                  character);
 
                     AI.gameObject.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
                     _characters.Add(character, AI);
@@ -76,15 +76,15 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
                 AIContainer.transform.parent = transform;
 
                 // Create simplified AIs
-                foreach (CharacterState character in levelState.Value.CharacterSaves)
+                foreach (CharacterSave character in levelState.Value.CharacterSaves)
                 {
                     AI = CreateAI(_simulationSettings.SimplifiedAIPrefab,
-                             Vector3.zero, 
-                             Quaternion.identity, 
-                             AIContainer.transform,
-                             _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
-                             levelState.Value.Graph,
-                             character);
+                                  Vector3.zero,
+                                  Quaternion.identity,
+                                  AIContainer.transform,
+                                  _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
+                                  levelState.Value.Graph,
+                                  character);
 
                     AI.GetComponent<SimplifiedCharacterMovement>().SetSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
                     _simplifiedCharacters.Add(character, AI);
@@ -93,13 +93,13 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         }
     }
 
-    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, Graph levelGraph, CharacterState characterState)
+    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, Graph levelGraph, CharacterSave characterState)
     {
         GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
         BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
         behaviorTree.ExternalBehavior = behavior;
         behaviorTree.SetVariableValue(_levelGraphVariableName, levelGraph);
-        behaviorTree.SetVariableValue(_characterStateVariableName, characterState);
+        behaviorTree.SetVariableValue(_characterSaveVariableName, characterState);
 
         return behaviorTree;
     }
@@ -116,7 +116,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         UpdateDebugWindow();
 #endif
         // Update AIs
-        foreach (KeyValuePair<CharacterState, BehaviorTree> entry in _characters)
+        foreach (KeyValuePair<CharacterSave, BehaviorTree> entry in _characters)
         {
             BehaviorManager.instance.Tick(entry.Value);
         }
@@ -127,7 +127,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         while (_timeSinceLastTick >= _simulationSettings.SimplifiedAITickRate)
         {
             _timeSinceLastTick -= _simulationSettings.SimplifiedAITickRate;
-            foreach (KeyValuePair<CharacterState, BehaviorTree> entry in _simplifiedCharacters)
+            foreach (KeyValuePair<CharacterSave, BehaviorTree> entry in _simplifiedCharacters)
             {
                 BehaviorManager.instance.Tick(entry.Value);
             }
@@ -139,7 +139,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
     {
         Graph graph = _gameSave.LevelStatesByBuildIndex[_buildIndex].Graph;
         
-        foreach (KeyValuePair<CharacterState, BehaviorTree> entry in _characters)
+        foreach (KeyValuePair<CharacterSave, BehaviorTree> entry in _characters)
         {
             int vertexA;
             int vertexB;

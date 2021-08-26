@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: SimulationSettings
   m_EditorClassIdentifier: 
   _charactersSettingsUsed: {fileID: 11400000, guid: 17a176cf65aa6844791862bbaecb4310, type: 2}
-  _initialGameState: {fileID: 11400000, guid: 118aab08155f12b478b842e435e79217, type: 2}
+  _initialGameState: {fileID: 11400000, guid: 208c7ff0c46bfb549a782b76496d1d17, type: 2}
   _simplifiedAIPrefab: {fileID: 6787028342017985559, guid: 11743cf0afda9914cb734f337a4048ba, type: 3}
   _simplifiedAITickRate: 1

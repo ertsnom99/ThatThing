@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 public class ConvertPositionToGraphDebugger : MonoBehaviour
 {
     [SerializeField]
-    private LevelState _levelState;
+    private Graph _graph;
     [SerializeField]
     private Transform _testPos;
     [SerializeField]
@@ -20,7 +20,7 @@ public class ConvertPositionToGraphDebugger : MonoBehaviour
         int vertexB;
         float progress;
 
-        if (gameSave == null || !gameSave.LevelStatesByBuildIndex[buildIndex].Graph.ConvertPositionToGraph(_testPos.position, _wallMask, out vertexA, out vertexB, out progress))
+        if (_graph == null || !_graph.ConvertPositionToGraph(_testPos.position, _wallMask, out vertexA, out vertexB, out progress))
         {
             return;
         }

@@ -15,6 +15,46 @@ MonoBehaviour:
   _playerState: {fileID: 11400000, guid: 24cd8c15bcc57744faac3c7d316f489c, type: 2}
   _levelStatesByBuildIndex:
   - _buildIndex: 1
-    _levelState: {fileID: 11400000, guid: 12cb3999ef2a5194c963f0b539a32b92, type: 2}
+    _graph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
+    _characterStates:
+    - _vertex: 13
+      _settings: 0
+      Folded: 1
+    - _vertex: 2
+      _settings: 1
+      Folded: 1
+    Folded: 0
   - _buildIndex: 2
-    _levelState: {fileID: 11400000, guid: 26525f2d091024b4e8d925041c45a4c3, type: 2}
+    _graph: {fileID: 11400000, guid: e8d4687d5b50fac47adad5f60f2844d3, type: 2}
+    _characterStates:
+    - _vertex: 16
+      _settings: 2
+      Folded: 1
+    - _vertex: 16
+      _settings: 2
+      Folded: 1
+    - _vertex: 16
+      _settings: 2
+      Folded: 1
+    Folded: 0
+  - _buildIndex: 3
+    _graph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
+    _characterStates:
+    - _vertex: 10
+      _settings: 2
+      Folded: 1
+    - _vertex: 2
+      _settings: 2
+      Folded: 1
+    - _vertex: 15
+      _settings: 2
+      Folded: 1
+    - _vertex: 2
+      _settings: 2
+      Folded: 1
+    - _vertex: 8
+      _settings: 2
+      Folded: 1
+    Folded: 0
+  _levelEdges: []
+  DisplayCharacterCounters: 1

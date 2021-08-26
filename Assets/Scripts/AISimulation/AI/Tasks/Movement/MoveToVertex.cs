@@ -6,7 +6,7 @@ using UnityEngine.AI;
 [TaskCategory("AI Simulation")]
 public class MoveToVertex : Action
 {
-    public SharedLevelGraph LevelGraph;
+    public SharedGraph LevelGraph;
     public SharedInt Vertex;
     public float _pathRefreshRate = .2f;
     public float _stopDistance = 3.0f;

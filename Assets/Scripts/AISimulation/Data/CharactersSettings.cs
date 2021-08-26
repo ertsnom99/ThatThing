@@ -55,7 +55,7 @@ public struct CharacterSettings
 [CreateAssetMenu(fileName = "CharactersSetting", menuName = "AI Simulation/Settings/Characters Settings")]
 public partial class CharactersSettings : ScriptableObject
 {
-    public CharacterSettings[] Settings;
+    public CharacterSettings[] Settings = new CharacterSettings[0];
 }
 #if UNITY_EDITOR
 public partial class CharactersSettings

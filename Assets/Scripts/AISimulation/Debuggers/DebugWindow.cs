@@ -52,7 +52,7 @@ public class DebugWindow : MonoBehaviour
     [SerializeField]
     private GameObject _characterPrefab;
 
-    private Dictionary<CharacterState, GameObject> _characters = new Dictionary<CharacterState, GameObject>();
+    private Dictionary<CharacterSave, GameObject> _characters = new Dictionary<CharacterSave, GameObject>();
 
     [SerializeField]
     private Vector3 _characterPositionOffset = new Vector3(0, 1.0f, 0);
@@ -187,7 +187,7 @@ public class DebugWindow : MonoBehaviour
         }
     }
 
-    private void CreateCharacter(CharacterState characterState, Vector3 characterPosition)
+    private void CreateCharacter(CharacterSave characterState, Vector3 characterPosition)
     {
         _characters.Add(characterState, Instantiate(_characterPrefab, characterPosition, Quaternion.identity, _levelGraphContainer.transform));
         _characters[characterState].transform.LookAt(characterPosition - _camera.transform.forward);
@@ -218,7 +218,7 @@ public class DebugWindow : MonoBehaviour
 
         if (_characters != null)
         {
-            foreach (KeyValuePair<CharacterState, GameObject> entry in _characters)
+            foreach (KeyValuePair<CharacterSave, GameObject> entry in _characters)
             {
                 Destroy(entry.Value);
             }
@@ -243,8 +243,8 @@ public class DebugWindow : MonoBehaviour
         {
             //--------HACK: NOT TESTED YET----------------------------
             // Check if any character might have exited or entered the level
-            CharacterState[] characterExited = _characters.Keys.ToList().Except(_levelStatesByBuildIndex[_selectedLevel].CharacterSaves).ToArray();
-            CharacterState[] characterEntered = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves.Except(_characters.Keys.ToList()).ToArray();
+            CharacterSave[] characterExited = _characters.Keys.ToList().Except(_levelStatesByBuildIndex[_selectedLevel].CharacterSaves).ToArray();
+            CharacterSave[] characterEntered = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves.Except(_characters.Keys.ToList()).ToArray();
 
             for (int i = 0; i < characterExited.Length; i++)
             {
@@ -257,7 +257,7 @@ public class DebugWindow : MonoBehaviour
                 CreateCharacter(characterEntered[i], characterEntered[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset);
             }
             //--------------------------------------------------------
-            foreach (KeyValuePair<CharacterState, GameObject> entry in _characters)
+            foreach (KeyValuePair<CharacterSave, GameObject> entry in _characters)
             {
                 entry.Value.transform.position = entry.Key.Position + _levelGraphContainer.transform.position + _characterPositionOffset;
                 entry.Value.transform.LookAt(entry.Value.transform.position - _camera.transform.forward);

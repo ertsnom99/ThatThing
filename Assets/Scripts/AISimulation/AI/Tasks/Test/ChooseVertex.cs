@@ -5,8 +5,8 @@ using UnityEngine;
 [TaskCategory("AI Simulation")]
 public class ChooseVertex : Action
 {
-    public SharedLevelGraph LevelGraph;
-    public SharedCharacterState CharacterState;
+    public SharedGraph LevelGraph;
+    public SharedCharacterSave CharacterSave;
     public SharedInt Vertex;
 
     public override TaskStatus OnUpdate()
@@ -18,7 +18,7 @@ public class ChooseVertex : Action
 
         int randomVertex = Random.Range(0, LevelGraph.Value.Vertices.Length);
 
-        if (randomVertex == CharacterState.Value.CurrentVertex)
+        if (randomVertex == CharacterSave.Value.CurrentVertex)
         {
             randomVertex++;
             randomVertex %= LevelGraph.Value.Vertices.Length;

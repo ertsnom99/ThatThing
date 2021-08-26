@@ -6,8 +6,8 @@ using GraphCreator;
 [TaskCategory("AI Simulation")]
 public class SimplifiedMoveToVertex : Action
 {
-    public SharedLevelGraph LevelGraph;
-    public SharedCharacterState CharacterState;
+    public SharedGraph LevelGraph;
+    public SharedCharacterSave CharacterSave;
     public SharedInt TargetVertex;
 
     private PathSegment[] _path = new PathSegment[0];
@@ -27,8 +27,8 @@ public class SimplifiedMoveToVertex : Action
             return TaskStatus.Failure;
         }
 
-        int from = CharacterState.Value.CurrentVertex;
-        int next = CharacterState.Value.NextVertex;
+        int from = CharacterSave.Value.CurrentVertex;
+        int next = CharacterSave.Value.NextVertex;
         float distance = 0;
 
         // Fix CharacterState if the edge became not traversable
@@ -36,16 +36,16 @@ public class SimplifiedMoveToVertex : Action
         {
             distance = (LevelGraph.Value.Vertices[next].Position - LevelGraph.Value.Vertices[from].Position).magnitude;
             
-            if (CharacterState.Value.Progress / distance < .5f)
+            if (CharacterSave.Value.Progress / distance < .5f)
             {
                 // Reverse current and next vertex and also the progress
-                CharacterState.Value.CurrentVertex = CharacterState.Value.NextVertex;
-                CharacterState.Value.NextVertex = from;
-                CharacterState.Value.Progress = distance - CharacterState.Value.Progress;
+                CharacterSave.Value.CurrentVertex = CharacterSave.Value.NextVertex;
+                CharacterSave.Value.NextVertex = from;
+                CharacterSave.Value.Progress = distance - CharacterSave.Value.Progress;
             }
 
             // Path most be calculate from the next vertex, because the edge, the character is on, is not traversable!
-            from = CharacterState.Value.NextVertex;
+            from = CharacterSave.Value.NextVertex;
         }
 
         if (LevelGraph.Value.CalculatePathWithDijkstra(from, TargetVertex.Value, out _path))
@@ -54,7 +54,7 @@ public class SimplifiedMoveToVertex : Action
 
             // Adjust the path if necessary
             // Path wasn't calculated starting at CurrentVertex (in case edge was not traversable)
-            if (CharacterState.Value.CurrentVertex != from)
+            if (CharacterSave.Value.CurrentVertex != from)
             {
                 _fixedPath.Clear();
                 _fixedPath.InsertRange(0, _path);
@@ -69,24 +69,24 @@ public class SimplifiedMoveToVertex : Action
                 }
                 
                 // Add missing path section
-                pathSection.VertexIndex = CharacterState.Value.CurrentVertex;
+                pathSection.VertexIndex = CharacterSave.Value.CurrentVertex;
                 pathSection.Distance = 0;
-                pathSection.Position = LevelGraph.Value.Vertices[CharacterState.Value.CurrentVertex].Position;
+                pathSection.Position = LevelGraph.Value.Vertices[CharacterSave.Value.CurrentVertex].Position;
                 _fixedPath.Insert(0, pathSection);
 
                 _path = _fixedPath.ToArray();
             }
             // Character is going in the wrong direction (ex: TargetVertex changed)
-            else if (CharacterState.Value.NextVertex >= 0 && CharacterState.Value.NextVertex != _path[1].VertexIndex)
+            else if (CharacterSave.Value.NextVertex >= 0 && CharacterSave.Value.NextVertex != _path[1].VertexIndex)
             {
-                from = CharacterState.Value.CurrentVertex;
-                next = CharacterState.Value.NextVertex;
+                from = CharacterSave.Value.CurrentVertex;
+                next = CharacterSave.Value.NextVertex;
                 distance = (LevelGraph.Value.Vertices[next].Position - LevelGraph.Value.Vertices[from].Position).magnitude;
 
                 // Reverse current and next vertex and also the progress
-                CharacterState.Value.CurrentVertex = CharacterState.Value.NextVertex;
-                CharacterState.Value.NextVertex = from;
-                CharacterState.Value.Progress = distance - CharacterState.Value.Progress;
+                CharacterSave.Value.CurrentVertex = CharacterSave.Value.NextVertex;
+                CharacterSave.Value.NextVertex = from;
+                CharacterSave.Value.Progress = distance - CharacterSave.Value.Progress;
 
                 _fixedPath.Clear();
                 _fixedPath.InsertRange(0, _path);
@@ -101,18 +101,18 @@ public class SimplifiedMoveToVertex : Action
                 }
 
                 // Add missing path section
-                pathSection.VertexIndex = CharacterState.Value.CurrentVertex;
+                pathSection.VertexIndex = CharacterSave.Value.CurrentVertex;
                 pathSection.Distance = 0;
-                pathSection.Position = LevelGraph.Value.Vertices[CharacterState.Value.CurrentVertex].Position;
+                pathSection.Position = LevelGraph.Value.Vertices[CharacterSave.Value.CurrentVertex].Position;
                 _fixedPath.Insert(0, pathSection);
 
                 _path = _fixedPath.ToArray();
             }
 
-            _simplifiedMovement.MoveOnGraph(_path, CharacterState.Value);
+            _simplifiedMovement.MoveOnGraph(_path, CharacterSave.Value);
 
             // Target reached
-            if (CharacterState.Value.CurrentVertex == TargetVertex.Value)
+            if (CharacterSave.Value.CurrentVertex == TargetVertex.Value)
             {
                 return TaskStatus.Success;
             }

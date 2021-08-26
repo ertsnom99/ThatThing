@@ -21,7 +21,7 @@ public class SimplifiedCharacterMovement : MonoBehaviour
         }
     }
 
-    public void MoveOnGraph(PathSegment[] path, CharacterState characterState)
+    public void MoveOnGraph(PathSegment[] path, CharacterSave characterState)
     {
         if (path.Length < 2)
         {

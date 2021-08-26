@@ -131,6 +131,6 @@ MonoBehaviour:
     VertexB: 1
     Direction: 0
     Traversable: 1
-  VertexIdCount: 16
+  VertexIdCount: 27
   EdgeIdCount: 17
-  EdgesFolded: 0101010101000101010101010101010101
+  EdgesFolded: 0101010101000101010101010101010100

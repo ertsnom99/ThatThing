@@ -2341,7 +2341,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _useDebugGameState: 0
-  _debugGameState: {fileID: 11400000, guid: 118aab08155f12b478b842e435e79217, type: 2}
+  _debugGameState: {fileID: 0}
   _windowPrefab: {fileID: 4262591605851610359, guid: a1b3dc5fe6bb0634a957614d866e3c8b, type: 3}
   _parent: {fileID: 1108664532}
   _toggleKey: 282
@@ -2850,6 +2850,10 @@ PrefabInstance:
     - target: {fileID: 7899912070962883305, guid: dfef67e969f84464280bdce546092b42, type: 3}
       propertyPath: m_Name
       value: RoomBase (13)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7899912070962883305, guid: dfef67e969f84464280bdce546092b42, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7899912070962883306, guid: dfef67e969f84464280bdce546092b42, type: 3}
       propertyPath: m_RootOrder
