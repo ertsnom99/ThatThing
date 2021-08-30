@@ -30,10 +30,20 @@ MonoBehaviour:
     _graph: {fileID: 11400000, guid: e8d4687d5b50fac47adad5f60f2844d3, type: 2}
     _characterStates:
     - _id: 6
-      _vertex: 21
+      _vertex: 25
       _settings: 1
-      Folded: 1
+      Folded: 0
     Folded: 0
-  _levelEdges: []
-  CharacterIdCount: 7
-  DisplayCharacterCounters: 1
+  _levelEdges:
+  - _levelA: 0
+    _levelB: 1
+    _edge:
+      Id: 17
+      VertexA: 0
+      VertexB: 0
+      Direction: 0
+      Traversable: 1
+    Folded: 0
+  CharacterIdCount: 8
+  DisplayCharacterCounters: 0
+  LevelEdgeIdCount: 18

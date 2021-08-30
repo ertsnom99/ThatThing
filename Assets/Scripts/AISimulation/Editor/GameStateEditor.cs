@@ -17,8 +17,11 @@ public class GameStateEditor : Editor
     private SerializedProperty _levelStatesByBuildIndex;
     private SerializedProperty _characterIdCount;
     private SerializedProperty _displayCharacterCounters;
+    private SerializedProperty _levelEdgeIdCount;
+
     private ReorderableList _levelStateByBuildIndexList;
-    private List<ReorderableList> _characterStates = new List<ReorderableList>();
+    private List<ReorderableList> _characterStateLists = new List<ReorderableList>();
+    private ReorderableList _levelEdgeList;
 
     private const int _sectionSpacing = 15;
 
@@ -52,9 +55,11 @@ public class GameStateEditor : Editor
         _levelStatesByBuildIndex = serializedObject.FindProperty("_levelStatesByBuildIndex");
         _characterIdCount = serializedObject.FindProperty("CharacterIdCount");
         _displayCharacterCounters = serializedObject.FindProperty("DisplayCharacterCounters");
-        
+        _levelEdgeIdCount = serializedObject.FindProperty("LevelEdgeIdCount");
+
         _levelStateByBuildIndexList = new ReorderableList(serializedObject, _levelStatesByBuildIndex, false, true, true, true);
         CreateCharacterStates();
+        _levelEdgeList = new ReorderableList(serializedObject, serializedObject.FindProperty("_levelEdges"), false, true, true, true);
 
         _invalidStyle.normal.textColor = Color.red;
         _invalidStyle.fontSize = 20;
@@ -85,7 +90,7 @@ public class GameStateEditor : Editor
     {
         for (int i = 0; i < _levelStateByBuildIndexList.count; i++)
         {
-            _characterStates.Add(new ReorderableList(serializedObject, _levelStatesByBuildIndex.GetArrayElementAtIndex(i).FindPropertyRelative("_characterStates"), false, true, true, true));
+            _characterStateLists.Add(new ReorderableList(serializedObject, _levelStatesByBuildIndex.GetArrayElementAtIndex(i).FindPropertyRelative("_characterStates"), false, true, true, true));
         }
     }
 
@@ -100,10 +105,6 @@ public class GameStateEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        // TODO: Remove these lines
-        //DrawDefaultInspector();
-        //return;
-
         // Add the default Script field
         GUI.enabled = false;
         EditorGUILayout.PropertyField(_script);
@@ -141,12 +142,16 @@ public class GameStateEditor : Editor
         EditorGUILayout.Space(_sectionSpacing);
 
         // Add the list of Graph by build indexes
-        HandleLevelStatesByBuildIndex(_levelStateByBuildIndexList);
+        HandleLevelStateByBuildIndexList(_levelStateByBuildIndexList);
         _levelStateByBuildIndexList.DoLayoutList();
 
         EditorGUILayout.PropertyField(_displayCharacterCounters);
 
-        // TODO: Add the list of connections
+        EditorGUILayout.Space(_sectionSpacing);
+
+        // Add the list of connections
+        HandleLevelEdgeList(_levelEdgeList);
+        _levelEdgeList.DoLayoutList();
 
         if (EditorGUI.EndChangeCheck())
         {
@@ -156,7 +161,7 @@ public class GameStateEditor : Editor
         GUI.enabled = false;
         if (!_gameState.IsValid(_simulationSettings.CharactersSettingsUsed))
         {
-            EditorGUILayout.TextArea("GameState is invalid (no PlayerState, build index duplicates or invalid, null Graphs, invalid vertex or invalid settings)", _invalidStyle);
+            EditorGUILayout.TextArea("GameState is invalid (no PlayerState, build index duplicates or invalid, null Graphs, invalid vertex, invalid settings, a levelEdge has the same LevelA and LevelB (or they are invalid) or some levelEdges are duplicates", _invalidStyle);
         }
         GUI.enabled = true;
 
@@ -193,7 +198,7 @@ public class GameStateEditor : Editor
         #endregion
     }
 
-    private void HandleLevelStatesByBuildIndex(ReorderableList levelStatesByBuildIndex)
+    private void HandleLevelStateByBuildIndexList(ReorderableList levelStateByBuildIndexList)
     {
         // Count how many scenes in the build are active
         int activeBuildIndexCount = 0;
@@ -214,18 +219,18 @@ public class GameStateEditor : Editor
             buildIndexOptions[i] = i.ToString();
         }
 
-        levelStatesByBuildIndex.drawHeaderCallback = (Rect rect) =>
+        levelStateByBuildIndexList.drawHeaderCallback = (Rect rect) =>
         {
-            EditorGUI.LabelField(rect, "Level state by build index");
+            EditorGUI.LabelField(rect, "Level states by build index");
         };
 
         _buildIndexes.Clear();
 
-        levelStatesByBuildIndex.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        levelStateByBuildIndexList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
             // Get the properties
-            SerializedProperty buildIndex = levelStatesByBuildIndex.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_buildIndex");
-            SerializedProperty graph = levelStatesByBuildIndex.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_graph");
+            SerializedProperty foldedProperty = levelStateByBuildIndexList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded");
+            SerializedProperty buildIndex = levelStateByBuildIndexList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_buildIndex");
             
             // Check if the build index is already used
             bool buildIndexAlreadySelected = _buildIndexes.Contains(buildIndex.intValue);
@@ -236,25 +241,25 @@ public class GameStateEditor : Editor
             }
 
             // Field for the build index
-            SerializedProperty foldedProperty = levelStatesByBuildIndex.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded");
-
             bool validBuildIndex = !buildIndexAlreadySelected && (buildIndex.intValue >= 0 && buildIndex.intValue < activeBuildIndexCount);
             GUI.color = !validBuildIndex ? Color.red : _originalTextColor;
             GUI.backgroundColor = !validBuildIndex ? Color.red : _originalBackgroundColor;
             foldedProperty.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .2f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), !foldedProperty.boolValue, "Build Index");
-            buildIndex.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .8f, EditorGUIUtility.singleLineHeight), buildIndex.intValue, buildIndexOptions);
+            buildIndex.intValue = EditorGUI.Popup(new Rect(rect.x + _foldoutArrowWidth + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .8f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), buildIndex.intValue, buildIndexOptions);
             GUI.color = Color.white;
             GUI.backgroundColor = _originalBackgroundColor;
 
             // Show all the fields
             if (!foldedProperty.boolValue)
             {
+                SerializedProperty graph = levelStateByBuildIndexList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_graph");
+
                 // Field for the Graph
                 bool validGraph = graph.objectReferenceValue;
                 GUI.color = !validGraph ? Color.red : _originalTextColor;
                 GUI.backgroundColor = !validGraph ? Color.red : _originalBackgroundColor;
-                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), new GUIContent("Graph"));
-                EditorGUI.PropertyField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), graph, GUIContent.none);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), new GUIContent("Graph"));
+                EditorGUI.PropertyField(new Rect(rect.x + _foldoutArrowWidth + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), graph, GUIContent.none);
                 GUI.color = Color.white;
                 GUI.backgroundColor = _originalBackgroundColor;
 
@@ -276,18 +281,18 @@ public class GameStateEditor : Editor
                 }
 
                 // Add the list of Character States
-                HandleCharacterStates(_characterStates[index], vertexOptions, settingsOptions);
-                _characterStates[index].DoList(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * 2.5f, rect.width - _foldoutArrowOffset, rect.height));
+                HandleCharacterStateList(_characterStateLists[index], vertexOptions, settingsOptions);
+                _characterStateLists[index].DoList(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * 2.5f, rect.width - _foldoutArrowWidth, rect.height));
             }
         };
 
-        levelStatesByBuildIndex.elementHeightCallback = (int index) =>
+        levelStateByBuildIndexList.elementHeightCallback = (int index) =>
         {
             // Space before the CharacterState list (without Graph field)
-            float height = EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight * 2.0f;
+            float height = EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight * 1.0f;
 
             // If LevelStateByBuildIndex is folded
-            if (levelStatesByBuildIndex.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded").boolValue)
+            if (_gameState.LevelStatesByBuildIndex[index].Folded)
             {
                 return height;
             }
@@ -302,9 +307,9 @@ public class GameStateEditor : Editor
             }
 
             // Minimum space taken by the ReorderabelList
-            height += EditorGUIUtility.singleLineHeight * 3.0f;
+            height += EditorGUIUtility.singleLineHeight * 4.0f;
 
-            if (_characterStates[index].count == 0)
+            if (_gameState.LevelStatesByBuildIndex[index].CharacterStates.Length == 0)
             {
                 // Space for empty ReorderabelList
                 height += EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight;
@@ -312,20 +317,16 @@ public class GameStateEditor : Editor
             else
             {
                 // Space based on how many characters there is and if they are folded/valid or not
-                for (int i = 0; i < _characterStates[index].count; i++)
+                for (int i = 0; i < _characterStateLists[index].count; i++)
                 {
-                    height += EditorGUIUtility.standardVerticalSpacing * 2.0f;
+                    height += EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight * 3.11f;
 
-                    bool folded = _characterStates[index].serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("Folded").boolValue;
-                    int settings = _characterStates[index].serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("_settings").intValue;
+                    bool folded = _gameState.LevelStatesByBuildIndex[index].CharacterStates[i].Folded;
+                    int settings = _gameState.LevelStatesByBuildIndex[index].CharacterStates[i].Settings;
 
-                    if (folded || settings < 0 || settings >= _simulationSettings.CharactersSettingsUsed.Settings.Length)
+                    if (!folded && settings >= 0 && settings < _simulationSettings.CharactersSettingsUsed.Settings.Length)
                     {
-                        height += EditorGUIUtility.singleLineHeight * 3.11f;
-                    }
-                    else
-                    {
-                        height += EditorGUIUtility.singleLineHeight * 6.11f;
+                        height += EditorGUIUtility.singleLineHeight * 3.0f;
                     }
                 }
             }
@@ -333,46 +334,47 @@ public class GameStateEditor : Editor
             return height;
         };
 
-        levelStatesByBuildIndex.onAddCallback = list =>
+        levelStateByBuildIndexList.onAddCallback = list =>
         {
             // Add new levelStateByBuildIndex
             ReorderableList.defaultBehaviours.DoAddButton(list);
 
             // Clear the CharacterStates of the new LevelStatesByBuildIndex
-            _levelStatesByBuildIndex.GetArrayElementAtIndex(_levelStatesByBuildIndex.arraySize - 1).FindPropertyRelative("_characterStates").arraySize = 0;
+            SerializedProperty newCharacterState = _levelStatesByBuildIndex.GetArrayElementAtIndex(_levelStatesByBuildIndex.arraySize - 1).FindPropertyRelative("_characterStates");
+            newCharacterState.arraySize = 0;
             
             // Create a new ReorderableList and store it
-            _characterStates.Add(new ReorderableList(serializedObject, _levelStatesByBuildIndex.GetArrayElementAtIndex(_levelStatesByBuildIndex.arraySize - 1).FindPropertyRelative("_characterStates"), false, true, true, true));
+            _characterStateLists.Add(new ReorderableList(serializedObject, newCharacterState, false, true, true, true));
         };
 
-        levelStatesByBuildIndex.onRemoveCallback = list =>
+        levelStateByBuildIndexList.onRemoveCallback = list =>
         {
             // Remove selected levelStateByBuildIndex
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
 
             // Recreate all CharacterState ReorderableLists (necessary to avoid out of bounds error)
-            _characterStates.Clear();
+            _characterStateLists.Clear();
             CreateCharacterStates();
         };
     }
 
-    private void HandleCharacterStates(ReorderableList characterStates, string[] vertexOptions, string[] settingsOptions)
+    private void HandleCharacterStateList(ReorderableList characterStateList, string[] vertexOptions, string[] settingsOptions)
     {
-        characterStates.drawHeaderCallback = (Rect rect) =>
+        characterStateList.drawHeaderCallback = (Rect rect) =>
         {
             EditorGUI.LabelField(rect, "Character States");
         };
 
-        characterStates.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        characterStateList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
         {
             // Get the properties
-            int id = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_id").intValue;
-            SerializedProperty vertex = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_vertex");
-            SerializedProperty settings = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_settings");
+            string id = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_id").intValue.ToString();
+            SerializedProperty vertex = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_vertex");
+            SerializedProperty folded = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded");
+            SerializedProperty settings = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_settings");
 
             // Id
-            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("ID"));
-            EditorGUI.LabelField(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .8f, EditorGUIUtility.singleLineHeight), new GUIContent(id.ToString()));
+            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id));
 
             // Dropdown for vertex
             bool validVertex = vertex.intValue >= 0 && vertex.intValue < vertexOptions.Length;
@@ -384,18 +386,16 @@ public class GameStateEditor : Editor
             GUI.backgroundColor = _originalBackgroundColor;
 
             // Dropdown for settings
-            SerializedProperty foldedProperty = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded");
-            
             bool validSettings = settings.intValue >= 0 && settings.intValue < settingsOptions.Length;
             GUI.color = !validSettings ? Color.red : _originalTextColor;
             GUI.backgroundColor = !validSettings ? Color.red : _originalBackgroundColor;
-            foldedProperty.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * (2.1f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), !foldedProperty.boolValue, "Settings");
+            folded.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * (2.1f + _reorderableListElementSpaceRatio), rect.width * .2f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), !folded.boolValue, "Settings");
             settings.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), settings.intValue, settingsOptions);
             GUI.color = Color.white;
             GUI.backgroundColor = _originalBackgroundColor;
 
             // Show settings details
-            if (!foldedProperty.boolValue && settings.intValue >= 0 && settings.intValue < _simulationSettings.CharactersSettingsUsed.Settings.Length)
+            if (!folded.boolValue && settings.intValue >= 0 && settings.intValue < _simulationSettings.CharactersSettingsUsed.Settings.Length)
             {
                 GUI.enabled = false;
                 EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), rect.width * .25f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Prefab"));
@@ -408,32 +408,178 @@ public class GameStateEditor : Editor
             }
         };
 
-        characterStates.elementHeightCallback = (int index) =>
+        characterStateList.elementHeightCallback = (int index) =>
         {
-            bool folded = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded").boolValue;
-            int settings = characterStates.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_settings").intValue;
+            bool folded = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded").boolValue;
+            int settings = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_settings").intValue;
 
-            float height = EditorGUIUtility.standardVerticalSpacing * 2.0f;
+            float height = EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight * 3.0f;
 
-            if (folded || settings < 0 || settings >= _simulationSettings.CharactersSettingsUsed.Settings.Length)
+            if (!folded && settings >= 0 && settings < _simulationSettings.CharactersSettingsUsed.Settings.Length)
             {
                 height += EditorGUIUtility.singleLineHeight * 3.0f;
-            }
-            else
-            {
-                height += EditorGUIUtility.singleLineHeight * 6.0f;
             }
 
             return height;
         };
 
-        characterStates.onAddCallback = list =>
+        characterStateList.onAddCallback = list =>
         {
             // Add new levelStateByBuildIndex
             ReorderableList.defaultBehaviours.DoAddButton(list);
 
             list.serializedProperty.GetArrayElementAtIndex(list.count - 1).FindPropertyRelative("_id").intValue = _characterIdCount.intValue;
             _characterIdCount.intValue++;
+        };
+    }
+
+    private void HandleLevelEdgeList(ReorderableList levelEdgeList)
+    {
+        // Create the array of choices for the levels
+        string[] levelOptions = new string[_gameState.LevelStatesByBuildIndex.Length];
+
+        for (int i = 0; i < levelOptions.Length; i++)
+        {
+            levelOptions[i] = "Build index " + _gameState.LevelStatesByBuildIndex[i].BuildIndex.ToString() + " -> " + (_gameState.LevelStatesByBuildIndex[i].Graph ? _gameState.LevelStatesByBuildIndex[i].Graph.name : "no graph!");
+        }
+        
+        levelEdgeList.drawHeaderCallback = (Rect rect) =>
+        {
+            EditorGUI.LabelField(rect, "Level edges");
+        };
+
+        levelEdgeList.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        {
+            // Get the properties
+            SerializedProperty folded = levelEdgeList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded");
+            SerializedProperty levelA = levelEdgeList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_levelA");
+            SerializedProperty levelB = levelEdgeList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_levelB");
+
+            folded.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .1f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), !folded.boolValue, "");
+
+            // Field for the level A
+            bool validLevelA = levelA.intValue >= 0 && levelA.intValue < _gameState.LevelStatesByBuildIndex.Length;
+            GUI.color = !validLevelA ? Color.red : _originalTextColor;
+            GUI.backgroundColor = !validLevelA ? Color.red : _originalBackgroundColor;
+            EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, (rect.width - _foldoutArrowWidth) * .16f, EditorGUIUtility.singleLineHeight),"Level A");
+            levelA.intValue = EditorGUI.Popup(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .16f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, (rect.width - _foldoutArrowWidth) * .32f, EditorGUIUtility.singleLineHeight), levelA.intValue, levelOptions);
+            GUI.color = Color.white;
+            GUI.backgroundColor = _originalBackgroundColor;
+
+            // Field for the level B
+            bool validLevelB = levelB.intValue != levelA.intValue && levelB.intValue >= 0 && levelB.intValue < _gameState.LevelStatesByBuildIndex.Length;
+            GUI.color = !validLevelB ? Color.red : _originalTextColor;
+            GUI.backgroundColor = !validLevelB ? Color.red : _originalBackgroundColor;
+            EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .52f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, (rect.width - _foldoutArrowWidth) * .16f, EditorGUIUtility.singleLineHeight), "Level B");
+            levelB.intValue = EditorGUI.Popup(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .68f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, (rect.width - _foldoutArrowWidth) * .32f, EditorGUIUtility.singleLineHeight), levelB.intValue, levelOptions);
+            GUI.color = Color.white;
+            GUI.backgroundColor = _originalBackgroundColor;
+            
+            if (!folded.boolValue && validLevelA && validLevelB)
+            {
+                Graph graphA = _gameState.LevelStatesByBuildIndex[levelA.intValue].Graph;
+
+                if (graphA)
+                {
+                    SerializedProperty vertexA = levelEdgeList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_edge").FindPropertyRelative("VertexA");
+
+                    // Create the array of choices for the vertices
+                    string[] vertexOptionsA = new string[graphA.Vertices.Length];
+
+                    for (int i = 0; i < vertexOptionsA.Length; i++)
+                    {
+                        vertexOptionsA[i] = "Id " + graphA.Vertices[i].Id.ToString();
+                    }
+
+                    // Field for the vertex A
+                    bool validVertexA = vertexA.intValue >= 0 && vertexA.intValue < graphA.Vertices.Length;
+                    GUI.color = !validVertexA ? Color.red : _originalTextColor;
+                    GUI.backgroundColor = !validVertexA ? Color.red : _originalBackgroundColor;
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .16f, EditorGUIUtility.singleLineHeight), "Vertex A");
+                    vertexA.intValue = EditorGUI.Popup(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .16f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .32f, EditorGUIUtility.singleLineHeight), vertexA.intValue, vertexOptionsA);
+                    GUI.color = Color.white;
+                    GUI.backgroundColor = _originalBackgroundColor;
+                }
+                else
+                {
+                    GUI.color = Color.red;
+                    GUI.backgroundColor = Color.red;
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .48f, EditorGUIUtility.singleLineHeight), "Level A doesn't specify a graph");
+                    GUI.color = Color.white;
+                    GUI.backgroundColor = _originalBackgroundColor;
+                }
+
+                Graph graphB = _gameState.LevelStatesByBuildIndex[levelB.intValue].Graph;
+
+                if (graphB)
+                {
+                    SerializedProperty vertexB = levelEdgeList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_edge").FindPropertyRelative("VertexB");
+
+                    // Create the array of choices for the vertices
+                    string[] vertexOptionsB = new string[graphB.Vertices.Length];
+
+                    for (int i = 0; i < vertexOptionsB.Length; i++)
+                    {
+                        vertexOptionsB[i] = "Id " + graphB.Vertices[i].Id.ToString();
+                    }
+
+                    // Field for the vertex B
+                    bool validVertexB = vertexB.intValue >= 0 && vertexB.intValue < graphB.Vertices.Length;
+                    GUI.color = !validVertexB ? Color.red : _originalTextColor;
+                    GUI.backgroundColor = !validVertexB ? Color.red : _originalBackgroundColor;
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .52f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .16f, EditorGUIUtility.singleLineHeight), "Vertex A");
+                    vertexB.intValue = EditorGUI.Popup(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .68f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .32f, EditorGUIUtility.singleLineHeight), vertexB.intValue, vertexOptionsB);
+                    GUI.color = Color.white;
+                    GUI.backgroundColor = _originalBackgroundColor;
+                }
+                else
+                {
+                    GUI.color = Color.red;
+                    GUI.backgroundColor = Color.red;
+                    EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .52f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .48f, EditorGUIUtility.singleLineHeight), "Level A doesn't specify a graph");
+                    GUI.color = Color.white;
+                    GUI.backgroundColor = _originalBackgroundColor;
+                }
+
+                SerializedProperty direction = levelEdgeList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_edge").FindPropertyRelative("Direction");
+                SerializedProperty traversable = levelEdgeList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_edge").FindPropertyRelative("Traversable");
+
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .16f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Direction"));
+                EditorGUI.PropertyField(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .16f, rect.y + EditorGUIUtility.singleLineHeight * (2.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .84f, EditorGUIUtility.singleLineHeight), direction, GUIContent.none);
+                EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .16f - _foldoutArrowWidth, EditorGUIUtility.singleLineHeight), new GUIContent("Traversable"));
+                EditorGUI.PropertyField(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .16f, rect.y + EditorGUIUtility.singleLineHeight * (3.0f + _reorderableListElementSpaceRatio), (rect.width - _foldoutArrowWidth) * .84f, EditorGUIUtility.singleLineHeight), traversable, GUIContent.none);
+            }
+        };
+
+        levelEdgeList.elementHeightCallback = (int index) =>
+        {
+            float height = EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight;
+
+            bool validLevelA = _gameState.LevelEdges[index].LevelA >= 0 && _gameState.LevelEdges[index].LevelA < _gameState.LevelStatesByBuildIndex.Length;
+            bool validLevelB = _gameState.LevelEdges[index].LevelB >= 0 && _gameState.LevelEdges[index].LevelB < _gameState.LevelStatesByBuildIndex.Length;
+
+            if (!validLevelA || !validLevelB || _gameState.LevelEdges[index].LevelA == _gameState.LevelEdges[index].LevelB)
+            {
+                return height;
+            }
+
+            if (!_gameState.LevelEdges[index].Folded)
+            {
+                height += EditorGUIUtility.singleLineHeight * 3.0f;
+            }
+
+            return height;
+        };
+
+        levelEdgeList.onAddCallback = list =>
+        {
+            // Add new levelStateByBuildIndex
+            ReorderableList.defaultBehaviours.DoAddButton(list);
+
+            list.serializedProperty.GetArrayElementAtIndex(list.count - 1).FindPropertyRelative("_edge").FindPropertyRelative("Id").intValue = _levelEdgeIdCount.intValue;
+            list.serializedProperty.GetArrayElementAtIndex(list.count - 1).FindPropertyRelative("_edge").FindPropertyRelative("Traversable").boolValue = true;
+            
+            _levelEdgeIdCount.intValue++;
         };
     }
 
@@ -446,8 +592,8 @@ public class GameStateEditor : Editor
             // Don't display character counters, CharactersSettings used is invalid or no LevelStateByBuildIndex is selected
             return;
         }
-
-        Graph graph = (Graph)_levelStatesByBuildIndex.GetArrayElementAtIndex(_levelStateByBuildIndexList.index).FindPropertyRelative("_graph").objectReferenceValue;
+        
+        Graph graph = _gameState.LevelStatesByBuildIndex[_levelStateByBuildIndexList.index].Graph;
 
         if (graph == null)
         {
@@ -468,7 +614,7 @@ public class GameStateEditor : Editor
                 continue;
             }
 
-            if (_characterStates[_levelStateByBuildIndexList.index].index == i)
+            if (_characterStateLists[_levelStateByBuildIndexList.index].index == i)
             {
                 selectedCharacterVertex = characterStates[i].Vertex;
             }

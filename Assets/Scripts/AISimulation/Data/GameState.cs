@@ -68,26 +68,26 @@ public partial struct CharacterState
 }
 
 [Serializable]
-public struct LevelEdge
+public partial struct LevelEdge
 {
     // Index of the corresponding LevelStateByBuildIndex
     [SerializeField]
-    private int _graphA;
+    private int _levelA;
 
-    public int GraphA
+    public int LevelA
     {
-        get { return _graphA; }
-        private set { _graphA = value; }
+        get { return _levelA; }
+        private set { _levelA = value; }
     }
 
     // Index of the corresponding LevelStateByBuildIndex
     [SerializeField]
-    private int _graphB;
+    private int _levelB;
 
-    public int GraphB
+    public int LevelB
     {
-        get { return _graphB; }
-        private set { _graphB = value; }
+        get { return _levelB; }
+        private set { _levelB = value; }
     }
 
     [SerializeField]
@@ -143,12 +143,20 @@ public partial struct CharacterState
     public bool Folded;
 }
 
+public partial struct LevelEdge
+{
+    [HideInInspector]
+    public bool Folded;
+}
+
 public partial class GameState
 {
     [HideInInspector]
     public int CharacterIdCount = 0;
     [HideInInspector]
     public bool DisplayCharacterCounters;
+    [HideInInspector]
+    public int LevelEdgeIdCount = 0;
 
     public bool IsValid(CharactersSettings charactersSettings)
     {
@@ -212,34 +220,57 @@ public partial class GameState
             }
         }
 
+        // List used to find duplicate LevelEdges
+        List<string> levelEdgeIds = new List<string>();
+
         // Check all LevelEdges
         foreach(LevelEdge levelEdge in _levelEdges)
         {
-            if (levelEdge.GraphA < 0 || levelEdge.GraphA >= _levelStatesByBuildIndex.Length)
+            if (levelEdge.LevelA < 0 || levelEdge.LevelA >= _levelStatesByBuildIndex.Length)
             {
-                // GraphA doesn't exist
+                // LevelA doesn't exist
                 return false;
             }
 
-            if (levelEdge.GraphB < 0 || levelEdge.GraphB >= _levelStatesByBuildIndex.Length)
+            if (levelEdge.LevelB < 0 || levelEdge.LevelB >= _levelStatesByBuildIndex.Length)
             {
-                // GraphB doesn't exist
+                // LevelB doesn't exist
                 return false;
             }
 
-            if (levelEdge.Edge.VertexA < 0 || levelEdge.Edge.VertexA >= _levelStatesByBuildIndex[levelEdge.GraphA].Graph.Vertices.Length)
+            if (levelEdge.LevelA == levelEdge.LevelB)
+            {
+                // LevelA and LevelB are the same
+                return false;
+            }
+
+            if (levelEdge.Edge.VertexA < 0 || levelEdge.Edge.VertexA >= _levelStatesByBuildIndex[levelEdge.LevelA].Graph.Vertices.Length)
             {
                 // VertexA doesn't exist
                 return false;
             }
 
-            if (levelEdge.Edge.VertexB < 0 || levelEdge.Edge.VertexB >= _levelStatesByBuildIndex[levelEdge.GraphB].Graph.Vertices.Length)
+            if (levelEdge.Edge.VertexB < 0 || levelEdge.Edge.VertexB >= _levelStatesByBuildIndex[levelEdge.LevelB].Graph.Vertices.Length)
             {
                 // VertexA doesn't exist
+                return false;
+            }
+
+            string idForward = "" + levelEdge.LevelA + levelEdge.Edge.VertexA + levelEdge.LevelB + levelEdge.Edge.VertexB;
+            string idBackward = "" + levelEdge.LevelB + levelEdge.Edge.VertexB + levelEdge.LevelA + levelEdge.Edge.VertexA;
+
+            if (levelEdgeIds.IndexOf(idForward) == -1 && levelEdgeIds.IndexOf(idBackward) == -1)
+            {
+                levelEdgeIds.Add(idForward);
+                levelEdgeIds.Add(idBackward);
+            }
+            else
+            {
+                // Duplicate level edge
                 return false;
             }
         }
-
+        
         return true;
     }
 }
