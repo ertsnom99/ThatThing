@@ -62,7 +62,7 @@ public class GameStateEditor : Editor
         _levelEdgeList = new ReorderableList(serializedObject, serializedObject.FindProperty("_levelEdges"), false, true, true, true);
 
         _invalidStyle.normal.textColor = Color.red;
-        _invalidStyle.fontSize = 20;
+        _invalidStyle.fontSize = 16;
         _invalidStyle.wordWrap = true;
         _invalidStyle.fontStyle = FontStyle.Bold;
 
@@ -158,12 +158,18 @@ public class GameStateEditor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        GUI.enabled = false;
-        if (!_gameState.IsValid(_simulationSettings.CharactersSettingsUsed))
+        string[] gameStateErrors;
+        bool validGameState = _gameState.IsValid(_simulationSettings.CharactersSettingsUsed, out gameStateErrors);
+
+        if (!validGameState)
         {
-            EditorGUILayout.TextArea("GameState is invalid (no PlayerState, build index duplicates or invalid, null Graphs, invalid vertex, invalid settings, a levelEdge has the same LevelA and LevelB (or they are invalid) or some levelEdges are duplicates", _invalidStyle);
+            GUI.enabled = false;
+            foreach (string error in gameStateErrors)
+            {
+                EditorGUILayout.TextArea("-" + error, _invalidStyle);
+            }
+            GUI.enabled = true;
         }
-        GUI.enabled = true;
 
         EditorGUILayout.Space(_sectionSpacing);
 
@@ -184,7 +190,7 @@ public class GameStateEditor : Editor
             path = path.Substring(0, index);
 
             // Can<t duplicate if the name is empty or the file already exist
-            GUI.enabled = _duplicateAssetName != "" && !File.Exists(Application.dataPath + path.Remove(0, 6) + "/" + _duplicateAssetName + ".asset");
+            GUI.enabled = validGameState && _duplicateAssetName != "" && !File.Exists(Application.dataPath + path.Remove(0, 6) + "/" + _duplicateAssetName + ".asset");
 
             if (GUILayout.Button("Duplicate", GUILayout.Width(200)))
             {

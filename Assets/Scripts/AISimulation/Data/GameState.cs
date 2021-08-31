@@ -158,12 +158,26 @@ public partial class GameState
     [HideInInspector]
     public int LevelEdgeIdCount = 0;
 
-    public bool IsValid(CharactersSettings charactersSettings)
+    // Error texts
+    private const string _noPlayerStateError = "No PlayerState";
+    private const string _invalidIndexError = "Some build indexes are invalid";
+    private const string _duplicateBuildIndexError = "Some build indexes are duplicated";
+    private const string _nullGraphsError = "Some graphs are null";
+    private const string _characterStateVerticesError = "Some CharacterState vertices are invalid";
+    private const string _characterStateSettingsError = "Some CharacterState settings are invalid";
+    private const string _invalidLevelAError = "Some LevelEdge LevelA are invalid";
+    private const string _invalidLevelBError = "Some LevelEdge LevelB are invalid";
+    private const string _levelASameHasLevelB = "Some LevelEdge LevelA and LevelB are the same";
+    private const string _invalidVertexA = "Some LevelEdge VertexA are invalid";
+    private const string _invalidVertexB = "Some LevelEdge VertexB are invalid";
+
+    public bool IsValid(CharactersSettings charactersSettings, out string[] errors)
     {
+        List<string> errorList = new List<string>();
+
         if (!_playerState)
         {
-            // No PlayerState
-            return false;
+            errorList.Add(_noPlayerStateError);
         }
 
         // Count how many scenes in the build are active
@@ -182,43 +196,48 @@ public partial class GameState
 
         foreach (LevelStateByBuildIndex levelStateByBuildIndex in _levelStatesByBuildIndex)
         {
-            if (levelStateByBuildIndex.BuildIndex < 0 || levelStateByBuildIndex.BuildIndex >= activeBuildIndexCount)
+            if ((levelStateByBuildIndex.BuildIndex < 0 || levelStateByBuildIndex.BuildIndex >= activeBuildIndexCount) && !errorList.Contains(_invalidIndexError))
             {
-                // BuildIndex not in build
-                return false;
+                errorList.Add(_invalidIndexError);
             }
 
             if (!_buildIndexes.Contains(levelStateByBuildIndex.BuildIndex))
             {
                 _buildIndexes.Add(levelStateByBuildIndex.BuildIndex);
             }
-            else
+            else if (!errorList.Contains(_duplicateBuildIndexError))
             {
-                // Duplicated index
-                return false;
+                errorList.Add(_duplicateBuildIndexError);
             }
 
-            if (!levelStateByBuildIndex.Graph)
+            if (!levelStateByBuildIndex.Graph && !errorList.Contains(_nullGraphsError))
             {
-                // No Graph
-                return false;
+                errorList.Add(_nullGraphsError);
+                continue;
             }
 
             foreach(CharacterState characterState in levelStateByBuildIndex.CharacterStates)
             {
-                if (characterState.Vertex < 0 || characterState.Vertex >= levelStateByBuildIndex.Graph.Vertices.Length)
+                if ((characterState.Vertex < 0 || characterState.Vertex >= levelStateByBuildIndex.Graph.Vertices.Length) && !errorList.Contains(_characterStateVerticesError))
                 {
-                    // Vertex doesn't exist
-                    return false;
+                    errorList.Add(_characterStateVerticesError);
                 }
 
-                if (characterState.Settings < 0 || characterState.Settings >= charactersSettings.Settings.Length)
+                if ((characterState.Settings < 0 || characterState.Settings >= charactersSettings.Settings.Length) && !errorList.Contains(_characterStateSettingsError))
                 {
-                    // Settings don't exist
-                    return false;
+                    errorList.Add(_characterStateSettingsError);
                 }
             }
         }
+
+        // Stop validation if an error was already found
+        if (errorList.Count > 0)
+        {
+            errors = errorList.ToArray();
+            return errors.Length == 0;
+        }
+
+        bool validA, validB;
 
         // List used to find duplicate LevelEdges
         List<string> levelEdgeIds = new List<string>();
@@ -226,34 +245,39 @@ public partial class GameState
         // Check all LevelEdges
         foreach(LevelEdge levelEdge in _levelEdges)
         {
-            if (levelEdge.LevelA < 0 || levelEdge.LevelA >= _levelStatesByBuildIndex.Length)
+            validA = true;
+            validB = true;
+
+            if ((levelEdge.LevelA < 0 || levelEdge.LevelA >= _levelStatesByBuildIndex.Length) && !errorList.Contains(_invalidLevelAError))
             {
-                // LevelA doesn't exist
-                return false;
+                validA = false;
+                errorList.Add(_invalidLevelAError);
             }
 
-            if (levelEdge.LevelB < 0 || levelEdge.LevelB >= _levelStatesByBuildIndex.Length)
+            if ((levelEdge.LevelB < 0 || levelEdge.LevelB >= _levelStatesByBuildIndex.Length) && !errorList.Contains(_invalidLevelBError))
             {
-                // LevelB doesn't exist
-                return false;
+                validB = false;
+                errorList.Add(_invalidLevelBError);
             }
 
-            if (levelEdge.LevelA == levelEdge.LevelB)
+            if (!validA || !validB)
             {
-                // LevelA and LevelB are the same
-                return false;
+                continue;
             }
 
-            if (levelEdge.Edge.VertexA < 0 || levelEdge.Edge.VertexA >= _levelStatesByBuildIndex[levelEdge.LevelA].Graph.Vertices.Length)
+            if (levelEdge.LevelA == levelEdge.LevelB && !errorList.Contains(_levelASameHasLevelB))
             {
-                // VertexA doesn't exist
-                return false;
+                errorList.Add(_levelASameHasLevelB);
             }
 
-            if (levelEdge.Edge.VertexB < 0 || levelEdge.Edge.VertexB >= _levelStatesByBuildIndex[levelEdge.LevelB].Graph.Vertices.Length)
+            if ((levelEdge.Edge.VertexA < 0 || levelEdge.Edge.VertexA >= _levelStatesByBuildIndex[levelEdge.LevelA].Graph.Vertices.Length) && !errorList.Contains(_invalidVertexA))
             {
-                // VertexA doesn't exist
-                return false;
+                errorList.Add(_invalidVertexA);
+            }
+
+            if ((levelEdge.Edge.VertexB < 0 || levelEdge.Edge.VertexB >= _levelStatesByBuildIndex[levelEdge.LevelB].Graph.Vertices.Length) && !errorList.Contains(_invalidVertexB))
+            {
+                errorList.Add(_invalidVertexB);
             }
 
             string idForward = "" + levelEdge.LevelA + levelEdge.Edge.VertexA + levelEdge.LevelB + levelEdge.Edge.VertexB;
@@ -266,12 +290,12 @@ public partial class GameState
             }
             else
             {
-                // Duplicate level edge
-                return false;
+                errorList.Add("Duplicate LevelEdge: LevelA (Build index " + levelEdge.LevelA + " -> Vertex " + levelEdge.Edge.VertexA + ") and LevelB (Build index " + levelEdge.LevelB + " -> Vertex " + levelEdge.Edge.VertexB + ") DUPLICATE COULD BE REVERSED");
             }
         }
-        
-        return true;
+
+        errors = errorList.ToArray();
+        return errors.Length == 0;
     }
 }
 #endif

@@ -62,33 +62,47 @@ public partial class CharactersSettings
 {
     public List<bool> SettingsFolded;
 
-    public bool IsValid()
+    // Error texts
+    private const string _emptyFieldsError = "Some fields are empty";
+    private const string _duplicateNameError = "Duplicate setting name";
+    private const string _missingBehaviorTreeError = "Some prefabs don't have a BehaviorTree script";
+    private const string _missingMovementError = "Some prefabs don't have a CharacterMovement script";
+
+    public bool IsValid(out string[] errors)
     {
-        List<string> _settingsNames = new List<string>();
+        List<string> errorList = new List<string>();
+        List<string> settingsNames = new List<string>();
 
         foreach (CharacterSettings setting in Settings)
         {
-            if (setting.Name == "" || setting.Prefab == null || setting.PrefabBehavior == null || setting.SimplifiedBehavior == null)
+            if ((setting.Name == "" || setting.Prefab == null || setting.PrefabBehavior == null || setting.SimplifiedBehavior == null) && !errorList.Contains(_emptyFieldsError))
             {
-                return false;
+                errorList.Add(_emptyFieldsError);
+                break;
             }
 
-            if (!_settingsNames.Contains(setting.Name))
+            if (!settingsNames.Contains(setting.Name))
             {
-                _settingsNames.Add(setting.Name);
+                settingsNames.Add(setting.Name);
             }
-            else
+            else if (!errorList.Contains(_duplicateNameError))
             {
-                return false;
+                errorList.Add(_duplicateNameError);
             }
 
-            if (!setting.Prefab.GetComponent<BehaviorTree>() || !setting.Prefab.GetComponent<CharacterMovement>())
+            if (!setting.Prefab.GetComponent<BehaviorTree>() && !errorList.Contains(_missingBehaviorTreeError))
             {
-                return false;
+                errorList.Add(_missingBehaviorTreeError);
+            }
+
+            if (!setting.Prefab.GetComponent<CharacterMovement>() && !errorList.Contains(_missingMovementError))
+            {
+                errorList.Add(_missingMovementError);
             }
         }
 
-        return true;
+        errors = errorList.ToArray();
+        return errors.Length == 0;
     }
 
     public string[] GetSettingsNames()

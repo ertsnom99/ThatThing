@@ -25,7 +25,7 @@ public class SimulationSettingsEditorWindow : EditorWindow
     private void OnEnable()
     {
         _invalidStyle.normal.textColor = Color.red;
-        _invalidStyle.fontSize = 20;
+        _invalidStyle.fontSize = 16;
         _invalidStyle.wordWrap = true;
         _invalidStyle.fontStyle = FontStyle.Bold;
 
@@ -83,7 +83,7 @@ public class SimulationSettingsEditorWindow : EditorWindow
 
         EditorGUI.BeginChangeCheck();
 
-        bool validSettings = DrawSettings();
+        DrawSettings();
 
         if (EditorGUI.EndChangeCheck() || _simplifiedAITickRateFixed)
         {
@@ -91,19 +91,23 @@ public class SimulationSettingsEditorWindow : EditorWindow
             _simplifiedAITickRateFixed = false;
         }
 
-        // Error message
-        if (!validSettings)
+        string[] simualtionSettingsErrors;
+
+        if (!_simulationSettings.IsValid(out simualtionSettingsErrors))
         {
             EditorGUILayout.Space(15.0f);
 
             GUI.enabled = false;
-            EditorGUILayout.TextArea("SimulationSettings are invalid (null fields, CharactersSettings not valid, InitialGameState not valid or SimplifiedAIPrefab doesn't have a BehaviorTree component or SImplifiedMovement component)", _invalidStyle);
+            foreach (string error in simualtionSettingsErrors)
+            {
+                EditorGUILayout.TextArea("-" + error, _invalidStyle);
+            }
             GUI.enabled = true;
         }
     }
 
     // Return if any field was invalid
-    private bool DrawSettings()
+    private void DrawSettings()
     {
         SerializedProperty charactersSettingsUsed = _serializedSimulationSettings.FindProperty("_charactersSettingsUsed");
         SerializedProperty initialGameState = _serializedSimulationSettings.FindProperty("_initialGameState");
@@ -113,18 +117,22 @@ public class SimulationSettingsEditorWindow : EditorWindow
         EditorGUILayout.LabelField("Settings");
         EditorGUILayout.Space(15.0f);
 
+        string[] characterSettingsErrors;
+
         // CharactersSettings
         CharactersSettings charactersSettings = (CharactersSettings)charactersSettingsUsed.objectReferenceValue;
-        bool validCharactersSettingsUsed = charactersSettingsUsed.objectReferenceValue && charactersSettings.IsValid();
+        bool validCharactersSettingsUsed = charactersSettingsUsed.objectReferenceValue && charactersSettings.IsValid(out characterSettingsErrors);
         GUI.color = !validCharactersSettingsUsed ? Color.red : _originalTextColor;
         GUI.backgroundColor = !charactersSettingsUsed.objectReferenceValue ? Color.red : _originalBackgroundColor;
         EditorGUILayout.PropertyField(charactersSettingsUsed);
         GUI.color = Color.white;
         GUI.backgroundColor = _originalBackgroundColor;
 
+        string[] gameStateErrors;
+
         // InitialGameState
         GameState gamestate = (GameState)initialGameState.objectReferenceValue;
-        bool validInitialGameState = initialGameState.objectReferenceValue && (!charactersSettings || gamestate.IsValid(charactersSettings));
+        bool validInitialGameState = initialGameState.objectReferenceValue && (!charactersSettings || gamestate.IsValid(charactersSettings, out gameStateErrors));
         GUI.color = !validInitialGameState ? Color.red : _originalTextColor;
         GUI.backgroundColor = !initialGameState.objectReferenceValue ? Color.red : _originalBackgroundColor;
         EditorGUILayout.PropertyField(initialGameState);
@@ -148,7 +156,5 @@ public class SimulationSettingsEditorWindow : EditorWindow
 
         // SimplifiedAITickRate
         EditorGUILayout.PropertyField(simplifiedAITickRate);
-
-        return validCharactersSettingsUsed && validInitialGameState && validSimplifiedAIPrefab;
     }
 }

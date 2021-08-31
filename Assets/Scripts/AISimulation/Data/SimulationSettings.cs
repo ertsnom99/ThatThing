@@ -1,6 +1,7 @@
 using System.IO;
 using BehaviorDesigner.Runtime;
 using UnityEngine;
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.Build;
@@ -58,6 +59,14 @@ public partial class SimulationSettings
 {
     private const string _pathToSimulationSetting = "Assets/Data/AISimulation/Resources/";
 
+    // Error texts
+    private const string _emptyFieldsError = "Some fields are empty";
+    private const string _invalidCharacterSettingsError = "CharacterSettings used is invalid";
+    private const string _invalidInitialGameStateError = "Initial GameState is invalid";
+    private const string _missingBehaviorTreeError = "Simplified AI prefab doesn't have a BehaviorTree";
+    private const string _missingMovementError = "Simplified AI prefab doesn't have a SimplifiedCharacterMovement";
+    private const string _AITickRateError = "AI tick rate can't be smaller than 0";
+
     public static SimulationSettings CreateAsset()
     {
         string directoryFullPath = Application.dataPath + _pathToSimulationSetting.Remove(0, 6);
@@ -76,29 +85,49 @@ public partial class SimulationSettings
         return (SimulationSettings)AssetDatabase.LoadAssetAtPath(_pathToSimulationSetting + _simulationSettingsFileName + ".asset", typeof(SimulationSettings));
     }
 
-    public bool IsValid()
+    public bool IsValid(out string[] errors)
     {
-        if (!_charactersSettingsUsed || !_charactersSettingsUsed.IsValid())
+        List<string> errorList = new List<string>();
+
+        if ((!_charactersSettingsUsed || !_initialGameState || !_simplifiedAIPrefab) && !errorList.Contains(_emptyFieldsError))
         {
-            return false;
+            errorList.Add(_emptyFieldsError);
+
+            errors = errorList.ToArray();
+            return errors.Length == 0;
         }
 
-        if (!_initialGameState || (_charactersSettingsUsed && !_initialGameState.IsValid(_charactersSettingsUsed)))
+        string[] characterSettingsErrors;
+
+        if (!_charactersSettingsUsed.IsValid(out characterSettingsErrors))
         {
-            return false;
+            errorList.Add(_invalidCharacterSettingsError);
         }
 
-        if (!_simplifiedAIPrefab || !_simplifiedAIPrefab.GetComponent<BehaviorTree>() || !_simplifiedAIPrefab.GetComponent<SimplifiedCharacterMovement>())
+        string[] gameStateErrors;
+
+        if (!_initialGameState.IsValid(_charactersSettingsUsed, out gameStateErrors))
         {
-            return false;
+            errorList.Add(_invalidInitialGameStateError);
+        }
+
+        if (!_simplifiedAIPrefab.GetComponent<BehaviorTree>())
+        {
+            errorList.Add(_missingBehaviorTreeError);
+        }
+
+        if (!_simplifiedAIPrefab.GetComponent<SimplifiedCharacterMovement>())
+        {
+            errorList.Add(_missingMovementError);
         }
 
         if (_simplifiedAITickRate < 0)
         {
-            return false;
+            errorList.Add(_AITickRateError);
         }
 
-        return true;
+        errors = errorList.ToArray();
+        return errors.Length == 0;
     }
 }
 
@@ -114,7 +143,9 @@ public class SimulationSettingsBuildProcessor : IPreprocessBuildWithReport
             throw new BuildFailedException("No simulationSettings file exist!");
         }
 
-        if (!simulationSettings.IsValid())
+        string[] simualtionSettingsErrors;
+
+        if (!simulationSettings.IsValid(out simualtionSettingsErrors))
         {
             throw new BuildFailedException("The simulationSettings file is not valid!");
         }

@@ -28,7 +28,10 @@ public class MainMenu : MonoBehaviour
             Debug.LogError("No SimulationSettings found!");
             return;
         }
-        else if (!simulationSettings.IsValid())
+
+        string[] simualtionSettingsErrors;
+
+        if (!simulationSettings.IsValid(out simualtionSettingsErrors))
         {
             Debug.LogError("The SimulationSettings aren't valid!");
             return;

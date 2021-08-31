@@ -290,7 +290,10 @@ public partial class SimulationManager
                 Debug.LogError("No SimulationSettings found!");
                 return;
             }
-            else if (!_simulationSettings.IsValid())
+
+            string[] simualtionSettingsErrors;
+
+            if (!_simulationSettings.IsValid(out simualtionSettingsErrors))
             {
                 Debug.LogError("The SimulationSettings aren't valid!");
                 return;

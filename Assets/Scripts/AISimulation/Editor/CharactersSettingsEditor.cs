@@ -36,7 +36,7 @@ public class CharactersSettingsEditor : Editor
         _settings = new ReorderableList(serializedObject, serializedObject.FindProperty("Settings"), false, true, true, true);
         
         _invalidStyle.normal.textColor = Color.red;
-        _invalidStyle.fontSize = 20;
+        _invalidStyle.fontSize = 16;
         _invalidStyle.wordWrap = true;
         _invalidStyle.fontStyle = FontStyle.Bold;
 
@@ -66,10 +66,15 @@ public class CharactersSettingsEditor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        if (!_charactersSettings.IsValid())
+        string[] gameStateErrors;
+
+        if (!_charactersSettings.IsValid(out gameStateErrors))
         {
             GUI.enabled = false;
-            EditorGUILayout.TextArea("CharactersSettings is invalid (empty names, duplicate names, prefabs without BehaviorTree component and CharacterMovement component or null fields)", _invalidStyle);
+            foreach (string error in gameStateErrors)
+            {
+                EditorGUILayout.TextArea("-" + error, _invalidStyle);
+            }
             GUI.enabled = true;
         }
     }
