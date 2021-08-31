@@ -37,7 +37,7 @@ public class MainMenu : MonoBehaviour
             return;
         }
 #endif
-        GameSave gameSave = new GameSave(simulationSettings.InitialGameState);
+        GameSave gameSave = new GameSave(simulationSettings.InitialSimulationState);
 
         SimulationManager.SetSimulationSettings(simulationSettings);
         SimulationManager.SetGameSave(gameSave);

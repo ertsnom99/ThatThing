@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c2fa4de1308590746b1e81cecf11213e, type: 3}
-  m_Name: SimpleGameState
+  m_Name: SimpleSimulationState
   m_EditorClassIdentifier: 
   _playerState: {fileID: 11400000, guid: 24cd8c15bcc57744faac3c7d316f489c, type: 2}
   _levelStatesByBuildIndex:
@@ -42,6 +42,14 @@ MonoBehaviour:
       _settings: 2
       Folded: 1
     Folded: 0
+  - _buildIndex: 3
+    _graph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
+    _characterStates:
+    - _id: 14
+      _vertex: 0
+      _settings: 0
+      Folded: 0
+    Folded: 0
   _levelEdges:
   - _levelA: 0
     _levelB: 1
@@ -52,6 +60,6 @@ MonoBehaviour:
       Direction: 0
       Traversable: 1
     Folded: 0
-  CharacterIdCount: 14
+  CharacterIdCount: 15
   DisplayCharacterCounters: 0
   LevelEdgeIdCount: 22

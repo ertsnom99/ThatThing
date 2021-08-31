@@ -100,8 +100,8 @@ public partial struct LevelEdge
     }
 }
 
-[CreateAssetMenu(fileName = "GameState", menuName = "AI Simulation/States/Game State")]
-public partial class GameState : ScriptableObject
+[CreateAssetMenu(fileName = "SimulationState", menuName = "AI Simulation/States/Game State")]
+public partial class SimulationState : ScriptableObject
 {
     [SerializeField]
     private PlayerState _playerState;
@@ -149,7 +149,7 @@ public partial struct LevelEdge
     public bool Folded;
 }
 
-public partial class GameState
+public partial class SimulationState
 {
     [HideInInspector]
     public int CharacterIdCount = 0;

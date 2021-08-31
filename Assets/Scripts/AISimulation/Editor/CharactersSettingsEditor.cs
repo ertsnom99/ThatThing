@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-// This is a custom editor for the GameState class
+// This is a custom editor for the CharacterSettings class
 [CustomEditor(typeof(CharactersSettings))]
 
 public class CharactersSettingsEditor : Editor
@@ -66,12 +66,12 @@ public class CharactersSettingsEditor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        string[] gameStateErrors;
+        string[] simulationStateErrors;
 
-        if (!_charactersSettings.IsValid(out gameStateErrors))
+        if (!_charactersSettings.IsValid(out simulationStateErrors))
         {
             GUI.enabled = false;
-            foreach (string error in gameStateErrors)
+            foreach (string error in simulationStateErrors)
             {
                 EditorGUILayout.TextArea("-" + error, _invalidStyle);
             }

@@ -32,12 +32,12 @@ public class GameSave
     public Dictionary<int, LevelStateSave> LevelStatesByBuildIndex = new Dictionary<int, LevelStateSave>();
 
     // TODO: Copy constructor
-    public GameSave(GameState gameState)
+    public GameSave(SimulationState simulationState)
     {
         // Copy PlayerState
-        PlayerLevel = gameState.PlayerState.Level;
-        PlayerPosition = gameState.PlayerState.Position;
-        PlayerRotatin = gameState.PlayerState.Rotation;
+        PlayerLevel = simulationState.PlayerState.Level;
+        PlayerPosition = simulationState.PlayerState.Position;
+        PlayerRotatin = simulationState.PlayerState.Rotation;
         
         // Copy LevelStates
         Vertex[] vertices;
@@ -46,7 +46,7 @@ public class GameSave
         CharacterSave[] characterSaves;
         LevelStateSave levelStateSave;
 
-        foreach (LevelStateByBuildIndex levelStateByBuildIndex in gameState.LevelStatesByBuildIndex)
+        foreach (LevelStateByBuildIndex levelStateByBuildIndex in simulationState.LevelStatesByBuildIndex)
         {
             // Copy all vertices and edges
             vertices = new Vertex[levelStateByBuildIndex.Graph.Vertices.Length];

@@ -20,12 +20,12 @@ public partial class SimulationSettings : ScriptableObject
     }
 
     [SerializeField]
-    private GameState _initialGameState;
+    private SimulationState _initialSimulationState;
 
-    public GameState InitialGameState
+    public SimulationState InitialSimulationState
     {
-        get { return _initialGameState; }
-        private set { _initialGameState = value; }
+        get { return _initialSimulationState; }
+        private set { _initialSimulationState = value; }
     }
 
     [SerializeField]
@@ -62,7 +62,7 @@ public partial class SimulationSettings
     // Error texts
     private const string _emptyFieldsError = "Some fields are empty";
     private const string _invalidCharacterSettingsError = "CharacterSettings used is invalid";
-    private const string _invalidInitialGameStateError = "Initial GameState is invalid";
+    private const string _invalidInitialSimulationStateError = "Initial SimulationState is invalid";
     private const string _missingBehaviorTreeError = "Simplified AI prefab doesn't have a BehaviorTree";
     private const string _missingMovementError = "Simplified AI prefab doesn't have a SimplifiedCharacterMovement";
     private const string _AITickRateError = "AI tick rate can't be smaller than 0";
@@ -89,7 +89,7 @@ public partial class SimulationSettings
     {
         List<string> errorList = new List<string>();
 
-        if ((!_charactersSettingsUsed || !_initialGameState || !_simplifiedAIPrefab) && !errorList.Contains(_emptyFieldsError))
+        if ((!_charactersSettingsUsed || !_initialSimulationState || !_simplifiedAIPrefab) && !errorList.Contains(_emptyFieldsError))
         {
             errorList.Add(_emptyFieldsError);
 
@@ -104,11 +104,11 @@ public partial class SimulationSettings
             errorList.Add(_invalidCharacterSettingsError);
         }
 
-        string[] gameStateErrors;
+        string[] simulationStateErrors;
 
-        if (!_initialGameState.IsValid(_charactersSettingsUsed, out gameStateErrors))
+        if (!_initialSimulationState.IsValid(_charactersSettingsUsed, out simulationStateErrors))
         {
-            errorList.Add(_invalidInitialGameStateError);
+            errorList.Add(_invalidInitialSimulationStateError);
         }
 
         if (!_simplifiedAIPrefab.GetComponent<BehaviorTree>())

@@ -6,11 +6,11 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-// This is a custom editor for the GameState class
-[CustomEditor(typeof(GameState))]
-public class GameStateEditor : Editor
+// This is a custom editor for the SimulationState class
+[CustomEditor(typeof(SimulationState))]
+public class SimulationStateEditor : Editor
 {
-    private GameState _gameState;
+    private SimulationState _simulationState;
 
     private SerializedProperty _script;
     private SerializedProperty _serializedPlayerState;
@@ -38,7 +38,7 @@ public class GameStateEditor : Editor
     private GUIStyle _counterStyle = new GUIStyle();
     private GUIStyle _selectedCounterStyle = new GUIStyle();
 
-    private string _duplicateAssetName = "GameState";
+    private string _duplicateAssetName = "SimulationState";
 
     private const float _reorderableListElementSpaceRatio = .14f;
     private const float _foldoutArrowOffset = 10.0f;
@@ -48,7 +48,7 @@ public class GameStateEditor : Editor
 
     private void OnEnable()
     {
-        _gameState = (GameState)target;
+        _simulationState = (SimulationState)target;
 
         _script = serializedObject.FindProperty("m_Script");
         _serializedPlayerState = serializedObject.FindProperty("_playerState");
@@ -158,13 +158,13 @@ public class GameStateEditor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        string[] gameStateErrors;
-        bool validGameState = _gameState.IsValid(_simulationSettings.CharactersSettingsUsed, out gameStateErrors);
+        string[] simulationStateErrors;
+        bool validSimulationState = _simulationState.IsValid(_simulationSettings.CharactersSettingsUsed, out simulationStateErrors);
 
-        if (!validGameState)
+        if (!validSimulationState)
         {
             GUI.enabled = false;
-            foreach (string error in gameStateErrors)
+            foreach (string error in simulationStateErrors)
             {
                 EditorGUILayout.TextArea("-" + error, _invalidStyle);
             }
@@ -190,7 +190,7 @@ public class GameStateEditor : Editor
             path = path.Substring(0, index);
 
             // Can<t duplicate if the name is empty or the file already exist
-            GUI.enabled = validGameState && _duplicateAssetName != "" && !File.Exists(Application.dataPath + path.Remove(0, 6) + "/" + _duplicateAssetName + ".asset");
+            GUI.enabled = validSimulationState && _duplicateAssetName != "" && !File.Exists(Application.dataPath + path.Remove(0, 6) + "/" + _duplicateAssetName + ".asset");
 
             if (GUILayout.Button("Duplicate", GUILayout.Width(200)))
             {
@@ -276,14 +276,14 @@ public class GameStateEditor : Editor
                 }
 
                 // Create the array of choices for the vertices
-                string[] vertexOptions = new string[_gameState.LevelStatesByBuildIndex[index].Graph.Vertices.Length];
+                string[] vertexOptions = new string[_simulationState.LevelStatesByBuildIndex[index].Graph.Vertices.Length];
 
                 // Create the array of choices for the settings
                 string[] settingsOptions = _simulationSettings.CharactersSettingsUsed.GetSettingsNames();
 
-                for (int i = 0; i < _gameState.LevelStatesByBuildIndex[index].Graph.Vertices.Length; i++)
+                for (int i = 0; i < _simulationState.LevelStatesByBuildIndex[index].Graph.Vertices.Length; i++)
                 {
-                    vertexOptions[i] = _gameState.LevelStatesByBuildIndex[index].Graph.Vertices[i].Id.ToString();
+                    vertexOptions[i] = _simulationState.LevelStatesByBuildIndex[index].Graph.Vertices[i].Id.ToString();
                 }
 
                 // Add the list of Character States
@@ -298,7 +298,7 @@ public class GameStateEditor : Editor
             float height = EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight * 1.0f;
 
             // If LevelStateByBuildIndex is folded
-            if (_gameState.LevelStatesByBuildIndex[index].Folded)
+            if (_simulationState.LevelStatesByBuildIndex[index].Folded)
             {
                 return height;
             }
@@ -307,7 +307,7 @@ public class GameStateEditor : Editor
             height += EditorGUIUtility.singleLineHeight;
 
             // If graph is invalid
-            if (!_gameState.LevelStatesByBuildIndex[index].Graph)
+            if (!_simulationState.LevelStatesByBuildIndex[index].Graph)
             {
                 return height;
             }
@@ -315,7 +315,7 @@ public class GameStateEditor : Editor
             // Minimum space taken by the ReorderabelList
             height += EditorGUIUtility.singleLineHeight * 4.0f;
 
-            if (_gameState.LevelStatesByBuildIndex[index].CharacterStates.Length == 0)
+            if (_simulationState.LevelStatesByBuildIndex[index].CharacterStates.Length == 0)
             {
                 // Space for empty ReorderabelList
                 height += EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight;
@@ -327,8 +327,8 @@ public class GameStateEditor : Editor
                 {
                     height += EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight * 3.11f;
 
-                    bool folded = _gameState.LevelStatesByBuildIndex[index].CharacterStates[i].Folded;
-                    int settings = _gameState.LevelStatesByBuildIndex[index].CharacterStates[i].Settings;
+                    bool folded = _simulationState.LevelStatesByBuildIndex[index].CharacterStates[i].Folded;
+                    int settings = _simulationState.LevelStatesByBuildIndex[index].CharacterStates[i].Settings;
 
                     if (!folded && settings >= 0 && settings < _simulationSettings.CharactersSettingsUsed.Settings.Length)
                     {
@@ -442,11 +442,11 @@ public class GameStateEditor : Editor
     private void HandleLevelEdgeList(ReorderableList levelEdgeList)
     {
         // Create the array of choices for the levels
-        string[] levelOptions = new string[_gameState.LevelStatesByBuildIndex.Length];
+        string[] levelOptions = new string[_simulationState.LevelStatesByBuildIndex.Length];
 
         for (int i = 0; i < levelOptions.Length; i++)
         {
-            levelOptions[i] = "Build index " + _gameState.LevelStatesByBuildIndex[i].BuildIndex.ToString() + " -> " + (_gameState.LevelStatesByBuildIndex[i].Graph ? _gameState.LevelStatesByBuildIndex[i].Graph.name : "no graph!");
+            levelOptions[i] = "Build index " + _simulationState.LevelStatesByBuildIndex[i].BuildIndex.ToString() + " -> " + (_simulationState.LevelStatesByBuildIndex[i].Graph ? _simulationState.LevelStatesByBuildIndex[i].Graph.name : "no graph!");
         }
         
         levelEdgeList.drawHeaderCallback = (Rect rect) =>
@@ -464,7 +464,7 @@ public class GameStateEditor : Editor
             folded.boolValue = !EditorGUI.Foldout(new Rect(rect.x + _foldoutArrowOffset, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, rect.width * .1f - _foldoutArrowOffset, EditorGUIUtility.singleLineHeight), !folded.boolValue, "");
 
             // Field for the level A
-            bool validLevelA = levelA.intValue >= 0 && levelA.intValue < _gameState.LevelStatesByBuildIndex.Length;
+            bool validLevelA = levelA.intValue >= 0 && levelA.intValue < _simulationState.LevelStatesByBuildIndex.Length;
             GUI.color = !validLevelA ? Color.red : _originalTextColor;
             GUI.backgroundColor = !validLevelA ? Color.red : _originalBackgroundColor;
             EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, (rect.width - _foldoutArrowWidth) * .16f, EditorGUIUtility.singleLineHeight),"Level A");
@@ -473,7 +473,7 @@ public class GameStateEditor : Editor
             GUI.backgroundColor = _originalBackgroundColor;
 
             // Field for the level B
-            bool validLevelB = levelB.intValue != levelA.intValue && levelB.intValue >= 0 && levelB.intValue < _gameState.LevelStatesByBuildIndex.Length;
+            bool validLevelB = levelB.intValue != levelA.intValue && levelB.intValue >= 0 && levelB.intValue < _simulationState.LevelStatesByBuildIndex.Length;
             GUI.color = !validLevelB ? Color.red : _originalTextColor;
             GUI.backgroundColor = !validLevelB ? Color.red : _originalBackgroundColor;
             EditorGUI.LabelField(new Rect(rect.x + _foldoutArrowWidth + (rect.width - _foldoutArrowWidth) * .52f, rect.y + EditorGUIUtility.singleLineHeight * _reorderableListElementSpaceRatio, (rect.width - _foldoutArrowWidth) * .16f, EditorGUIUtility.singleLineHeight), "Level B");
@@ -483,7 +483,7 @@ public class GameStateEditor : Editor
             
             if (!folded.boolValue && validLevelA && validLevelB)
             {
-                Graph graphA = _gameState.LevelStatesByBuildIndex[levelA.intValue].Graph;
+                Graph graphA = _simulationState.LevelStatesByBuildIndex[levelA.intValue].Graph;
 
                 if (graphA)
                 {
@@ -515,7 +515,7 @@ public class GameStateEditor : Editor
                     GUI.backgroundColor = _originalBackgroundColor;
                 }
 
-                Graph graphB = _gameState.LevelStatesByBuildIndex[levelB.intValue].Graph;
+                Graph graphB = _simulationState.LevelStatesByBuildIndex[levelB.intValue].Graph;
 
                 if (graphB)
                 {
@@ -561,15 +561,15 @@ public class GameStateEditor : Editor
         {
             float height = EditorGUIUtility.standardVerticalSpacing * 2.0f + EditorGUIUtility.singleLineHeight;
 
-            bool validLevelA = _gameState.LevelEdges[index].LevelA >= 0 && _gameState.LevelEdges[index].LevelA < _gameState.LevelStatesByBuildIndex.Length;
-            bool validLevelB = _gameState.LevelEdges[index].LevelB >= 0 && _gameState.LevelEdges[index].LevelB < _gameState.LevelStatesByBuildIndex.Length;
+            bool validLevelA = _simulationState.LevelEdges[index].LevelA >= 0 && _simulationState.LevelEdges[index].LevelA < _simulationState.LevelStatesByBuildIndex.Length;
+            bool validLevelB = _simulationState.LevelEdges[index].LevelB >= 0 && _simulationState.LevelEdges[index].LevelB < _simulationState.LevelStatesByBuildIndex.Length;
 
-            if (!validLevelA || !validLevelB || _gameState.LevelEdges[index].LevelA == _gameState.LevelEdges[index].LevelB)
+            if (!validLevelA || !validLevelB || _simulationState.LevelEdges[index].LevelA == _simulationState.LevelEdges[index].LevelB)
             {
                 return height;
             }
 
-            if (!_gameState.LevelEdges[index].Folded)
+            if (!_simulationState.LevelEdges[index].Folded)
             {
                 height += EditorGUIUtility.singleLineHeight * 3.0f;
             }
@@ -593,13 +593,13 @@ public class GameStateEditor : Editor
     {
         bool characterSettingsValid = _simulationSettings && _simulationSettings.CharactersSettingsUsed && _simulationSettings.CharactersSettingsUsed.Settings.Length > 0;
 
-        if (!_gameState.DisplayCharacterCounters || !characterSettingsValid || _levelStateByBuildIndexList.index < 0)
+        if (!_simulationState.DisplayCharacterCounters || !characterSettingsValid || _levelStateByBuildIndexList.index < 0)
         {
             // Don't display character counters, CharactersSettings used is invalid or no LevelStateByBuildIndex is selected
             return;
         }
         
-        Graph graph = _gameState.LevelStatesByBuildIndex[_levelStateByBuildIndexList.index].Graph;
+        Graph graph = _simulationState.LevelStatesByBuildIndex[_levelStateByBuildIndexList.index].Graph;
 
         if (graph == null)
         {
@@ -611,7 +611,7 @@ public class GameStateEditor : Editor
         int selectedCharacterVertex = -1;
         Dictionary<int, int> characterCountByVertex = new Dictionary<int, int>();
         
-        CharacterState[] characterStates = _gameState.LevelStatesByBuildIndex[_levelStateByBuildIndexList.index].CharacterStates;
+        CharacterState[] characterStates = _simulationState.LevelStatesByBuildIndex[_levelStateByBuildIndexList.index].CharacterStates;
 
         for (int i = 0; i < characterStates.Length; i++)
         {

@@ -195,12 +195,12 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 
     public static void LoadGameSave()
     {
-        if (File.Exists(Application.persistentDataPath + "/GameState.dat"))
+        if (File.Exists(Application.persistentDataPath + "/SimulationState.dat"))
         {
             BinaryFormatter bf = new BinaryFormatter();
             AddSurrogateSelector(bf);
 
-            FileStream file = File.Open(Application.persistentDataPath + "/GameState.dat", FileMode.Open);
+            FileStream file = File.Open(Application.persistentDataPath + "/SimulationState.dat", FileMode.Open);
 
             _gameSave = (GameSave)bf.Deserialize(file);
             file.Close();
@@ -227,7 +227,7 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         BinaryFormatter bf = new BinaryFormatter();
         AddSurrogateSelector(bf);
 
-        FileStream file = File.Create(Application.persistentDataPath + "/GameState.dat");
+        FileStream file = File.Create(Application.persistentDataPath + "/SimulationState.dat");
 
         bf.Serialize(file, _gameSave);
         file.Close();
@@ -246,9 +246,9 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 
     public static void DeleteGameSave()
     {
-        if (File.Exists(Application.persistentDataPath + "/GameState.dat"))
+        if (File.Exists(Application.persistentDataPath + "/SimulationState.dat"))
         {
-            File.Delete(Application.persistentDataPath + "/GameState.dat");
+            File.Delete(Application.persistentDataPath + "/SimulationState.dat");
             return;
         }
 
@@ -261,22 +261,22 @@ public partial class SimulationManager
 {
     [Header("Debug Game")]
     [SerializeField]
-    private bool _useDebugGameState;
+    private bool _useDebugSimulationState;
     [SerializeField]
-    private GameState _debugGameState;
+    private SimulationState _debugSimulationState;
 
     private void AwakeInUnityEditor()
     {
         // Use debug
-        if (_useDebugGameState)
+        if (_useDebugSimulationState)
         {
-            if (_debugGameState == null)
+            if (_debugSimulationState == null)
             {
-                Debug.LogError("No debug GameState is set!");
+                Debug.LogError("No debug SimulationState is set!");
                 return;
             }
 
-            _gameSave = new GameSave(_debugGameState);
+            _gameSave = new GameSave(_debugSimulationState);
             _gameSave.PlayerLevel = _buildIndex;
         }
 
@@ -303,7 +303,7 @@ public partial class SimulationManager
         // Create a GameSave if none exist
         if (_gameSave == null)
         {
-            _gameSave = new GameSave(_simulationSettings.InitialGameState);
+            _gameSave = new GameSave(_simulationSettings.InitialSimulationState);
             _gameSave.PlayerLevel = _buildIndex;
         }
     }

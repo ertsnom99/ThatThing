@@ -110,7 +110,7 @@ public class SimulationSettingsEditorWindow : EditorWindow
     private void DrawSettings()
     {
         SerializedProperty charactersSettingsUsed = _serializedSimulationSettings.FindProperty("_charactersSettingsUsed");
-        SerializedProperty initialGameState = _serializedSimulationSettings.FindProperty("_initialGameState");
+        SerializedProperty initialSimulationState = _serializedSimulationSettings.FindProperty("_initialSimulationState");
         SerializedProperty simplifiedAIPrefab = _serializedSimulationSettings.FindProperty("_simplifiedAIPrefab");
         SerializedProperty simplifiedAITickRate = _serializedSimulationSettings.FindProperty("_simplifiedAITickRate");
 
@@ -128,14 +128,14 @@ public class SimulationSettingsEditorWindow : EditorWindow
         GUI.color = Color.white;
         GUI.backgroundColor = _originalBackgroundColor;
 
-        string[] gameStateErrors;
+        string[] simulationStateErrors;
 
-        // InitialGameState
-        GameState gamestate = (GameState)initialGameState.objectReferenceValue;
-        bool validInitialGameState = initialGameState.objectReferenceValue && (!charactersSettings || gamestate.IsValid(charactersSettings, out gameStateErrors));
-        GUI.color = !validInitialGameState ? Color.red : _originalTextColor;
-        GUI.backgroundColor = !initialGameState.objectReferenceValue ? Color.red : _originalBackgroundColor;
-        EditorGUILayout.PropertyField(initialGameState);
+        // InitialSimulationState
+        SimulationState simulationState = (SimulationState)initialSimulationState.objectReferenceValue;
+        bool validInitialSimulationState = initialSimulationState.objectReferenceValue && (!charactersSettings || simulationState.IsValid(charactersSettings, out simulationStateErrors));
+        GUI.color = !validInitialSimulationState ? Color.red : _originalTextColor;
+        GUI.backgroundColor = !initialSimulationState.objectReferenceValue ? Color.red : _originalBackgroundColor;
+        EditorGUILayout.PropertyField(initialSimulationState);
         GUI.color = Color.white;
         GUI.backgroundColor = _originalBackgroundColor;
 
