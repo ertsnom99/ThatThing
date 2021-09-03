@@ -6,7 +6,7 @@ using UnityEngine;
 public class ChooseVertex : Action
 {
     public SharedGraph LevelGraph;
-    public SharedCharacterSave CharacterSave;
+    public SharedCharacterState CharacterState;
     public SharedInt Vertex;
 
     public override TaskStatus OnUpdate()
@@ -18,7 +18,7 @@ public class ChooseVertex : Action
 
         int randomVertex = Random.Range(0, LevelGraph.Value.Vertices.Length);
 
-        if (randomVertex == CharacterSave.Value.CurrentVertex)
+        if (randomVertex == CharacterState.Value.CurrentVertex)
         {
             randomVertex++;
             randomVertex %= LevelGraph.Value.Vertices.Length;

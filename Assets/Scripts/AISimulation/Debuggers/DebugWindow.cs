@@ -14,22 +14,23 @@ public class DebugWindow : MonoBehaviour
     [SerializeField]
     private LayerMask _cullingMask;
 
+    [SerializeField]
+    private RawImage _levelRenderer;
+    private RectTransform _levelRendererTransform;
     private RenderTexture _renderTexture;
 
     // Should always be powers of 2
     [SerializeField]
     private Vector2 _renderTextureSize = new Vector2(512.0f, 256.0f);
 
-    private Dictionary<int, LevelStateSave> _levelStatesByBuildIndex = new Dictionary<int, LevelStateSave>();
+    private Dictionary<int, Graph> _levelGraphsByBuildIndex = new Dictionary<int, Graph>();
+    private List<CharacterState> _characters = new List<CharacterState>();
+    private Dictionary<int, GameObject> _characterInstances = new Dictionary<int, GameObject>();
 
     [SerializeField]
     private Dropdown _levelDropdown;
 
     private int _selectedLevel = -1;
-
-    [SerializeField]
-    private RawImage _levelRenderer;
-    private RectTransform _levelRendererTransform;
 
     [SerializeField]
     private GameObject _vertexPrefab;
@@ -51,8 +52,6 @@ public class DebugWindow : MonoBehaviour
 
     [SerializeField]
     private GameObject _characterPrefab;
-
-    private Dictionary<CharacterSave, GameObject> _characters = new Dictionary<CharacterSave, GameObject>();
 
     [SerializeField]
     private Vector3 _characterPositionOffset = new Vector3(0, 1.0f, 0);
@@ -110,21 +109,22 @@ public class DebugWindow : MonoBehaviour
         _levelDropdown.onValueChanged.AddListener(delegate { LevelDropdownValueChanged(); });
     }
 
-    public void SetLevelStates(Dictionary<int, LevelStateSave> levelStatesByBuildIndex, int currentBuildIndex)
+    public void Initialize(Dictionary<int, Graph> levelGraphsByBuildIndex, List<CharacterState> characters, int currentBuildIndex)
     {
-        _levelStatesByBuildIndex = levelStatesByBuildIndex;
-        
+        _levelGraphsByBuildIndex = levelGraphsByBuildIndex;
+        _characters = characters;
+
         // Fill the level dropdown options
         List<Dropdown.OptionData> levelOptions = new List<Dropdown.OptionData>();
 
-        foreach (KeyValuePair<int, LevelStateSave> levelState in _levelStatesByBuildIndex)
+        foreach (int buildIndex in _levelGraphsByBuildIndex.Keys)
         {
-            if (currentBuildIndex == levelState.Key)
+            if (currentBuildIndex == buildIndex)
             {
                 continue;
             }
 
-            levelOptions.Add(new Dropdown.OptionData(levelState.Key.ToString()));
+            levelOptions.Add(new Dropdown.OptionData(buildIndex.ToString()));
         }
 
         _levelDropdown.options = levelOptions;
@@ -138,7 +138,7 @@ public class DebugWindow : MonoBehaviour
             return;
         }
 
-        CreateLevelGraph();
+        CreateLevelGraph(_selectedLevel);
     }
 
     void LevelDropdownValueChanged()
@@ -146,27 +146,27 @@ public class DebugWindow : MonoBehaviour
         DeleteLevelGraph();
 
         _selectedLevel = int.Parse(_levelDropdown.options[_levelDropdown.value].text);
-        CreateLevelGraph();
+        CreateLevelGraph(_selectedLevel);
     }
 
-    private void CreateLevelGraph()
+    private void CreateLevelGraph(int buildIndex)
     {
         // Create vertices
-        _vertices = new GameObject[_levelStatesByBuildIndex[_selectedLevel].Graph.Vertices.Length];
+        _vertices = new GameObject[_levelGraphsByBuildIndex[_selectedLevel].Vertices.Length];
 
-        for (int i = 0; i < _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices.Length; i++)
+        for (int i = 0; i < _levelGraphsByBuildIndex[_selectedLevel].Vertices.Length; i++)
         {
-            _vertices[i] = Instantiate(_vertexPrefab, _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[i].Position + _levelGraphContainer.transform.position, Quaternion.identity, _levelGraphContainer.transform);
+            _vertices[i] = Instantiate(_vertexPrefab, _levelGraphsByBuildIndex[_selectedLevel].Vertices[i].Position + _levelGraphContainer.transform.position, Quaternion.identity, _levelGraphContainer.transform);
         }
 
         // Create edges
-        _edges = new GameObject[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length];
-        _lineRenderers = new LineRenderer[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length];
+        _edges = new GameObject[_levelGraphsByBuildIndex[_selectedLevel].Edges.Length];
+        _lineRenderers = new LineRenderer[_levelGraphsByBuildIndex[_selectedLevel].Edges.Length];
         
-        for (int i = 0; i < _levelStatesByBuildIndex[_selectedLevel].Graph.Edges.Length; i++)
+        for (int i = 0; i < _levelGraphsByBuildIndex[_selectedLevel].Edges.Length; i++)
         {
-            Vector3 roomAPosition = _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].VertexA].Position + _levelGraphContainer.transform.position;
-            Vector3 roomBPosition = _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices[_levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].VertexB].Position + _levelGraphContainer.transform.position;
+            Vector3 roomAPosition = _levelGraphsByBuildIndex[_selectedLevel].Vertices[_levelGraphsByBuildIndex[_selectedLevel].Edges[i].VertexA].Position + _levelGraphContainer.transform.position;
+            Vector3 roomBPosition = _levelGraphsByBuildIndex[_selectedLevel].Vertices[_levelGraphsByBuildIndex[_selectedLevel].Edges[i].VertexB].Position + _levelGraphContainer.transform.position;
 
             _lineRenderers[i] = Instantiate(_edgePrefab, roomAPosition, Quaternion.identity, _levelGraphContainer.transform).GetComponent<LineRenderer>();
             _edges[i] = _lineRenderers[i].gameObject;
@@ -174,23 +174,28 @@ public class DebugWindow : MonoBehaviour
             _lineRenderers[i].positionCount = 2;
             _lineRenderers[i].SetPosition(0, roomAPosition);
             _lineRenderers[i].SetPosition(1, roomBPosition);
-            _lineRenderers[i].material = _levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].Traversable ? _traversableEdge : _notTraversableEdge;
+            _lineRenderers[i].material = _levelGraphsByBuildIndex[_selectedLevel].Edges[i].Traversable ? _traversableEdge : _notTraversableEdge;
         }
 
         CenterCamera();
 
         // Create characters
-        for (int i = 0; i < _levelStatesByBuildIndex[_selectedLevel].CharacterSaves.Count; i++)
+        foreach (CharacterState character in _characters)
         {
-            Vector3 characterPosition = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset;
-            CreateCharacter(_levelStatesByBuildIndex[_selectedLevel].CharacterSaves[i], characterPosition);
+            if (character.BuildIndex != buildIndex)
+            {
+                continue;
+            }
+
+            Vector3 characterPosition = character.Position + _levelGraphContainer.transform.position + _characterPositionOffset;
+            CreateCharacter(character, characterPosition);
         }
     }
 
-    private void CreateCharacter(CharacterSave characterState, Vector3 characterPosition)
+    private void CreateCharacter(CharacterState character, Vector3 position)
     {
-        _characters.Add(characterState, Instantiate(_characterPrefab, characterPosition, Quaternion.identity, _levelGraphContainer.transform));
-        _characters[characterState].transform.LookAt(characterPosition - _camera.transform.forward);
+        _characterInstances.Add(character.ID, Instantiate(_characterPrefab, position, Quaternion.identity, _levelGraphContainer.transform));
+        _characterInstances[character.ID].transform.LookAt(position - _camera.transform.forward);
     }
 
     private void DeleteLevelGraph()
@@ -216,14 +221,14 @@ public class DebugWindow : MonoBehaviour
             _lineRenderers = null;
         }
 
-        if (_characters != null)
+        if (_characterInstances != null)
         {
-            foreach (KeyValuePair<CharacterSave, GameObject> entry in _characters)
+            foreach (GameObject character in _characterInstances.Values)
             {
-                Destroy(entry.Value);
+                Destroy(character);
             }
 
-            _characters.Clear();
+            _characterInstances.Clear();
         }
     }
 
@@ -234,38 +239,43 @@ public class DebugWindow : MonoBehaviour
         {
             for (int i = 0; i < _edges.Length; i++)
             {
-                _lineRenderers[i].material = _levelStatesByBuildIndex[_selectedLevel].Graph.Edges[i].Traversable ? _traversableEdge : _notTraversableEdge;
+                _lineRenderers[i].material = _levelGraphsByBuildIndex[_selectedLevel].Edges[i].Traversable ? _traversableEdge : _notTraversableEdge;
             }
         }
 
         // Update characters
-        if (_characters != null && _selectedLevel > -1)
+        if (_characterInstances != null && _selectedLevel > -1)
         {
             //--------HACK: NOT TESTED YET----------------------------
             // Check if any character might have exited or entered the level
-            CharacterSave[] characterExited = _characters.Keys.ToList().Except(_levelStatesByBuildIndex[_selectedLevel].CharacterSaves).ToArray();
-            CharacterSave[] characterEntered = _levelStatesByBuildIndex[_selectedLevel].CharacterSaves.Except(_characters.Keys.ToList()).ToArray();
+            /*CharacterSave[] characterExited = _charactersOLD.Keys.ToList().Except(_levelGraphsByBuildIndex[_selectedLevel].CharacterSaves).ToArray();
+            CharacterSave[] characterEntered = _levelGraphsByBuildIndex[_selectedLevel].CharacterSaves.Except(_charactersOLD.Keys.ToList()).ToArray();
 
             for (int i = 0; i < characterExited.Length; i++)
             {
-                Destroy(_characters[characterExited[i]]);
-                _characters.Remove(characterExited[i]);
+                Destroy(_charactersOLD[characterExited[i]]);
+                _charactersOLD.Remove(characterExited[i]);
             }
 
             for (int i = 0; i < characterEntered.Length; i++)
             {
                 CreateCharacter(characterEntered[i], characterEntered[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset);
-            }
+            }*/
             //--------------------------------------------------------
-            foreach (KeyValuePair<CharacterSave, GameObject> entry in _characters)
+            foreach (CharacterState character in _characters)
             {
-                entry.Value.transform.position = entry.Key.Position + _levelGraphContainer.transform.position + _characterPositionOffset;
-                entry.Value.transform.LookAt(entry.Value.transform.position - _camera.transform.forward);
+                if (!_characterInstances.ContainsKey(character.ID))
+                {
+                    continue;
+                }
+
+                _characterInstances[character.ID].transform.position = character.Position + _levelGraphContainer.transform.position + _characterPositionOffset;
+                _characterInstances[character.ID].transform.LookAt(_characterInstances[character.ID].transform.position - _camera.transform.forward);
             }
         }
 
         // Update camera
-        if (!_camera || _levelStatesByBuildIndex == null || _selectedLevel < 0)
+        if (!_camera || _levelGraphsByBuildIndex == null || _selectedLevel < 0)
         {
             return;
         }
@@ -369,12 +379,12 @@ public class DebugWindow : MonoBehaviour
     {
         Vector3 averagePosition = Vector3.zero;
 
-        foreach (Vertex vertex in _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices)
+        foreach (Vertex vertex in _levelGraphsByBuildIndex[_selectedLevel].Vertices)
         {
             averagePosition += vertex.Position + _levelGraphContainer.transform.position;
         }
 
-        averagePosition /= _levelStatesByBuildIndex[_selectedLevel].Graph.Vertices.Length;
+        averagePosition /= _levelGraphsByBuildIndex[_selectedLevel].Vertices.Length;
         PlaceCameraAtDistance(averagePosition, _centerTargetDistance);
 
         _focusing = true;

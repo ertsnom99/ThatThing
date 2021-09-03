@@ -10,18 +10,21 @@ using UnityEngine.SceneManagement;
 public partial class SimulationManager : MonoSingleton<SimulationManager>
 {
     private int _buildIndex = -1;
-    private Dictionary<CharacterSave, BehaviorTree> _characters = new Dictionary<CharacterSave, BehaviorTree>();
-    private Dictionary<CharacterSave, BehaviorTree> _simplifiedCharacters = new Dictionary<CharacterSave, BehaviorTree>();
+
+    private Dictionary<int, BehaviorTree> _characterBehaviorsById = new Dictionary<int, BehaviorTree>();
+    private Dictionary<int, BehaviorTree> _simplifiedCharacterBehaviorsById = new Dictionary<int, BehaviorTree>();
     private float _timeSinceLastTick = .0f;
 
-    private static SimulationSettings _simulationSettings;
-    private static GameSave _gameSave;
-
     private const string _levelGraphVariableName = "LevelGraph";
-    private const string _characterSaveVariableName = "CharacterSave";
+    private const string _characterStateVariableName = "CharacterState";
 
     [SerializeField]
     private LayerMask _wallMask;
+
+    private static SimulationSettings _simulationSettings;
+    private static Dictionary<int, Graph> _levelGraphsByBuildIndex = new Dictionary<int, Graph>();
+    private static List<CharacterState> _characters = new List<CharacterState>();
+    private static LevelEdge[] _levelEdges = new LevelEdge[0];
 
     protected override void Awake()
     {
@@ -34,8 +37,6 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 #endif
         UpdateScene();
         CreateAIs();
-
-        // TODO: Set player (position, rotation, etc.)
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
         CreateDebugWindow();
 #endif
@@ -48,58 +49,57 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 
     private void CreateAIs()
     {
-        GameObject AIContainer;
+        // Prepare containers for the AIs
+        Dictionary<int, GameObject> AIContainers = new Dictionary<int, GameObject>();
+
+        foreach(int buildIndex in _levelGraphsByBuildIndex.Keys)
+        {
+            AIContainers.Add(buildIndex, new GameObject("level " + buildIndex));
+            AIContainers[buildIndex].transform.parent = transform;
+        }
+
         BehaviorTree AI;
 
-        foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+        foreach(CharacterState character in _characters)
         {
-            if (_buildIndex == levelState.Key)
+            if (_buildIndex == character.BuildIndex)
             {
                 // Create AIs
-                foreach(CharacterSave character in levelState.Value.CharacterSaves)
-                {
-                    AI = CreateAI(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
-                                  character.Position,
-                                  Quaternion.Euler(character.Rotation),
-                                  null,
-                                  _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
-                                  levelState.Value.Graph,
-                                  character);
+                AI = CreateAI(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
+                              character.Position,
+                              Quaternion.Euler(character.Rotation),
+                              null,
+                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
+                              _levelGraphsByBuildIndex[character.BuildIndex],
+                              character);
 
-                    AI.gameObject.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
-                    _characters.Add(character, AI);
-                }
+                AI.gameObject.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
+                _characterBehaviorsById.Add(character.ID, AI);
             }
             else
             {
-                AIContainer = new GameObject("level " + levelState.Key);
-                AIContainer.transform.parent = transform;
-
                 // Create simplified AIs
-                foreach (CharacterSave character in levelState.Value.CharacterSaves)
-                {
-                    AI = CreateAI(_simulationSettings.SimplifiedAIPrefab,
-                                  Vector3.zero,
-                                  Quaternion.identity,
-                                  AIContainer.transform,
-                                  _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
-                                  levelState.Value.Graph,
-                                  character);
+                AI = CreateAI(_simulationSettings.SimplifiedAIPrefab,
+                              Vector3.zero,
+                              Quaternion.identity,
+                              AIContainers[character.BuildIndex].transform,
+                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
+                              _levelGraphsByBuildIndex[character.BuildIndex],
+                              character);
 
-                    AI.GetComponent<SimplifiedCharacterMovement>().SetSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
-                    _simplifiedCharacters.Add(character, AI);
-                }
+                AI.GetComponent<SimplifiedCharacterMovement>().SetSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
+                _simplifiedCharacterBehaviorsById.Add(character.ID, AI);
             }
         }
     }
 
-    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, Graph levelGraph, CharacterSave characterState)
+    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, Graph levelGraph, CharacterState characterState)
     {
         GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
         BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
         behaviorTree.ExternalBehavior = behavior;
         behaviorTree.SetVariableValue(_levelGraphVariableName, levelGraph);
-        behaviorTree.SetVariableValue(_characterSaveVariableName, characterState);
+        behaviorTree.SetVariableValue(_characterStateVariableName, characterState);
 
         return behaviorTree;
     }
@@ -116,9 +116,9 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         UpdateDebugWindow();
 #endif
         // Update AIs
-        foreach (KeyValuePair<CharacterSave, BehaviorTree> entry in _characters)
+        foreach (BehaviorTree behaviorTree in _characterBehaviorsById.Values)
         {
-            BehaviorManager.instance.Tick(entry.Value);
+            BehaviorManager.instance.Tick(behaviorTree);
         }
 
         // Update simplified AIs
@@ -127,9 +127,9 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         while (_timeSinceLastTick >= _simulationSettings.SimplifiedAITickRate)
         {
             _timeSinceLastTick -= _simulationSettings.SimplifiedAITickRate;
-            foreach (KeyValuePair<CharacterSave, BehaviorTree> entry in _simplifiedCharacters)
+            foreach (BehaviorTree behaviorTree in _simplifiedCharacterBehaviorsById.Values)
             {
-                BehaviorManager.instance.Tick(entry.Value);
+                BehaviorManager.instance.Tick(behaviorTree);
             }
         }
     }
@@ -137,30 +137,35 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
     // Update the CharacterState of all characters in the level
     public void UpdateCharactersState()
     {
-        Graph graph = _gameSave.LevelStatesByBuildIndex[_buildIndex].Graph;
-        
-        foreach (KeyValuePair<CharacterSave, BehaviorTree> entry in _characters)
+        Graph graph = _levelGraphsByBuildIndex[_buildIndex];
+
+        foreach(CharacterState character in _characters)
         {
+            if (character.BuildIndex != _buildIndex)
+            {
+                continue;
+            }
+
             int vertexA;
             int vertexB;
             float progress;
 
-            if (graph.ConvertPositionToGraph(entry.Value.transform.position, _wallMask, out vertexA, out vertexB, out progress))
+            if (graph.ConvertPositionToGraph(_characterBehaviorsById[character.ID].transform.position, _wallMask, out vertexA, out vertexB, out progress))
             {
-                entry.Key.CurrentVertex = vertexA;
-                entry.Key.NextVertex = vertexB;
-                entry.Key.Progress = progress;
+                character.CurrentVertex = vertexA;
+                character.NextVertex = vertexB;
+                character.Progress = progress;
 
                 if (vertexB > -1)
                 {
                     Vector3 AtoB = graph.Vertices[vertexB].Position - graph.Vertices[vertexA].Position;
-                    entry.Key.Position = Vector3.Lerp(graph.Vertices[vertexA].Position, graph.Vertices[vertexB].Position, progress / (AtoB).magnitude);
-                    entry.Key.Rotation = Quaternion.LookRotation(AtoB, Vector3.up).eulerAngles;
+                    character.Position = Vector3.Lerp(graph.Vertices[vertexA].Position, graph.Vertices[vertexB].Position, progress / (AtoB).magnitude);
+                    character.Rotation = Quaternion.LookRotation(AtoB, Vector3.up).eulerAngles;
                 }
                 else
                 {
-                    entry.Key.Position = graph.Vertices[vertexA].Position;
-                    entry.Key.Rotation = Vector3.zero;
+                    character.Position = graph.Vertices[vertexA].Position;
+                    character.Rotation = Vector3.zero;
                 }
             }
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -172,27 +177,92 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         }
     }
 
-    public static void SetSimulationSettings(SimulationSettings simulationSettings)
+    public static int[] GetBuildIndexes()
     {
-        _simulationSettings = simulationSettings;
-    }
+        List<int> buildIndexes = new List<int>();
 
-    #region GameSave Methods
-    public static GameSave GetGameSave()
-    {
-        return _gameSave;
-    }
-
-    public static void SetGameSave(GameSave gameSave)
-    {
-        _gameSave = gameSave;
-        
-        foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
+        foreach (int buildIndex in _levelGraphsByBuildIndex.Keys)
         {
-            levelState.Value.Graph.Initialize();
+            buildIndexes.Add(buildIndex);
+        }
+
+        return buildIndexes.ToArray();
+    }
+
+    public static void Initialize(GameSave gameSave = null)
+    {
+        _simulationSettings = SimulationSettings.LoadFromResources();
+#if UNITY_EDITOR
+        if (!_simulationSettings)
+        {
+            Debug.LogError("No SimulationSettings found!");
+            return;
+        }
+
+        string[] simualtionSettingsErrors;
+
+        if (!_simulationSettings.IsValid(out simualtionSettingsErrors))
+        {
+            Debug.LogError("The SimulationSettings aren't valid!");
+            return;
+        }
+#endif
+        SetSimulationState(_simulationSettings.InitialSimulationState);
+
+        // TODO: Consider if a gameSave is given in parameter
+    }
+
+    private static void SetSimulationState(SimulationState simulationState)
+    {
+        // Store graphs and characters
+        _levelGraphsByBuildIndex.Clear();
+        _characters.Clear();
+
+        Vertex[] vertices;
+        Edge[] edges;
+        Graph graph;
+
+        foreach (LevelStateByBuildIndex levelStateByBuildIndex in simulationState.LevelStatesByBuildIndex)
+        {
+            // Copy all vertices and edges
+            vertices = new Vertex[levelStateByBuildIndex.Graph.Vertices.Length];
+            levelStateByBuildIndex.Graph.Vertices.CopyTo(vertices, 0);
+            edges = new Edge[levelStateByBuildIndex.Graph.Edges.Length];
+            levelStateByBuildIndex.Graph.Edges.CopyTo(edges, 0);
+
+            // Copy the graph
+            graph = ScriptableObject.CreateInstance<Graph>();
+            graph.Initialize(vertices, edges);
+
+            // Add the graph in the dictionary
+            _levelGraphsByBuildIndex.Add(levelStateByBuildIndex.BuildIndex, graph);
+
+            // Store all characters in the level
+            foreach(CharacterState characterState in levelStateByBuildIndex.CharacterStates)
+            {
+                _characters.Add(new CharacterState(characterState)
+                {
+                    BuildIndex = levelStateByBuildIndex.BuildIndex,
+                    NextVertex = -1,
+                    Progress = .0f,
+                    Position = vertices[characterState.CurrentVertex].Position,
+                    Rotation = Vector3.zero
+                });
+            }
+        }
+
+        // Store the levelEdges
+        _levelEdges = new LevelEdge[simulationState.LevelEdges.Length];
+
+        for (int i = 0; i < simulationState.LevelEdges.Length; i++)
+        {
+            int levelABuildIndex = simulationState.LevelStatesByBuildIndex[simulationState.LevelEdges[i].LevelA].BuildIndex;
+            int levelBBuildIndex = simulationState.LevelStatesByBuildIndex[simulationState.LevelEdges[i].LevelB].BuildIndex;
+            _levelEdges[i] = new LevelEdge(levelABuildIndex, levelBBuildIndex, simulationState.LevelEdges[i].Edge);
         }
     }
 
+    #region GameSave Methods
     public static void LoadGameSave()
     {
         if (File.Exists(Application.persistentDataPath + "/SimulationState.dat"))
@@ -202,13 +272,10 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 
             FileStream file = File.Open(Application.persistentDataPath + "/SimulationState.dat", FileMode.Open);
 
-            _gameSave = (GameSave)bf.Deserialize(file);
+            //_gameSave = (GameSave)bf.Deserialize(file);
             file.Close();
             
-            foreach (KeyValuePair<int, LevelStateSave> levelState in _gameSave.LevelStatesByBuildIndex)
-            {
-                levelState.Value.Graph.Initialize();
-            }
+            // TODO: Apply game save / maybe load initial state
 
             return;
         }
@@ -219,17 +286,17 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
     // Returns if _gameSave was saved
     public static bool SaveGameSave()
     {
-        if (_gameSave == null)
+        /*if (_gameSave == null)
         {
             return false;
-        }
+        }*/
 
         BinaryFormatter bf = new BinaryFormatter();
         AddSurrogateSelector(bf);
 
         FileStream file = File.Create(Application.persistentDataPath + "/SimulationState.dat");
 
-        bf.Serialize(file, _gameSave);
+        //bf.Serialize(file, _gameSave);
         file.Close();
 
         return true;
@@ -267,45 +334,54 @@ public partial class SimulationManager
 
     private void AwakeInUnityEditor()
     {
-        // Use debug
-        if (_useDebugSimulationState)
+        if (_levelGraphsByBuildIndex.Count <= 0)
         {
-            if (_debugSimulationState == null)
+            // Use debug
+            if (_useDebugSimulationState)
             {
-                Debug.LogError("No debug SimulationState is set!");
-                return;
+                if (_debugSimulationState == null)
+                {
+                    Debug.LogError("No debug SimulationState is set!");
+                    return;
+                }
+
+                Initialize(_debugSimulationState);
             }
-
-            _gameSave = new GameSave(_debugSimulationState);
-            _gameSave.PlayerLevel = _buildIndex;
+            else
+            {
+                Initialize();
+            }
         }
+    }
 
+    private void Initialize(SimulationState initialState)
+    {
         // Search for a valid SimulationSettings
+        _simulationSettings = SimulationSettings.LoadFromResources();
+
         if (!_simulationSettings)
         {
-            _simulationSettings = SimulationSettings.LoadFromAsset();
-
-            if (!_simulationSettings)
-            {
-                Debug.LogError("No SimulationSettings found!");
-                return;
-            }
-
-            string[] simualtionSettingsErrors;
-
-            if (!_simulationSettings.IsValid(out simualtionSettingsErrors))
-            {
-                Debug.LogError("The SimulationSettings aren't valid!");
-                return;
-            }
+            Debug.LogError("No SimulationSettings found!");
+            return;
         }
 
-        // Create a GameSave if none exist
-        if (_gameSave == null)
+        string[] simualtionSettingsErrors;
+
+        if (!_simulationSettings.IsValid(out simualtionSettingsErrors))
         {
-            _gameSave = new GameSave(_simulationSettings.InitialSimulationState);
-            _gameSave.PlayerLevel = _buildIndex;
+            Debug.LogError("The SimulationSettings aren't valid!");
+            return;
         }
+
+        string[] simualtionStateErrors;
+
+        if (!initialState.IsValid(_simulationSettings.CharactersSettingsUsed, out simualtionStateErrors))
+        {
+            Debug.LogError("The given initialState isn't valid!");
+            return;
+        }
+
+        SetSimulationState(initialState);
     }
 }
 #endif
@@ -323,13 +399,13 @@ public partial class SimulationManager
 
     private void CreateDebugWindow()
     {
-        if (!_windowPrefab || _gameSave == null)
+        if (!_windowPrefab || _levelGraphsByBuildIndex.Count <= 0)
         {
             return;
         }
 
         _debugWindow = Instantiate(_windowPrefab, _parent.transform).GetComponent<DebugWindow>();
-        _debugWindow.SetLevelStates(_gameSave.LevelStatesByBuildIndex, _buildIndex);
+        _debugWindow.Initialize(_levelGraphsByBuildIndex, _characters, _buildIndex);
     }
 
     private void UpdateDebugWindow()

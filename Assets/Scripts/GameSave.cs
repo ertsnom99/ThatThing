@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using GraphCreator;
 using UnityEngine;
 
-[Serializable]
+/*[Serializable]
 public class CharacterSave
 {
     public int CurrentVertex;
@@ -19,22 +19,22 @@ public struct LevelStateSave
 {
     public Graph Graph;
     public List<CharacterSave> CharacterSaves;
-}
+}*/
 
 [Serializable]
 public class GameSave
 {
-    // Player info
+    /*// Player info
     public int PlayerLevel = 0;
     public Vector3 PlayerPosition;
     public Vector3 PlayerRotatin;
 
-    public Dictionary<int, LevelStateSave> LevelStatesByBuildIndex = new Dictionary<int, LevelStateSave>();
+    public Dictionary<int, LevelStateSave> LevelStatesByBuildIndex = new Dictionary<int, LevelStateSave>();*/
 
     // TODO: Copy constructor
     public GameSave(SimulationState simulationState)
     {
-        // Copy PlayerState
+        /*// Copy PlayerState
         PlayerLevel = simulationState.PlayerState.Level;
         PlayerPosition = simulationState.PlayerState.Position;
         PlayerRotatin = simulationState.PlayerState.Rotation;
@@ -65,10 +65,10 @@ public class GameSave
             {
                 characterSaves[i] = new CharacterSave
                 {
-                    CurrentVertex = levelStateByBuildIndex.CharacterStates[i].Vertex,
+                    CurrentVertex = levelStateByBuildIndex.CharacterStates[i].CurrentVertex,
                     NextVertex = -1,
                     Progress = .0f,
-                    Position = vertices[levelStateByBuildIndex.CharacterStates[i].Vertex].Position,
+                    Position = vertices[levelStateByBuildIndex.CharacterStates[i].CurrentVertex].Position,
                     Rotation = Vector3.zero,
                     Settings = levelStateByBuildIndex.CharacterStates[i].Settings
                 };
@@ -82,6 +82,6 @@ public class GameSave
             };
 
             LevelStatesByBuildIndex.Add(levelStateByBuildIndex.BuildIndex, levelStateSave);
-        }
+        }*/
     }
 }

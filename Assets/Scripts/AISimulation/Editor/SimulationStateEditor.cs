@@ -375,7 +375,7 @@ public class SimulationStateEditor : Editor
         {
             // Get the properties
             string id = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_id").intValue.ToString();
-            SerializedProperty vertex = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_vertex");
+            SerializedProperty vertex = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("CurrentVertex");
             SerializedProperty folded = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded");
             SerializedProperty settings = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_settings");
 
@@ -615,23 +615,23 @@ public class SimulationStateEditor : Editor
 
         for (int i = 0; i < characterStates.Length; i++)
         {
-            if (characterStates[i].Vertex < 0 && characterStates[i].Vertex >= graph.Vertices.Length)
+            if (characterStates[i].CurrentVertex < 0 && characterStates[i].CurrentVertex >= graph.Vertices.Length)
             {
                 continue;
             }
 
             if (_characterStateLists[_levelStateByBuildIndexList.index].index == i)
             {
-                selectedCharacterVertex = characterStates[i].Vertex;
+                selectedCharacterVertex = characterStates[i].CurrentVertex;
             }
 
-            if (!characterCountByVertex.ContainsKey(characterStates[i].Vertex))
+            if (!characterCountByVertex.ContainsKey(characterStates[i].CurrentVertex))
             {
-                characterCountByVertex.Add(characterStates[i].Vertex, 1);
+                characterCountByVertex.Add(characterStates[i].CurrentVertex, 1);
             }
             else
             {
-                characterCountByVertex[characterStates[i].Vertex] += 1;
+                characterCountByVertex[characterStates[i].CurrentVertex] += 1;
             }
         }
 

@@ -17,37 +17,37 @@ MonoBehaviour:
   - _buildIndex: 1
     _graph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
     _characterStates:
-    - _id: 9
-      _vertex: 10
-      _settings: 0
-      Folded: 1
-    - _id: 13
-      _vertex: 2
+    - _id: 20
       _settings: 1
-      Folded: 1
+      CurrentVertex: 8
+      Folded: 0
     Folded: 0
   - _buildIndex: 2
     _graph: {fileID: 11400000, guid: e8d4687d5b50fac47adad5f60f2844d3, type: 2}
     _characterStates:
-    - _id: 10
-      _vertex: 14
-      _settings: 1
-      Folded: 1
-    - _id: 11
-      _vertex: 23
+    - _id: 15
       _settings: 0
-      Folded: 1
-    - _id: 12
-      _vertex: 4
+      CurrentVertex: 0
+      Folded: 0
+    - _id: 16
       _settings: 2
-      Folded: 1
+      CurrentVertex: 17
+      Folded: 0
     Folded: 0
   - _buildIndex: 3
     _graph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
     _characterStates:
-    - _id: 14
-      _vertex: 0
+    - _id: 17
       _settings: 0
+      CurrentVertex: 3
+      Folded: 0
+    - _id: 18
+      _settings: 1
+      CurrentVertex: 15
+      Folded: 0
+    - _id: 19
+      _settings: 0
+      CurrentVertex: 7
       Folded: 0
     Folded: 0
   _levelEdges:
@@ -60,6 +60,6 @@ MonoBehaviour:
       Direction: 0
       Traversable: 1
     Folded: 0
-  CharacterIdCount: 15
+  CharacterIdCount: 21
   DisplayCharacterCounters: 0
   LevelEdgeIdCount: 22

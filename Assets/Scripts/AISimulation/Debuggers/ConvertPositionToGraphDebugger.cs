@@ -1,6 +1,5 @@
 using GraphCreator;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class ConvertPositionToGraphDebugger : MonoBehaviour
 {
@@ -13,9 +12,6 @@ public class ConvertPositionToGraphDebugger : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        GameSave gameSave = SimulationManager.GetGameSave();
-        int buildIndex = SceneManager.GetActiveScene().buildIndex;
-
         int vertexA;
         int vertexB;
         float progress;
@@ -24,31 +20,29 @@ public class ConvertPositionToGraphDebugger : MonoBehaviour
         {
             return;
         }
-
-        Vertex[] vertices = gameSave.LevelStatesByBuildIndex[buildIndex].Graph.Vertices;
         
         if (vertexA > -1 && progress > 0)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawSphere(vertices[vertexA].Position, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[vertexA].Position, 1.5f);
         }
 
         if (vertexB > -1 && progress> 0)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawSphere(vertices[vertexB].Position, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[vertexB].Position, 1.5f);
         }
 
         if (progress == 0)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawSphere(vertices[vertexA].Position, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[vertexA].Position, 1.5f);
         }
         else if (vertexA > -1 && vertexB > -1)
         {
-            Vector3 closestToSecondVertex = (vertices[vertexB].Position - vertices[vertexA].Position).normalized;
+            Vector3 closestToSecondVertex = (_graph.Vertices[vertexB].Position - _graph.Vertices[vertexA].Position).normalized;
             Gizmos.color = Color.green;
-            Gizmos.DrawSphere(vertices[vertexA].Position + closestToSecondVertex * progress, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[vertexA].Position + closestToSecondVertex * progress, 1.5f);
         }
     }
 }

@@ -10,52 +10,23 @@ public class MainMenu : MonoBehaviour
 
     private void Awake()
     {
-        if (SimulationManager.GetGameSave() == null)
-        {
-            InitializeSimulationManager();
-        }
-
+        SimulationManager.Initialize();
         FillLevelDropdown();
-    }
-
-    private void InitializeSimulationManager()
-    {
-        // Search for a valid SimulationSettings
-        SimulationSettings simulationSettings = SimulationSettings.LoadFromResources();
-#if UNITY_EDITOR
-        if (!simulationSettings)
-        {
-            Debug.LogError("No SimulationSettings found!");
-            return;
-        }
-
-        string[] simualtionSettingsErrors;
-
-        if (!simulationSettings.IsValid(out simualtionSettingsErrors))
-        {
-            Debug.LogError("The SimulationSettings aren't valid!");
-            return;
-        }
-#endif
-        GameSave gameSave = new GameSave(simulationSettings.InitialSimulationState);
-
-        SimulationManager.SetSimulationSettings(simulationSettings);
-        SimulationManager.SetGameSave(gameSave);
     }
 
     private void FillLevelDropdown()
     {
         List<Dropdown.OptionData> levelOptions = new List<Dropdown.OptionData>();
-        int buildIndex = SceneManager.GetActiveScene().buildIndex;
+        int currentBuildIndex = SceneManager.GetActiveScene().buildIndex;
 
-        foreach (KeyValuePair<int, LevelStateSave> levelState in SimulationManager.GetGameSave().LevelStatesByBuildIndex)
+        foreach (int buildIndex in SimulationManager.GetBuildIndexes())
         {
-            if (buildIndex == levelState.Key)
+            if (currentBuildIndex == buildIndex)
             {
                 continue;
             }
 
-            levelOptions.Add(new Dropdown.OptionData(levelState.Key.ToString()));
+            levelOptions.Add(new Dropdown.OptionData(buildIndex.ToString()));
         }
 
         _levelDropdown.options = levelOptions;
@@ -64,7 +35,6 @@ public class MainMenu : MonoBehaviour
     public void Play()
     {
         int buildIndex = int.Parse(_levelDropdown.options[_levelDropdown.value].text);
-        SimulationManager.GetGameSave().PlayerLevel = buildIndex;
         SceneManager.LoadScene(buildIndex, LoadSceneMode.Single);
     }
 

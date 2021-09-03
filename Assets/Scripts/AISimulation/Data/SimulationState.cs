@@ -36,7 +36,7 @@ public partial struct LevelStateByBuildIndex
 }
 
 [Serializable]
-public partial struct CharacterState
+public partial class CharacterState
 {
     [SerializeField]
     private int _id;
@@ -47,32 +47,49 @@ public partial struct CharacterState
         private set { _id = value; }
     }
 
-    // Index of the vertex
     [SerializeField]
-    private int _vertex;
-
-    public int Vertex
-    {
-        get { return _vertex; }
-        private set { _vertex = value; }
-    }
-
-    [SerializeField]
-    private int _settings;
+    private int _settings = -1;
 
     public int Settings
     {
         get { return _settings; }
         private set { _settings = value; }
     }
+
+    [NonSerialized]
+    public int BuildIndex = -1;
+    // Index of the vertex
+    public int CurrentVertex = -1;
+    [NonSerialized]
+    public int NextVertex = -1;
+    [NonSerialized]
+    public float Progress;
+    [NonSerialized]
+    public Vector3 Position;
+    [NonSerialized]
+    public Vector3 Rotation;
+
+    public CharacterState() { }
+
+    public CharacterState(CharacterState characterState)
+    {
+        _id = characterState.ID;
+        _settings = characterState.Settings;
+        BuildIndex = characterState.BuildIndex;
+        CurrentVertex = characterState.CurrentVertex;
+        NextVertex = characterState.NextVertex;
+        Progress = characterState.Progress;
+        Position = characterState.Position;
+        Rotation = characterState.Rotation;
+    }
 }
 
 [Serializable]
-public partial struct LevelEdge
+public partial class LevelEdge
 {
     // Index of the corresponding LevelStateByBuildIndex
     [SerializeField]
-    private int _levelA;
+    private int _levelA = -1;
 
     public int LevelA
     {
@@ -82,7 +99,7 @@ public partial struct LevelEdge
 
     // Index of the corresponding LevelStateByBuildIndex
     [SerializeField]
-    private int _levelB;
+    private int _levelB = -1;
 
     public int LevelB
     {
@@ -97,6 +114,16 @@ public partial struct LevelEdge
     {
         get { return _edge; }
         private set { _edge = value; }
+    }
+
+    public LevelEdge(int levelA, int levelB, Edge edge)
+    {
+        _levelA = levelA;
+        _levelB = levelB;
+        _edge = edge;
+#if UNITY_EDITOR
+        Folded = false;
+#endif
     }
 }
 
@@ -137,13 +164,13 @@ public partial struct LevelStateByBuildIndex
     public bool Folded;
 }
 
-public partial struct CharacterState
+public partial class CharacterState
 {
     [HideInInspector]
     public bool Folded;
 }
 
-public partial struct LevelEdge
+public partial class LevelEdge
 {
     [HideInInspector]
     public bool Folded;
@@ -218,7 +245,7 @@ public partial class SimulationState
 
             foreach(CharacterState characterState in levelStateByBuildIndex.CharacterStates)
             {
-                if ((characterState.Vertex < 0 || characterState.Vertex >= levelStateByBuildIndex.Graph.Vertices.Length) && !errorList.Contains(_characterStateVerticesError))
+                if ((characterState.CurrentVertex < 0 || characterState.CurrentVertex >= levelStateByBuildIndex.Graph.Vertices.Length) && !errorList.Contains(_characterStateVerticesError))
                 {
                     errorList.Add(_characterStateVerticesError);
                 }
