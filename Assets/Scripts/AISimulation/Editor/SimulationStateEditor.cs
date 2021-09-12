@@ -375,7 +375,7 @@ public class SimulationStateEditor : Editor
         {
             // Get the properties
             string id = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_id").intValue.ToString();
-            SerializedProperty vertex = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("CurrentVertex");
+            SerializedProperty vertex = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("PositionOnGraph").FindPropertyRelative("VertexA");
             SerializedProperty folded = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Folded");
             SerializedProperty settings = characterStateList.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_settings");
 
@@ -615,23 +615,23 @@ public class SimulationStateEditor : Editor
 
         for (int i = 0; i < characterStates.Length; i++)
         {
-            if (characterStates[i].CurrentVertex < 0 && characterStates[i].CurrentVertex >= graph.Vertices.Length)
+            if (characterStates[i].PositionOnGraph.VertexA < 0 && characterStates[i].PositionOnGraph.VertexA >= graph.Vertices.Length)
             {
                 continue;
             }
 
             if (_characterStateLists[_levelStateByBuildIndexList.index].index == i)
             {
-                selectedCharacterVertex = characterStates[i].CurrentVertex;
+                selectedCharacterVertex = characterStates[i].PositionOnGraph.VertexA;
             }
 
-            if (!characterCountByVertex.ContainsKey(characterStates[i].CurrentVertex))
+            if (!characterCountByVertex.ContainsKey(characterStates[i].PositionOnGraph.VertexA))
             {
-                characterCountByVertex.Add(characterStates[i].CurrentVertex, 1);
+                characterCountByVertex.Add(characterStates[i].PositionOnGraph.VertexA, 1);
             }
             else
             {
-                characterCountByVertex[characterStates[i].CurrentVertex] += 1;
+                characterCountByVertex[characterStates[i].PositionOnGraph.VertexA] += 1;
             }
         }
 

@@ -11,9 +11,14 @@ namespace GraphCreator
         [SerializeField]
         private PathFindingAlgorithm AlgorithmUsed;
         [SerializeField]
-        private int FromId = 0;
+        private Transform From;
         [SerializeField]
-        private int ToId = 1;
+        private Transform To;
+        [SerializeField]
+        private LayerMask _wallMask;
+
+private GameObject sphereA;
+private GameObject sphereB;
 
         private void Awake()
         {
@@ -21,34 +26,50 @@ namespace GraphCreator
             {
                 Graph.Initialize();
             }
+
+sphereA = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+sphereB = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         }
 
         private void Update()
         {
-            if (!Graph)
+            if (!Graph || !From || !To)
             {
                 return;
             }
 
-            int from = -1;
-            int to = -1;
+            PositionOnGraph fromPosition;
+            PositionOnGraph toPosition;
 
-            for(int i = 0; i < Graph.Vertices.Length; i++)
+            if(!Graph.ConvertPositionToGraph(From.position, _wallMask, out fromPosition) || !Graph.ConvertPositionToGraph(To.position, _wallMask, out toPosition))
             {
-                if (Graph.Vertices[i].Id == FromId)
-                {
-                    from = i;
-                }
-
-                if (Graph.Vertices[i].Id == ToId)
-                {
-                    to = i;
-                }
+                return;
             }
 
-            if (from == -1 || to == -1)
+            if (fromPosition.VertexA < 0 || fromPosition.VertexA >= Graph.Vertices.Length || fromPosition.VertexB >= Graph.Vertices.Length ||
+                toPosition.VertexA < 0 || toPosition.VertexA >= Graph.Vertices.Length || toPosition.VertexB >= Graph.Vertices.Length)
             {
                 return;    
+            }
+
+            // Place sphere A
+            if (fromPosition.VertexB == -1)
+            {
+                sphereA.transform.position = Graph.Vertices[fromPosition.VertexA].Position;
+            }
+            else
+            {
+                sphereA.transform.position = (Graph.Vertices[fromPosition.VertexB].Position - Graph.Vertices[fromPosition.VertexA].Position).normalized * fromPosition.Progress + Graph.Vertices[fromPosition.VertexA].Position;
+            }
+
+            // Place sphere B
+            if (toPosition.VertexB == -1)
+            {
+                sphereB.transform.position = Graph.Vertices[toPosition.VertexA].Position;
+            }
+            else
+            {
+                sphereB.transform.position = (Graph.Vertices[toPosition.VertexB].Position - Graph.Vertices[toPosition.VertexA].Position).normalized * toPosition.Progress + Graph.Vertices[toPosition.VertexA].Position;
             }
 
             bool pathFound = false;
@@ -57,10 +78,10 @@ namespace GraphCreator
             switch (AlgorithmUsed)
             {
                 case PathFindingAlgorithm.Dijkstra:
-                    pathFound = Graph.CalculatePathWithDijkstra(from, to, out path);
+                    pathFound = Graph.CalculatePathWithDijkstra(fromPosition, toPosition, out path);
                     break;
                 case PathFindingAlgorithm.AStar:
-                    pathFound = Graph.CalculatePathWithAStar(from, to, out path);
+                    pathFound = Graph.CalculatePathWithAStar(fromPosition, toPosition, out path);
                     break;
             }
 

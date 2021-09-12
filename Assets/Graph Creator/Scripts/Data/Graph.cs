@@ -28,9 +28,19 @@ namespace GraphCreator
 
     public enum EdgeDirection { Bidirectional, AtoB, BtoA };
 
+    [Serializable]
+    public struct PositionOnGraph
+    {
+        // Index of the vertex
+        public int VertexA;
+        // Index of the vertex
+        public int VertexB;
+        public float Progress;
+    }
+
     public struct PathSegment
     {
-        public int VertexIndex;
+        public PositionOnGraph PositionOnGraph;
         public float Distance;
         public Vector3 Position;
     }
@@ -138,7 +148,7 @@ namespace GraphCreator
             Initialize();
         }
 
-        public bool CalculatePathWithDijkstra(int sourceVertexIndex, int targetVertexIndex, out PathSegment[] path)
+        public bool CalculatePathWithDijkstra(PositionOnGraph sourcePosition, PositionOnGraph targetPosition, out PathSegment[] path)
         {
             path = new PathSegment[0];
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -148,20 +158,93 @@ namespace GraphCreator
                 return false;
             }
 #endif
-            // Clear the distances
+            // Stop if the target is unreachable
+            if (targetPosition.VertexB > -1 && _adjMatrix[targetPosition.VertexA, targetPosition.VertexB] == -1 && _adjMatrix[targetPosition.VertexB, targetPosition.VertexA] == -1)
+            {
+                return false;
+            }
+
+            // Rearrange positions if both are on the same edge
+            if (targetPosition.VertexB > -1 && sourcePosition.VertexA == targetPosition.VertexB && sourcePosition.VertexB == targetPosition.VertexA)
+            {
+                sourcePosition.VertexA = targetPosition.VertexA;
+                sourcePosition.VertexB = targetPosition.VertexB;
+                sourcePosition.Progress = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude - sourcePosition.Progress;
+            }
+
+            // Special case where sourcePosition and targetPosition are both on the same edge and the path can simply go from sourcePosition to targetPosition
+            if (sourcePosition.VertexA == targetPosition.VertexA && sourcePosition.VertexB == targetPosition.VertexB) 
+            {
+                if (sourcePosition.Progress <= targetPosition.Progress && _adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
+                {
+                    path = new PathSegment[2];
+                    float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
+
+                    path[0].PositionOnGraph.VertexA = sourcePosition.VertexA;
+                    path[0].PositionOnGraph.VertexB = sourcePosition.VertexB;
+                    path[0].PositionOnGraph.Progress = sourcePosition.Progress;
+                    path[0].Distance = 0;
+                    path[0].Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude);
+
+                    path[1].PositionOnGraph.VertexA = targetPosition.VertexA;
+                    path[1].PositionOnGraph.VertexB = targetPosition.VertexB;
+                    path[1].PositionOnGraph.Progress = targetPosition.Progress;
+                    path[1].Distance = targetPosition.Progress - sourcePosition.Progress;
+                    path[1].Position = Vector3.Lerp(_vertices[targetPosition.VertexA].Position, _vertices[targetPosition.VertexB].Position, targetPosition.Progress / AtoBMagnitude);
+
+                    return true;
+                }
+                else if (sourcePosition.Progress > targetPosition.Progress && _adjMatrix[sourcePosition.VertexB, sourcePosition.VertexA] > -1)
+                {
+                    path = new PathSegment[2];
+                    float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
+
+                    path[0].PositionOnGraph.VertexA = sourcePosition.VertexB;
+                    path[0].PositionOnGraph.VertexB = sourcePosition.VertexA;
+                    path[0].PositionOnGraph.Progress = AtoBMagnitude - sourcePosition.Progress;
+                    path[0].Distance = 0;
+                    path[0].Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude);
+
+                    path[1].PositionOnGraph.VertexA = targetPosition.VertexB;
+                    path[1].PositionOnGraph.VertexB = targetPosition.VertexA;
+                    path[1].PositionOnGraph.Progress = AtoBMagnitude - targetPosition.Progress;
+                    path[1].Distance = sourcePosition.Progress - targetPosition.Progress;
+                    path[1].Position = Vector3.Lerp(_vertices[targetPosition.VertexA].Position, _vertices[targetPosition.VertexB].Position, targetPosition.Progress / AtoBMagnitude);
+
+                    return true;
+                }
+            }
+
             _vertexIndices.Clear();
+            const int infiniteDistance = 999999;
 
             for (int i = 0; i < _vertices.Length; i++)
             {
-                _distances[i] = 999999;
+                _distances[i] = infiniteDistance;
                 _parents[i] = -1;
                 _vertexIndices.Add(i);
             }
 
-            _distances[sourceVertexIndex] = 0;
+            // Add the distances of the source position vertices
+            if (sourcePosition.VertexB > -1)
+            {
+                if (_adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
+                {
+                    _distances[sourcePosition.VertexB] = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude - sourcePosition.Progress;
+                }
+
+                if (_adjMatrix[sourcePosition.VertexB, sourcePosition.VertexA] > -1)
+                {
+                    _distances[sourcePosition.VertexA] = sourcePosition.Progress;
+                }
+            }
+            else
+            {
+                _distances[sourcePosition.VertexA] = 0;
+            }
 
             // Calculate shortest distances for all vertices
-            while(_vertexIndices.Count > 0)
+            while (_vertexIndices.Count > 0)
             {
                 // Find the closest vertex to source
                 int vertexIndex = _vertexIndices[0];
@@ -196,23 +279,59 @@ namespace GraphCreator
                     }
                 }
             }
-        
-            // Find shortest path
-            int currentVertex = targetVertexIndex;
+
             _shortestPath.Clear();
-
             PathSegment pathSection;
-            pathSection.VertexIndex = targetVertexIndex;
-            pathSection.Distance = _distances[targetVertexIndex];
-            pathSection.Position = _vertices[targetVertexIndex].Position;
-            _shortestPath.Add(pathSection);
+            int currentVertex = targetPosition.VertexA;
 
-            // Start from to target vertex and find path back to the source vertex
+            // Add an extra position if the target position is along an edge
+            if (targetPosition.VertexB > -1)
+            {
+                float AtoBMagnitude = (_vertices[targetPosition.VertexA].Position - _vertices[targetPosition.VertexB].Position).magnitude;
+
+                if (_adjMatrix[targetPosition.VertexB, targetPosition.VertexA] == -1 || (_adjMatrix[targetPosition.VertexA, targetPosition.VertexB] > -1 && _distances[targetPosition.VertexA] + targetPosition.Progress <= _distances[targetPosition.VertexB] + AtoBMagnitude - targetPosition.Progress))
+                {
+                    currentVertex = targetPosition.VertexA;
+                    pathSection.PositionOnGraph.VertexB = targetPosition.VertexB;
+                    pathSection.PositionOnGraph.Progress = targetPosition.Progress;
+                }
+                else
+                {
+                    currentVertex = targetPosition.VertexB;
+                    pathSection.PositionOnGraph.VertexB = targetPosition.VertexA;
+                    pathSection.PositionOnGraph.Progress = AtoBMagnitude - targetPosition.Progress;
+                }
+
+                pathSection.PositionOnGraph.VertexA = currentVertex;
+                pathSection.Distance = _distances[currentVertex] + pathSection.PositionOnGraph.Progress;
+                pathSection.Position = Vector3.Lerp(_vertices[targetPosition.VertexA].Position, _vertices[targetPosition.VertexB].Position, targetPosition.Progress / AtoBMagnitude);
+
+                _shortestPath.Add(pathSection);
+            }
+
+            // Path doesn't exist if currentVertex can't be reached
+            if (_distances[currentVertex] == infiniteDistance)
+            {
+                return false;
+            }
+
+            // Add the last vertex of the path
+            pathSection.PositionOnGraph.VertexA = currentVertex;
+            pathSection.PositionOnGraph.VertexB = -1;
+            pathSection.PositionOnGraph.Progress = 0;
+            pathSection.Distance = _distances[currentVertex];
+            pathSection.Position = _vertices[currentVertex].Position;
+
+            _shortestPath.Insert(0, pathSection);
+
+            // Start from the current vertex and find a path back to the vertex closest to the source
             while (_parents[currentVertex] != -1)
             {
                 int vertexIndex = _parents[currentVertex];
 
-                pathSection.VertexIndex = vertexIndex;
+                pathSection.PositionOnGraph.VertexA = vertexIndex;
+                pathSection.PositionOnGraph.VertexB = -1;
+                pathSection.PositionOnGraph.Progress = 0;
                 pathSection.Distance = _distances[vertexIndex];
                 pathSection.Position = _vertices[vertexIndex].Position;
                 _shortestPath.Insert(0, pathSection);
@@ -220,16 +339,39 @@ namespace GraphCreator
                 currentVertex = vertexIndex;
             }
 
-            if (currentVertex == sourceVertexIndex)
+            // Add an extra position if the source position is along an edge
+            if (_shortestPath[0].Distance > 0)
             {
-                path = _shortestPath.ToArray();
-                return true;
+                float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
+
+                if (currentVertex == sourcePosition.VertexA)
+                {
+                    pathSection.PositionOnGraph.VertexA = sourcePosition.VertexB;
+                    pathSection.PositionOnGraph.VertexB = sourcePosition.VertexA;
+                    pathSection.PositionOnGraph.Progress = AtoBMagnitude - sourcePosition.Progress;
+                    pathSection.Distance = 0;
+                    pathSection.Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude); ;
+                    
+                    _shortestPath.Insert(0, pathSection);
+                }
+                else
+                {
+                    pathSection.PositionOnGraph.VertexA = sourcePosition.VertexA;
+                    pathSection.PositionOnGraph.VertexB = sourcePosition.VertexB;
+                    pathSection.PositionOnGraph.Progress = sourcePosition.Progress;
+                    pathSection.Distance = 0;
+                    pathSection.Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude);
+                    
+                    _shortestPath.Insert(0, pathSection);
+                }
             }
 
-            return false;
+            // If a path was found
+            path = _shortestPath.ToArray();
+            return true;
         }
 
-        public bool CalculatePathWithAStar(int sourceVertexIndex, int targetVertexIndex, out PathSegment[] path)
+        public bool CalculatePathWithAStar(PositionOnGraph sourcePosition, PositionOnGraph targetPosition, out PathSegment[] path)
         {
             path = new PathSegment[0];
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -239,11 +381,111 @@ namespace GraphCreator
                 return false;
             }
 #endif
+            bool canEndAtVertexA = true;
+            bool canEndAtVertexB = false;
+
+            // Store at which vertex A* can end and stop if the target is unreachable
+            if (targetPosition.VertexB > -1)
+            {
+                canEndAtVertexA = _adjMatrix[targetPosition.VertexA, targetPosition.VertexB] > -1;
+                canEndAtVertexB = _adjMatrix[targetPosition.VertexB, targetPosition.VertexA] > -1;
+
+                if (!canEndAtVertexA && !canEndAtVertexB)
+                {
+                    return false;
+                }
+            }
+
+            // Rearrange positions if both are on the same edge
+            if (targetPosition.VertexB > -1 && sourcePosition.VertexA == targetPosition.VertexB && sourcePosition.VertexB == targetPosition.VertexA)
+            {
+                sourcePosition.VertexA = targetPosition.VertexA;
+                sourcePosition.VertexB = targetPosition.VertexB;
+                sourcePosition.Progress = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude - sourcePosition.Progress;
+            }
+
+            // Special case where sourcePosition and targetPosition are both on the same edge and the path can simply go from sourcePosition to targetPosition
+            if (sourcePosition.VertexA == targetPosition.VertexA && sourcePosition.VertexB == targetPosition.VertexB)
+            {
+                if (sourcePosition.Progress <= targetPosition.Progress && _adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
+                {
+                    path = new PathSegment[2];
+                    float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
+
+                    path[0].PositionOnGraph.VertexA = sourcePosition.VertexA;
+                    path[0].PositionOnGraph.VertexB = sourcePosition.VertexB;
+                    path[0].PositionOnGraph.Progress = sourcePosition.Progress;
+                    path[0].Distance = 0;
+                    path[0].Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude);
+
+                    path[1].PositionOnGraph.VertexA = targetPosition.VertexA;
+                    path[1].PositionOnGraph.VertexB = targetPosition.VertexB;
+                    path[1].PositionOnGraph.Progress = targetPosition.Progress;
+                    path[1].Distance = targetPosition.Progress - sourcePosition.Progress;
+                    path[1].Position = Vector3.Lerp(_vertices[targetPosition.VertexA].Position, _vertices[targetPosition.VertexB].Position, targetPosition.Progress / AtoBMagnitude);
+
+                    return true;
+                }
+                else if (sourcePosition.Progress > targetPosition.Progress && _adjMatrix[sourcePosition.VertexB, sourcePosition.VertexA] > -1)
+                {
+                    path = new PathSegment[2];
+                    float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
+
+                    path[0].PositionOnGraph.VertexA = sourcePosition.VertexB;
+                    path[0].PositionOnGraph.VertexB = sourcePosition.VertexA;
+                    path[0].PositionOnGraph.Progress = AtoBMagnitude - sourcePosition.Progress;
+                    path[0].Distance = 0;
+                    path[0].Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude);
+
+                    path[1].PositionOnGraph.VertexA = targetPosition.VertexB;
+                    path[1].PositionOnGraph.VertexB = targetPosition.VertexA;
+                    path[1].PositionOnGraph.Progress = AtoBMagnitude - targetPosition.Progress;
+                    path[1].Distance = sourcePosition.Progress - targetPosition.Progress;
+                    path[1].Position = Vector3.Lerp(_vertices[targetPosition.VertexA].Position, _vertices[targetPosition.VertexB].Position, targetPosition.Progress / AtoBMagnitude);
+
+                    return true;
+                }
+            }
+
+            Vector3 endPosition;
+
+            // Store the end position
+            if (targetPosition.VertexB > -1)
+            {
+                float progress = targetPosition.Progress / (_vertices[targetPosition.VertexB].Position - _vertices[targetPosition.VertexA].Position).magnitude;
+                endPosition = Vector3.Lerp(_vertices[targetPosition.VertexA].Position, _vertices[targetPosition.VertexB].Position, progress);
+            }
+            else
+            {
+                endPosition = _vertices[targetPosition.VertexA].Position;
+            }
+
             _visitedVertex.Clear();
             _activeVertex.Clear();
 
-            // Add starting node
-            _activeVertex.Add(new AStarNode { VertexIndex = sourceVertexIndex, GCost = 0, HCost = 0, FCost = 0, Parent = -1 });
+            // Add starting nodes
+            if (sourcePosition.VertexB > -1)
+            {
+                if (_adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
+                {
+                    float GCost = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude - sourcePosition.Progress;
+                    float HCost = (endPosition - _vertices[sourcePosition.VertexB].Position).magnitude;
+
+                    _activeVertex.Add(new AStarNode { VertexIndex = sourcePosition.VertexB, GCost = GCost, HCost = HCost, FCost = GCost + HCost, Parent = -1 });
+                }
+
+                if (_adjMatrix[sourcePosition.VertexB, sourcePosition.VertexA] > -1)
+                {
+                    float GCost = sourcePosition.Progress;
+                    float HCost = (endPosition - _vertices[sourcePosition.VertexA].Position).magnitude;
+
+                    _activeVertex.Add(new AStarNode { VertexIndex = sourcePosition.VertexA, GCost = GCost, HCost = HCost, FCost = GCost + HCost, Parent = -1 });
+                }
+            }
+            else
+            {
+                _activeVertex.Add(new AStarNode { VertexIndex = sourcePosition.VertexA, GCost = 0, HCost = 0, FCost = 0, Parent = -1 });
+            }
 
             while(_activeVertex.Count > 0)
             {
@@ -265,26 +507,83 @@ namespace GraphCreator
                 current = _visitedVertex.Count - 1;
 
                 // Create the path if reached the target vertex
-                if (_visitedVertex[current].VertexIndex == targetVertexIndex)
+                if ((_visitedVertex[current].VertexIndex == targetPosition.VertexA && canEndAtVertexA) ||
+                    (_visitedVertex[current].VertexIndex == targetPosition.VertexB && canEndAtVertexB))
                 {
                     PathSegment pathSection;
                     _shortestPath.Clear();
 
-                    while(true)
+                    // Add an extra position if the target position is along an edge
+                    if (targetPosition.VertexB > -1)
                     {
-                        pathSection.VertexIndex = _visitedVertex[current].VertexIndex;
+                        float AtoBMagnitude = (_vertices[targetPosition.VertexA].Position - _vertices[targetPosition.VertexB].Position).magnitude;
+
+                        if (_visitedVertex[current].VertexIndex == targetPosition.VertexA)
+                        {
+                            pathSection.PositionOnGraph.VertexA = targetPosition.VertexA;
+                            pathSection.PositionOnGraph.VertexB = targetPosition.VertexB;
+                            pathSection.PositionOnGraph.Progress = targetPosition.Progress;
+                        }
+                        else
+                        {
+                            pathSection.PositionOnGraph.VertexA = targetPosition.VertexB;
+                            pathSection.PositionOnGraph.VertexB = targetPosition.VertexA;
+                            pathSection.PositionOnGraph.Progress = AtoBMagnitude - targetPosition.Progress;
+                        }
+
+                        pathSection.Distance = _visitedVertex[current].GCost + pathSection.PositionOnGraph.Progress;
+                        pathSection.Position = Vector3.Lerp(_vertices[targetPosition.VertexA].Position, _vertices[targetPosition.VertexB].Position, targetPosition.Progress / AtoBMagnitude);
+
+                        _shortestPath.Add(pathSection);
+                    }
+
+                    // Start from the current visited vertex and find a path back to the vertex closest to the source
+                    while (true)
+                    {
+                        pathSection.PositionOnGraph.VertexA = _visitedVertex[current].VertexIndex;
+                        pathSection.PositionOnGraph.VertexB = -1;
+                        pathSection.PositionOnGraph.Progress = 0;
                         pathSection.Distance = _visitedVertex[current].GCost;
                         pathSection.Position = _vertices[_visitedVertex[current].VertexIndex].Position;
                         _shortestPath.Insert(0, pathSection);
 
-                        if (_visitedVertex[current].VertexIndex == sourceVertexIndex)
+                        if (_visitedVertex[current].Parent == -1)
                         {
-                            path = _shortestPath.ToArray();
-                            return true;
+                            break;
                         }
-
+                        
                         current = _visitedVertex[current].Parent;
                     }
+
+                    // Add an extra position if the source position is along an edge
+                    if (_visitedVertex[current].FCost > 0)
+                    {
+                        float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
+
+                        if (_visitedVertex[current].VertexIndex == sourcePosition.VertexA)
+                        {
+                            pathSection.PositionOnGraph.VertexA = sourcePosition.VertexB;
+                            pathSection.PositionOnGraph.VertexB = sourcePosition.VertexA;
+                            pathSection.PositionOnGraph.Progress = AtoBMagnitude - sourcePosition.Progress;
+                            pathSection.Distance = 0;
+                            pathSection.Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude); ;
+
+                            _shortestPath.Insert(0, pathSection);
+                        }
+                        else
+                        {
+                            pathSection.PositionOnGraph.VertexA = sourcePosition.VertexA;
+                            pathSection.PositionOnGraph.VertexB = sourcePosition.VertexB;
+                            pathSection.PositionOnGraph.Progress = sourcePosition.Progress;
+                            pathSection.Distance = 0;
+                            pathSection.Position = Vector3.Lerp(_vertices[sourcePosition.VertexA].Position, _vertices[sourcePosition.VertexB].Position, sourcePosition.Progress / AtoBMagnitude);
+
+                            _shortestPath.Insert(0, pathSection);
+                        }
+                    }
+
+                    path = _shortestPath.ToArray();
+                    return true;
                 }
 
                 // Check all neighbours
@@ -298,7 +597,7 @@ namespace GraphCreator
 
                     int activeIndex = _activeVertex.FindIndex(node => node.VertexIndex == i);
                     float GCost = _adjMatrix[_visitedVertex[current].VertexIndex, i] + _visitedVertex[current].GCost;
-                    float HCost = (_vertices[i].Position - _vertices[_visitedVertex[current].VertexIndex].Position).magnitude;
+                    float HCost = (endPosition - _vertices[_visitedVertex[current].VertexIndex].Position).magnitude;
 
                     // Add the neighbour 
                     if (activeIndex == -1)
@@ -327,15 +626,14 @@ namespace GraphCreator
             return false;
         }
 
-        // Takes a world position and finds the closest vertexA, the possible edge it's on (given by vertexB) and the progress on that edge.
-        // Returns true if the conversion was successful. Even if the conversion is successful, vertexB could be -1, if the position
-        // was considered exactly at vertexA. 
-        public bool ConvertPositionToGraph(Vector3 position, LayerMask blockingMask, out int vertexA, out int vertexB, out float progress)
+        // Takes a world position and finds the closest PositionOnGraph.
+        // Returns true if the conversion was successful. 
+        public bool ConvertPositionToGraph(Vector3 position, LayerMask blockingMask, out PositionOnGraph positionOnGraph)
         {
             // Reset variables
-            vertexA = -1;
-            vertexB = -1;
-            progress = .0f;
+            positionOnGraph.VertexA = -1;
+            positionOnGraph.VertexB = -1;
+            positionOnGraph.Progress = .0f;
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
             if (_indexes == null || _distances == null)
             {
@@ -360,13 +658,13 @@ namespace GraphCreator
                 // Check if a raycast can reach vertex
                 if (!Physics.Raycast(_vertices[_indexes[i]].Position, (position - _vertices[_indexes[i]].Position).normalized, out hit, _distances[i], blockingMask))
                 {
-                    vertexA = _indexes[i];
+                    positionOnGraph.VertexA = _indexes[i];
                     break;
                 }
             }
 
             // The position can't be converted to graph if no vertexA could be found
-            if (vertexA == -1)
+            if (positionOnGraph.VertexA == -1)
             {
                 return false;
             }
@@ -379,11 +677,11 @@ namespace GraphCreator
             {
                 int secondVertex;
 
-                if (edge.VertexA == vertexA)
+                if (edge.VertexA == positionOnGraph.VertexA)
                 {
                     secondVertex = edge.VertexB;
                 }
-                else if (edge.VertexB == vertexA)
+                else if (edge.VertexB == positionOnGraph.VertexA)
                 {
                     secondVertex = edge.VertexA;
                 }
@@ -393,11 +691,11 @@ namespace GraphCreator
                 }
 
                 // Find progress along the edge
-                Vector3 vertexAToSecond = _vertices[secondVertex].Position - _vertices[vertexA].Position;
-                Vector3 vertexToPos = position - _vertices[vertexA].Position;
+                Vector3 vertexAToSecond = _vertices[secondVertex].Position - _vertices[positionOnGraph.VertexA].Position;
+                Vector3 vertexToPos = position - _vertices[positionOnGraph.VertexA].Position;
                 float dotA = Vector3.Dot(vertexAToSecond, vertexToPos);
 
-                Vector3 secondToVertexA = _vertices[vertexA].Position - _vertices[secondVertex].Position;
+                Vector3 secondToVertexA = _vertices[positionOnGraph.VertexA].Position - _vertices[secondVertex].Position;
                 vertexToPos = position - _vertices[secondVertex].Position;
                 float dotB = Vector3.Dot(secondToVertexA, vertexToPos);
 
@@ -408,12 +706,12 @@ namespace GraphCreator
                     Vector3 projectedPosition = (dotA / vertexAToSecond.sqrMagnitude) * vertexAToSecond;
 
                     // Calculate the distance between the position and the projected position 
-                    float distanceToPosition = (position - _vertices[vertexA].Position - projectedPosition).sqrMagnitude;
+                    float distanceToPosition = (position - _vertices[positionOnGraph.VertexA].Position - projectedPosition).sqrMagnitude;
 
                     if (distanceToPosition < smallestDistance)
                     {
-                        vertexB = secondVertex;
-                        progress = projectedPosition.magnitude;
+                        positionOnGraph.VertexB = secondVertex;
+                        positionOnGraph.Progress = projectedPosition.magnitude;
                         smallestDistance = distanceToPosition;
                     }
                 }
@@ -561,7 +859,7 @@ namespace GraphCreator
         {
             List<string> idList = new List<string>();
 
-            foreach (Vertex vertex in Vertices)
+            foreach (Vertex vertex in _vertices)
             {
                 idList.Add(vertex.Id.ToString());
             }

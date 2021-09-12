@@ -15,4 +15,4 @@ MonoBehaviour:
   _charactersSettingsUsed: {fileID: 11400000, guid: 17a176cf65aa6844791862bbaecb4310, type: 2}
   _initialSimulationState: {fileID: 11400000, guid: 208c7ff0c46bfb549a782b76496d1d17, type: 2}
   _simplifiedAIPrefab: {fileID: 6787028342017985559, guid: 11743cf0afda9914cb734f337a4048ba, type: 3}
-  _simplifiedAITickRate: 0.01
+  _simplifiedAITickRate: 1

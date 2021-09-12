@@ -12,37 +12,35 @@ public class ConvertPositionToGraphDebugger : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        int vertexA;
-        int vertexB;
-        float progress;
+        PositionOnGraph positionOnGraph;
 
-        if (_graph == null || !_graph.ConvertPositionToGraph(_testPos.position, _wallMask, out vertexA, out vertexB, out progress))
+        if (_graph == null || !_graph.ConvertPositionToGraph(_testPos.position, _wallMask, out positionOnGraph))
         {
             return;
         }
         
-        if (vertexA > -1 && progress > 0)
+        if (positionOnGraph.VertexA > -1 && positionOnGraph.Progress > 0)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawSphere(_graph.Vertices[vertexA].Position, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[positionOnGraph.VertexA].Position, 1.5f);
         }
 
-        if (vertexB > -1 && progress> 0)
+        if (positionOnGraph.VertexB > -1 && positionOnGraph.Progress > 0)
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawSphere(_graph.Vertices[vertexB].Position, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[positionOnGraph.VertexB].Position, 1.5f);
         }
 
-        if (progress == 0)
+        if (positionOnGraph.Progress == 0)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawSphere(_graph.Vertices[vertexA].Position, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[positionOnGraph.VertexA].Position, 1.5f);
         }
-        else if (vertexA > -1 && vertexB > -1)
+        else if (positionOnGraph.VertexA > -1 && positionOnGraph.VertexB > -1)
         {
-            Vector3 closestToSecondVertex = (_graph.Vertices[vertexB].Position - _graph.Vertices[vertexA].Position).normalized;
+            Vector3 closestToSecondVertex = (_graph.Vertices[positionOnGraph.VertexB].Position - _graph.Vertices[positionOnGraph.VertexA].Position).normalized;
             Gizmos.color = Color.green;
-            Gizmos.DrawSphere(_graph.Vertices[vertexA].Position + closestToSecondVertex * progress, 1.5f);
+            Gizmos.DrawSphere(_graph.Vertices[positionOnGraph.VertexA].Position + closestToSecondVertex * positionOnGraph.Progress, 1.5f);
         }
     }
 }

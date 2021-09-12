@@ -29,17 +29,15 @@ public class SimplifiedCharacterMovement : MonoBehaviour
         }
 
         float distanceToTravel = _speed * (Time.time - _lastTickTime);
-        distanceToTravel += characterState.Progress;
-
         _lastTickTime = Time.time;
 
         if (distanceToTravel >= path[path.Length - 1].Distance)
         {
             int pathVertexIndex = path.Length - 1;
 
-            characterState.CurrentVertex = path[pathVertexIndex].VertexIndex;
-            characterState.NextVertex = -1;
-            characterState.Progress = 0;
+            characterState.PositionOnGraph.VertexA = path[pathVertexIndex].PositionOnGraph.VertexA;
+            characterState.PositionOnGraph.VertexB = -1;
+            characterState.PositionOnGraph.Progress = 0;
             characterState.Position = path[pathVertexIndex].Position;
             Vector3 direction = (path[pathVertexIndex].Position - path[pathVertexIndex - 1].Position).normalized;
             characterState.Rotation = Quaternion.LookRotation(direction, Vector3.up).eulerAngles;
@@ -47,14 +45,28 @@ public class SimplifiedCharacterMovement : MonoBehaviour
         else
         {
             int pathVertexIndex = BinarySearchPathSection(path, distanceToTravel);
+
+            characterState.PositionOnGraph.VertexA = path[pathVertexIndex].PositionOnGraph.VertexA;
+            characterState.PositionOnGraph.Progress = distanceToTravel - path[pathVertexIndex].Distance + path[pathVertexIndex].PositionOnGraph.Progress;
+
+            if (distanceToTravel == path[pathVertexIndex].Distance)
+            {
+                characterState.PositionOnGraph.VertexB = path[pathVertexIndex].PositionOnGraph.VertexB;
+            }
+            else if (pathVertexIndex + 1 == path.Length - 1 && path[pathVertexIndex + 1].PositionOnGraph.VertexB > -1)
+            {
+                characterState.PositionOnGraph.VertexB = path[pathVertexIndex + 1].PositionOnGraph.VertexB;
+            } 
+            else
+            {
+                characterState.PositionOnGraph.VertexB = path[pathVertexIndex + 1].PositionOnGraph.VertexA;
+            }
             
-            characterState.CurrentVertex = path[pathVertexIndex].VertexIndex;
-            characterState.NextVertex = path[pathVertexIndex + 1].VertexIndex;
-            characterState.Progress = distanceToTravel - path[pathVertexIndex].Distance;
             Vector3 currentVertexPosition = path[pathVertexIndex].Position;
             Vector3 nextVertexPosition = path[pathVertexIndex + 1].Position;
-            float progressRatio = characterState.Progress / (nextVertexPosition - currentVertexPosition).magnitude;
-            Vector3 position = (1 - progressRatio) * currentVertexPosition + progressRatio * nextVertexPosition;
+            float progressRatio = (distanceToTravel - path[pathVertexIndex].Distance) / (nextVertexPosition - currentVertexPosition).magnitude;
+            Vector3 position = Vector3.Lerp(currentVertexPosition, nextVertexPosition, progressRatio);
+
             characterState.Position = position;
             characterState.Rotation = Quaternion.LookRotation((nextVertexPosition - currentVertexPosition).normalized, Vector3.up).eulerAngles;
         }

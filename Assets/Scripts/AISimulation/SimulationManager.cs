@@ -146,25 +146,23 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
                 continue;
             }
 
-            int vertexA;
-            int vertexB;
-            float progress;
+            PositionOnGraph positionOnGraph;
 
-            if (graph.ConvertPositionToGraph(_characterBehaviorsById[character.ID].transform.position, _wallMask, out vertexA, out vertexB, out progress))
+            if (graph.ConvertPositionToGraph(_characterBehaviorsById[character.ID].transform.position, _wallMask, out positionOnGraph))
             {
-                character.CurrentVertex = vertexA;
-                character.NextVertex = vertexB;
-                character.Progress = progress;
+                character.PositionOnGraph.VertexA = positionOnGraph.VertexA;
+                character.PositionOnGraph.VertexB = positionOnGraph.VertexB;
+                character.PositionOnGraph.Progress = positionOnGraph.Progress;
 
-                if (vertexB > -1)
+                if (positionOnGraph.VertexB > -1)
                 {
-                    Vector3 AtoB = graph.Vertices[vertexB].Position - graph.Vertices[vertexA].Position;
-                    character.Position = Vector3.Lerp(graph.Vertices[vertexA].Position, graph.Vertices[vertexB].Position, progress / (AtoB).magnitude);
+                    Vector3 AtoB = graph.Vertices[positionOnGraph.VertexB].Position - graph.Vertices[positionOnGraph.VertexA].Position;
+                    character.Position = Vector3.Lerp(graph.Vertices[positionOnGraph.VertexA].Position, graph.Vertices[positionOnGraph.VertexB].Position, positionOnGraph.Progress / (AtoB).magnitude);
                     character.Rotation = Quaternion.LookRotation(AtoB, Vector3.up).eulerAngles;
                 }
                 else
                 {
-                    character.Position = graph.Vertices[vertexA].Position;
+                    character.Position = graph.Vertices[positionOnGraph.VertexA].Position;
                     character.Rotation = Vector3.zero;
                 }
             }
@@ -240,14 +238,13 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
             // Store all characters in the level
             foreach(CharacterState characterState in levelStateByBuildIndex.CharacterStates)
             {
-                _characters.Add(new CharacterState(characterState)
-                {
-                    BuildIndex = levelStateByBuildIndex.BuildIndex,
-                    NextVertex = -1,
-                    Progress = .0f,
-                    Position = vertices[characterState.CurrentVertex].Position,
-                    Rotation = Vector3.zero
-                });
+                CharacterState character = new CharacterState(characterState);
+                character.BuildIndex = levelStateByBuildIndex.BuildIndex;
+                character.PositionOnGraph.VertexB = -1;
+                character.PositionOnGraph.Progress = .0f;
+                character.Position = vertices[characterState.PositionOnGraph.VertexA].Position;
+                character.Rotation = Vector3.zero;
+                _characters.Add(character);
             }
         }
 

@@ -18,7 +18,7 @@ public class ChooseVertex : Action
 
         int randomVertex = Random.Range(0, LevelGraph.Value.Vertices.Length);
 
-        if (randomVertex == CharacterState.Value.CurrentVertex)
+        if (randomVertex == CharacterState.Value.PositionOnGraph.VertexA)
         {
             randomVertex++;
             randomVertex %= LevelGraph.Value.Vertices.Length;

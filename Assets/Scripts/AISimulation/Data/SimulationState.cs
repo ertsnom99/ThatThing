@@ -58,12 +58,7 @@ public partial class CharacterState
 
     [NonSerialized]
     public int BuildIndex = -1;
-    // Index of the vertex
-    public int CurrentVertex = -1;
-    [NonSerialized]
-    public int NextVertex = -1;
-    [NonSerialized]
-    public float Progress;
+    public PositionOnGraph PositionOnGraph;
     [NonSerialized]
     public Vector3 Position;
     [NonSerialized]
@@ -76,9 +71,9 @@ public partial class CharacterState
         _id = characterState.ID;
         _settings = characterState.Settings;
         BuildIndex = characterState.BuildIndex;
-        CurrentVertex = characterState.CurrentVertex;
-        NextVertex = characterState.NextVertex;
-        Progress = characterState.Progress;
+        PositionOnGraph.VertexA = characterState.PositionOnGraph.VertexA;
+        PositionOnGraph.VertexB = characterState.PositionOnGraph.VertexB;
+        PositionOnGraph.Progress = characterState.PositionOnGraph.Progress;
         Position = characterState.Position;
         Rotation = characterState.Rotation;
     }
@@ -245,7 +240,7 @@ public partial class SimulationState
 
             foreach(CharacterState characterState in levelStateByBuildIndex.CharacterStates)
             {
-                if ((characterState.CurrentVertex < 0 || characterState.CurrentVertex >= levelStateByBuildIndex.Graph.Vertices.Length) && !errorList.Contains(_characterStateVerticesError))
+                if ((characterState.PositionOnGraph.VertexA < 0 || characterState.PositionOnGraph.VertexA >= levelStateByBuildIndex.Graph.Vertices.Length) && !errorList.Contains(_characterStateVerticesError))
                 {
                     errorList.Add(_characterStateVerticesError);
                 }
