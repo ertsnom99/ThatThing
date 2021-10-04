@@ -25,7 +25,7 @@ public class DebugWindow : MonoBehaviour
 
     private Dictionary<int, Graph> _levelGraphsByBuildIndex = new Dictionary<int, Graph>();
     private List<CharacterState> _characters = new List<CharacterState>();
-    private Dictionary<int, GameObject> _characterInstances = new Dictionary<int, GameObject>();
+    private Dictionary<int, DebugWindowCharacter> _debugWidnowCharacters = new Dictionary<int, DebugWindowCharacter>();
 
     [SerializeField]
     private Dropdown _levelDropdown;
@@ -194,8 +194,8 @@ public class DebugWindow : MonoBehaviour
 
     private void CreateCharacter(CharacterState character, Vector3 position)
     {
-        _characterInstances.Add(character.ID, Instantiate(_characterPrefab, position, Quaternion.identity, _levelGraphContainer.transform));
-        _characterInstances[character.ID].transform.LookAt(position - _camera.transform.forward);
+        _debugWidnowCharacters.Add(character.Id, Instantiate(_characterPrefab, position, Quaternion.identity, _levelGraphContainer.transform).GetComponent<DebugWindowCharacter>());
+        _debugWidnowCharacters[character.Id].transform.LookAt(position - _camera.transform.forward);
     }
 
     private void DeleteLevelGraph()
@@ -221,18 +221,18 @@ public class DebugWindow : MonoBehaviour
             _lineRenderers = null;
         }
 
-        if (_characterInstances != null)
+        if (_debugWidnowCharacters != null)
         {
-            foreach (GameObject character in _characterInstances.Values)
+            foreach (DebugWindowCharacter character in _debugWidnowCharacters.Values)
             {
-                Destroy(character);
+                Destroy(character.gameObject);
             }
 
-            _characterInstances.Clear();
+            _debugWidnowCharacters.Clear();
         }
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         // Update level graph
         if (_edges != null && _selectedLevel > -1)
@@ -244,33 +244,39 @@ public class DebugWindow : MonoBehaviour
         }
 
         // Update characters
-        if (_characterInstances != null && _selectedLevel > -1)
+        // TODO: make sure text list exist
+        if (_debugWidnowCharacters != null && _selectedLevel > -1)
         {
-            //--------HACK: NOT TESTED YET----------------------------
             // Check if any character might have exited or entered the level
-            /*CharacterSave[] characterExited = _charactersOLD.Keys.ToList().Except(_levelGraphsByBuildIndex[_selectedLevel].CharacterSaves).ToArray();
-            CharacterSave[] characterEntered = _levelGraphsByBuildIndex[_selectedLevel].CharacterSaves.Except(_charactersOLD.Keys.ToList()).ToArray();
+            CharacterState[] characterExited = _characters.Where(c => _debugWidnowCharacters.ContainsKey(c.Id) && c.BuildIndex != _selectedLevel).ToArray();
+            CharacterState[] characterEntered = _characters.Where(c => !_debugWidnowCharacters.ContainsKey(c.Id) && c.BuildIndex == _selectedLevel).ToArray();
 
+            // Remove exited characters
             for (int i = 0; i < characterExited.Length; i++)
             {
-                Destroy(_charactersOLD[characterExited[i]]);
-                _charactersOLD.Remove(characterExited[i]);
+                Destroy(_debugWidnowCharacters[characterExited[i].Id].gameObject);
+                _debugWidnowCharacters.Remove(characterExited[i].Id);
             }
 
+            // Add entered characters
             for (int i = 0; i < characterEntered.Length; i++)
             {
                 CreateCharacter(characterEntered[i], characterEntered[i].Position + _levelGraphContainer.transform.position + _characterPositionOffset);
-            }*/
-            //--------------------------------------------------------
+            }
+
+            // Update all characters position and rotation
             foreach (CharacterState character in _characters)
             {
-                if (!_characterInstances.ContainsKey(character.ID))
+                if (!_debugWidnowCharacters.ContainsKey(character.Id))
                 {
                     continue;
                 }
 
-                _characterInstances[character.ID].transform.position = character.Position + _levelGraphContainer.transform.position + _characterPositionOffset;
-                _characterInstances[character.ID].transform.LookAt(_characterInstances[character.ID].transform.position - _camera.transform.forward);
+                _debugWidnowCharacters[character.Id].transform.position = character.Position + _levelGraphContainer.transform.position + _characterPositionOffset;
+                _debugWidnowCharacters[character.Id].transform.LookAt(_debugWidnowCharacters[character.Id].transform.position + _camera.transform.forward);
+                _debugWidnowCharacters[character.Id].DisplayText(character.ChangingLevel);
+                _debugWidnowCharacters[character.Id].SetLevelText(character.TargetLevel.ToString());
+
             }
         }
 
@@ -332,10 +338,7 @@ public class DebugWindow : MonoBehaviour
                 Debug.Log(hit.transform.gameObject.name);
             }
         }
-    }
 
-    private void LateUpdate()
-    {
         _clicked = false;
     }
 

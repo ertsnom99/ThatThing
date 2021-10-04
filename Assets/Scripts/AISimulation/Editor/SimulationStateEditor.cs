@@ -386,7 +386,7 @@ public class SimulationStateEditor : Editor
             bool validVertex = vertex.intValue >= 0 && vertex.intValue < vertexOptions.Length;
             GUI.color = !validVertex ? Color.red : _originalTextColor;
             GUI.backgroundColor = !validVertex ? Color.red : _originalBackgroundColor;
-            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * (1.1f + _reorderableListElementSpaceRatio), rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Vertex"));
+            EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * (1.1f + _reorderableListElementSpaceRatio), rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Vertex (id)"));
             vertex.intValue = EditorGUI.Popup(new Rect(rect.x + rect.width * .2f, rect.y + EditorGUIUtility.singleLineHeight * (1.0f + _reorderableListElementSpaceRatio), rect.width * .8f, EditorGUIUtility.singleLineHeight), vertex.intValue, vertexOptions);
             GUI.color = Color.white;
             GUI.backgroundColor = _originalBackgroundColor;
@@ -582,7 +582,7 @@ public class SimulationStateEditor : Editor
             // Add new levelStateByBuildIndex
             ReorderableList.defaultBehaviours.DoAddButton(list);
 
-            list.serializedProperty.GetArrayElementAtIndex(list.count - 1).FindPropertyRelative("_edge").FindPropertyRelative("Id").intValue = _levelEdgeIdCount.intValue;
+            list.serializedProperty.GetArrayElementAtIndex(list.count - 1).FindPropertyRelative("_edge").FindPropertyRelative("_id").intValue = _levelEdgeIdCount.intValue;
             list.serializedProperty.GetArrayElementAtIndex(list.count - 1).FindPropertyRelative("_edge").FindPropertyRelative("Traversable").boolValue = true;
             
             _levelEdgeIdCount.intValue++;

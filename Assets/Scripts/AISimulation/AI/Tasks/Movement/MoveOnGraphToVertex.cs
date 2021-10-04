@@ -5,7 +5,7 @@ using GraphCreator;
 using UnityEngine;
 
 [TaskCategory("AI Simulation")]
-public class SimplifiedMoveToVertex : Action
+public class MoveOnGraphToVertex : Action
 {
     public SharedGraph LevelGraph;
     public SharedCharacterState CharacterState;

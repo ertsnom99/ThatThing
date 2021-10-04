@@ -10,20 +10,57 @@ namespace GraphCreator
     [Serializable]
     public struct Vertex
     {
-        public int Id;
+        [SerializeField]
+        private int _id;
+
+        public int Id
+        {
+            get => _id;
+            private set
+            {
+                _id = value;
+            }
+        }
+
         public Vector3 Position;
+
+        public Vertex(int id, Vector3 pos)
+        {
+            _id = id;
+            Position = pos;
+        }
     }
 
     [Serializable]
     public struct Edge
     {
-        public int Id;
+        [SerializeField]
+        private int _id;
+
+        public int Id
+        {
+            get => _id;
+            private set
+            {
+                _id = value;
+            }
+        }
+
         // Index of VertexA in Vertices
         public int VertexA;
         // Index of VertexB in Vertices
         public int VertexB;
         public EdgeDirection Direction;
         public bool Traversable;
+
+        public Edge(int id, int vertexA, int vertexB, EdgeDirection direction, bool traversable)
+        {
+            _id = id;
+            VertexA = vertexA;
+            VertexB = vertexB;
+            Direction = direction;
+            Traversable = traversable;
+        }
     }
 
     public enum EdgeDirection { Bidirectional, AtoB, BtoA };
@@ -87,7 +124,7 @@ namespace GraphCreator
         private List<PathSegment> _shortestPath = new List<PathSegment>();
         private float[] _distances;
         private int[] _parents;
-        private List<int> _vertexIndices = new List<int>();
+        private List<int> _vertexIndexes = new List<int>();
         private List<AStarNode> _visitedVertex = new List<AStarNode>();
         private List<AStarNode> _activeVertex = new List<AStarNode>();
         private int[] _indexes;
@@ -172,10 +209,28 @@ namespace GraphCreator
                 sourcePosition.Progress = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude - sourcePosition.Progress;
             }
 
-            // Special case where sourcePosition and targetPosition are both on the same edge and the path can simply go from sourcePosition to targetPosition
-            if (sourcePosition.VertexA == targetPosition.VertexA && sourcePosition.VertexB == targetPosition.VertexB) 
+            // Special case where sourcePosition and targetPosition are both on the same edge
+            if (sourcePosition.VertexA == targetPosition.VertexA && sourcePosition.VertexB == targetPosition.VertexB)
             {
-                if (sourcePosition.Progress <= targetPosition.Progress && _adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
+                if (sourcePosition.VertexB == -1)
+                {
+                    path = new PathSegment[2];
+
+                    path[0].PositionOnGraph.VertexA = sourcePosition.VertexA;
+                    path[0].PositionOnGraph.VertexB = sourcePosition.VertexB;
+                    path[0].PositionOnGraph.Progress = sourcePosition.Progress;
+                    path[0].Distance = 0;
+                    path[0].Position = _vertices[sourcePosition.VertexA].Position;
+
+                    path[1].PositionOnGraph.VertexA = targetPosition.VertexA;
+                    path[1].PositionOnGraph.VertexB = targetPosition.VertexB;
+                    path[1].PositionOnGraph.Progress = targetPosition.Progress;
+                    path[1].Distance = 0;
+                    path[1].Position = _vertices[targetPosition.VertexA].Position;
+
+                    return true;
+                }
+                else if (sourcePosition.Progress <= targetPosition.Progress && _adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
                 {
                     path = new PathSegment[2];
                     float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
@@ -215,14 +270,14 @@ namespace GraphCreator
                 }
             }
 
-            _vertexIndices.Clear();
+            _vertexIndexes.Clear();
             const int infiniteDistance = 999999;
 
             for (int i = 0; i < _vertices.Length; i++)
             {
                 _distances[i] = infiniteDistance;
                 _parents[i] = -1;
-                _vertexIndices.Add(i);
+                _vertexIndexes.Add(i);
             }
 
             // Add the distances of the source position vertices
@@ -244,27 +299,27 @@ namespace GraphCreator
             }
 
             // Calculate shortest distances for all vertices
-            while (_vertexIndices.Count > 0)
+            while (_vertexIndexes.Count > 0)
             {
                 // Find the closest vertex to source
-                int vertexIndex = _vertexIndices[0];
+                int vertexIndex = _vertexIndexes[0];
 
-                for(int i = 1; i < _vertexIndices.Count; i++)
+                for(int i = 1; i < _vertexIndexes.Count; i++)
                 {
-                    if (_distances[_vertexIndices[i]] < _distances[vertexIndex])
+                    if (_distances[_vertexIndexes[i]] < _distances[vertexIndex])
                     {
-                        vertexIndex = _vertexIndices[i];
+                        vertexIndex = _vertexIndexes[i];
                     }
                 }
             
                 // Remove closest vertex
-                _vertexIndices.Remove(vertexIndex);
+                _vertexIndexes.Remove(vertexIndex);
 
                 // Set shortest distance for all neighbors of the closest vertex
                 for (int i = 0; i < _vertices.Length; i++)
                 {
-                    // Skip vertex i if not accessible or already removed from Q
-                    if (_adjMatrix[vertexIndex, i] < 0 || !_vertexIndices.Contains(i))
+                    // Skip vertex i if not accessible or already removed from _vertexIndexes
+                    if (_adjMatrix[vertexIndex, i] < 0 || !_vertexIndexes.Contains(i))
                     {
                         continue;
                     }
@@ -404,10 +459,28 @@ namespace GraphCreator
                 sourcePosition.Progress = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude - sourcePosition.Progress;
             }
 
-            // Special case where sourcePosition and targetPosition are both on the same edge and the path can simply go from sourcePosition to targetPosition
+            // Special case where sourcePosition and targetPosition are both on the same edge
             if (sourcePosition.VertexA == targetPosition.VertexA && sourcePosition.VertexB == targetPosition.VertexB)
             {
-                if (sourcePosition.Progress <= targetPosition.Progress && _adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
+                if (sourcePosition.VertexB == -1)
+                {
+                    path = new PathSegment[2];
+
+                    path[0].PositionOnGraph.VertexA = sourcePosition.VertexA;
+                    path[0].PositionOnGraph.VertexB = sourcePosition.VertexB;
+                    path[0].PositionOnGraph.Progress = sourcePosition.Progress;
+                    path[0].Distance = 0;
+                    path[0].Position = _vertices[sourcePosition.VertexA].Position;
+
+                    path[0].PositionOnGraph.VertexA = targetPosition.VertexA;
+                    path[0].PositionOnGraph.VertexB = targetPosition.VertexB;
+                    path[0].PositionOnGraph.Progress = targetPosition.Progress;
+                    path[0].Distance = 0;
+                    path[0].Position = _vertices[targetPosition.VertexA].Position;
+
+                    return true;
+                }
+                else if (sourcePosition.Progress <= targetPosition.Progress && _adjMatrix[sourcePosition.VertexA, sourcePosition.VertexB] > -1)
                 {
                     path = new PathSegment[2];
                     float AtoBMagnitude = (_vertices[sourcePosition.VertexA].Position - _vertices[sourcePosition.VertexB].Position).magnitude;
@@ -793,9 +866,7 @@ namespace GraphCreator
             // Record the Graph before applying change to allow undo
             Undo.RecordObject(this, "Added Vertex");
 
-            Vertex newVertex = new Vertex();
-            newVertex.Id = GenerateUniqueVertexId();
-            newVertex.Position = position;
+            Vertex newVertex = new Vertex(GenerateUniqueVertexId(), position);
 
             List<Vertex> tempVertices = new List<Vertex>(_vertices);
             tempVertices.Add(newVertex);
@@ -880,12 +951,7 @@ namespace GraphCreator
             // Record the Graph before applying change to allow undo
             Undo.RecordObject(this, "Added Edge");
 
-            Edge newEdge = new Edge();
-            newEdge.Id = GenerateUniqueEdgeId();
-            newEdge.VertexA = vertexA;
-            newEdge.VertexB = vertexB;
-            newEdge.Direction = direction;
-            newEdge.Traversable = traversable;
+            Edge newEdge = new Edge(GenerateUniqueEdgeId(), vertexA, vertexB, direction, traversable);
 
             List<Edge> tempEdges = new List<Edge>(_edges);
             tempEdges.Add(newEdge);

@@ -293,7 +293,7 @@ namespace GraphCreator
             ReorderableVertices.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
             {
                 // Get the data
-                SerializedProperty id = ReorderableVertices.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
+                SerializedProperty id = ReorderableVertices.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_id");
                 SerializedProperty position = ReorderableVertices.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Position");
 
                 EditorGUI.LabelField(new Rect(rect.x, rect.y + EditorGUIUtility.singleLineHeight * .1f, rect.width * .2f, EditorGUIUtility.singleLineHeight), new GUIContent("Id: " + id.intValue.ToString()));
@@ -409,7 +409,7 @@ namespace GraphCreator
             ReorderableEdges.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
             {
                 // Get the edge data
-                SerializedProperty id = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Id");
+                SerializedProperty id = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("_id");
                 SerializedProperty vertexA = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("VertexA");
                 SerializedProperty vertexB = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("VertexB");
                 SerializedProperty direction = ReorderableEdges.serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("Direction");
@@ -417,8 +417,8 @@ namespace GraphCreator
 
                 if (_vertices.count > vertexA.intValue && _vertices.count > vertexB.intValue)
                 {
-                    int vertexAId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexA.intValue).FindPropertyRelative("Id").intValue;
-                    int vertexBId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexB.intValue).FindPropertyRelative("Id").intValue;
+                    int vertexAId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexA.intValue).FindPropertyRelative("_id").intValue;
+                    int vertexBId = _vertices.serializedProperty.GetArrayElementAtIndex(vertexB.intValue).FindPropertyRelative("_id").intValue;
                     float distance = (_editorSettings.CurrentGraph.Vertices[vertexA.intValue].Position - _editorSettings.CurrentGraph.Vertices[vertexB.intValue].Position).magnitude;
                     string directionText = "";
 
@@ -600,7 +600,8 @@ namespace GraphCreator
                         DrawArrow(startVertex + direction * ((j + 1) / (float)_editorSettings.DebugEdgeArrowCount),
                                   direction,
                                   _editorSettings.DebugEdgeArrowHeadLength,
-                                  _editorSettings.DebugEdgeArrowHeadAngle);
+                                  _editorSettings.DebugEdgeArrowHeadAngle,
+                                  _editorSettings.DebugEdgeThickness);
                     }
                 }
             }
@@ -616,12 +617,12 @@ namespace GraphCreator
         }
 
         // Code taken from: https://forum.unity.com/threads/debug-drawarrow.85980/
-        private void DrawArrow(Vector3 pos, Vector3 direction, float arrowHeadLength = 1.0f, float arrowHeadAngle = 20.0f)
+        private void DrawArrow(Vector3 pos, Vector3 direction, float length = 1.0f, float angle = 20.0f, float thickness = .5f)
         {
-            Vector3 right = Quaternion.LookRotation(direction) * Quaternion.Euler(0, 180 + arrowHeadAngle, 0) * new Vector3(0, 0, 1);
-            Vector3 left = Quaternion.LookRotation(direction) * Quaternion.Euler(0, 180 - arrowHeadAngle, 0) * new Vector3(0, 0, 1);
-            Handles.DrawLine(pos, pos + right * arrowHeadLength);
-            Handles.DrawLine(pos, pos + left * arrowHeadLength);
+            Vector3 right = Quaternion.LookRotation(direction) * Quaternion.Euler(0, 180 + angle, 0) * new Vector3(0, 0, 1);
+            Vector3 left = Quaternion.LookRotation(direction) * Quaternion.Euler(0, 180 - angle, 0) * new Vector3(0, 0, 1);
+            Handles.DrawLine(pos, pos + right * length, thickness);
+            Handles.DrawLine(pos, pos + left * length, thickness);
         }
 
         private void DrawGUIDebug()

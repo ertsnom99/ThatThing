@@ -41,7 +41,7 @@ public partial class CharacterState
     [SerializeField]
     private int _id;
 
-    public int ID
+    public int Id
     {
         get { return _id; }
         private set { _id = value; }
@@ -63,12 +63,16 @@ public partial class CharacterState
     public Vector3 Position;
     [NonSerialized]
     public Vector3 Rotation;
+    [NonSerialized]
+    public bool ChangingLevel;
+    [NonSerialized]
+    public int TargetLevel;
 
     public CharacterState() { }
 
     public CharacterState(CharacterState characterState)
     {
-        _id = characterState.ID;
+        _id = characterState.Id;
         _settings = characterState.Settings;
         BuildIndex = characterState.BuildIndex;
         PositionOnGraph.VertexA = characterState.PositionOnGraph.VertexA;
@@ -76,6 +80,8 @@ public partial class CharacterState
         PositionOnGraph.Progress = characterState.PositionOnGraph.Progress;
         Position = characterState.Position;
         Rotation = characterState.Rotation;
+        ChangingLevel = characterState.ChangingLevel;
+        TargetLevel = characterState.TargetLevel;
     }
 }
 
@@ -110,6 +116,8 @@ public partial class LevelEdge
         get { return _edge; }
         private set { _edge = value; }
     }
+
+    public LevelEdge() { }
 
     public LevelEdge(int levelA, int levelB, Edge edge)
     {

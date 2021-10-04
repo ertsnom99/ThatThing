@@ -3693,8 +3693,8 @@ MonoBehaviour:
   _wallMask:
     serializedVersion: 2
     m_Bits: 64
-  _useDebugGameState: 0
-  _debugGameState: {fileID: 0}
+  _useDebugSimulationState: 0
+  _debugSimulationState: {fileID: 0}
   _windowPrefab: {fileID: 4262591605851610359, guid: a1b3dc5fe6bb0634a957614d866e3c8b, type: 3}
   _parent: {fileID: 1071718013}
   _toggleKey: 282

@@ -36,7 +36,7 @@ public class LevelMenu : MonoBehaviour
     {
         int buildIndex = int.Parse(_levelDropdown.options[_levelDropdown.value].text);
 
-        SimulationManager.Instance.UpdateCharactersState();
+        SimulationManager.Instance.UpdateCharacterStatesInCurrentLevel();
         
         SceneManager.LoadScene(buildIndex, LoadSceneMode.Single);
     }

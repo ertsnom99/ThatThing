@@ -17,8 +17,8 @@ namespace GraphCreator
         [SerializeField]
         private LayerMask _wallMask;
 
-private GameObject sphereA;
-private GameObject sphereB;
+        private GameObject sphereA;
+        private GameObject sphereB;
 
         private void Awake()
         {
@@ -27,8 +27,8 @@ private GameObject sphereB;
                 Graph.Initialize();
             }
 
-sphereA = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-sphereB = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphereA = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphereB = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         }
 
         private void Update()

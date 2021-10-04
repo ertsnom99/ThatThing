@@ -3,7 +3,7 @@ using BehaviorDesigner.Runtime.Tasks;
 using UnityEngine;
 
 [TaskCategory("AI Simulation")]
-public class ChooseVertex : Action
+public class ChooseRandomVertex : Action
 {
     public SharedGraph LevelGraph;
     public SharedCharacterState CharacterState;

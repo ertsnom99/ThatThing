@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 387b15422ee2dfa46bc85f7b7b1d14e3, type: 3}
   m_Name: GraphEditorWindowSettings
   m_EditorClassIdentifier: 
-  CurrentGraph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
+  CurrentGraph: {fileID: 11400000, guid: e8d4687d5b50fac47adad5f60f2844d3, type: 2}
   DefaultAddedOffset: {x: 0, y: 0.1, z: 0}
   DefaultEdgeDirection: 0
   DefaultEdgeTraversable: 1

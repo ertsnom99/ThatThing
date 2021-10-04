@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using BehaviorDesigner.Runtime;
@@ -11,12 +12,17 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 {
     private int _buildIndex = -1;
 
+    private Dictionary<int, GameObject> _AIContainers = new Dictionary<int, GameObject>();
     private Dictionary<int, BehaviorTree> _characterBehaviorsById = new Dictionary<int, BehaviorTree>();
     private Dictionary<int, BehaviorTree> _simplifiedCharacterBehaviorsById = new Dictionary<int, BehaviorTree>();
     private float _timeSinceLastTick = .0f;
 
+    private const string _levelIndexesVariableName = "LevelIndexes";
+    private const string _levelEdgesVariableName = "LevelEdges";
     private const string _levelGraphVariableName = "LevelGraph";
     private const string _characterStateVariableName = "CharacterState";
+    
+    private const string _changingLevelEvent = "ChangingLevel";
 
     [SerializeField]
     private LayerMask _wallMask;
@@ -50,58 +56,60 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
     private void CreateAIs()
     {
         // Prepare containers for the AIs
-        Dictionary<int, GameObject> AIContainers = new Dictionary<int, GameObject>();
-
         foreach(int buildIndex in _levelGraphsByBuildIndex.Keys)
         {
-            AIContainers.Add(buildIndex, new GameObject("level " + buildIndex));
-            AIContainers[buildIndex].transform.parent = transform;
+            _AIContainers.Add(buildIndex, new GameObject("level " + buildIndex));
+            _AIContainers[buildIndex].transform.parent = transform;
         }
 
-        BehaviorTree AI;
-
+        // Create each AI
         foreach(CharacterState character in _characters)
         {
-            if (_buildIndex == character.BuildIndex)
-            {
-                // Create AIs
-                AI = CreateAI(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
-                              character.Position,
-                              Quaternion.Euler(character.Rotation),
-                              null,
-                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior,
-                              _levelGraphsByBuildIndex[character.BuildIndex],
-                              character);
-
-                AI.gameObject.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
-                _characterBehaviorsById.Add(character.ID, AI);
-            }
-            else
-            {
-                // Create simplified AIs
-                AI = CreateAI(_simulationSettings.SimplifiedAIPrefab,
-                              Vector3.zero,
-                              Quaternion.identity,
-                              AIContainers[character.BuildIndex].transform,
-                              _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior,
-                              _levelGraphsByBuildIndex[character.BuildIndex],
-                              character);
-
-                AI.GetComponent<SimplifiedCharacterMovement>().SetSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
-                _simplifiedCharacterBehaviorsById.Add(character.ID, AI);
-            }
+            CreateAI(character);
         }
     }
 
-    private BehaviorTree CreateAI(GameObject prefab, Vector3 position, Quaternion rotation, Transform AIContainer, ExternalBehavior behavior, Graph levelGraph, CharacterState characterState)
+    private void CreateAI(CharacterState character)
     {
-        GameObject AI = Instantiate(prefab, position, rotation, AIContainer);
-        BehaviorTree behaviorTree = AI.GetComponent<BehaviorTree>();
-        behaviorTree.ExternalBehavior = behavior;
-        behaviorTree.SetVariableValue(_levelGraphVariableName, levelGraph);
-        behaviorTree.SetVariableValue(_characterStateVariableName, characterState);
+        GameObject AI;
+        ExternalBehavior externalBehavior;
+        Dictionary<int, BehaviorTree> behaviorsById;
 
-        return behaviorTree;
+        if (character.BuildIndex == _buildIndex)
+        {
+            AI = Instantiate(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].Prefab,
+                             character.Position,
+                             Quaternion.Euler(character.Rotation),
+                             null);
+
+            AI.GetComponent<CharacterMovement>().SetMaxWalkSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
+
+            externalBehavior = _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].PrefabBehavior;
+            behaviorsById = _characterBehaviorsById;
+        }
+        else
+        {
+            AI = Instantiate(_simulationSettings.SimplifiedAIPrefab,
+                             Vector3.zero,
+                             Quaternion.identity,
+                             _AIContainers[character.BuildIndex].transform);
+
+            AI.GetComponent<SimplifiedCharacterMovement>().SetSpeed(_simulationSettings.CharactersSettingsUsed.Settings[character.Settings].MaxWalkSpeed);
+
+            externalBehavior = _simulationSettings.CharactersSettingsUsed.Settings[character.Settings].SimplifiedBehavior;
+            behaviorsById = _simplifiedCharacterBehaviorsById;
+
+        }
+
+        BehaviorTree behaviorTreeComponent = AI.GetComponent<BehaviorTree>();
+        behaviorTreeComponent.ExternalBehavior = externalBehavior;
+        behaviorTreeComponent.SetVariableValue(_characterStateVariableName, character);
+        behaviorTreeComponent.SetVariableValue(_levelIndexesVariableName, _levelGraphsByBuildIndex.Keys.ToArray());
+        behaviorTreeComponent.SetVariableValue(_levelEdgesVariableName, _levelEdges);
+        behaviorTreeComponent.SetVariableValue(_levelGraphVariableName, _levelGraphsByBuildIndex[character.BuildIndex]);
+
+        behaviorsById.Add(character.Id, behaviorTreeComponent);
+        behaviorTreeComponent.RegisterEvent<object, object>(_changingLevelEvent, OnChangingLevel);
     }
 
     private void Update()
@@ -116,26 +124,71 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
         UpdateDebugWindow();
 #endif
         // Update AIs
-        foreach (BehaviorTree behaviorTree in _characterBehaviorsById.Values)
+        // Must use for instead of foreach, since _characterBehaviorsById may change
+        for (int i = _characterBehaviorsById.Values.Count; i > 0; i--)
         {
-            BehaviorManager.instance.Tick(behaviorTree);
+            BehaviorManager.instance.Tick(_characterBehaviorsById.ElementAt(i - 1).Value);
         }
 
         // Update simplified AIs
         _timeSinceLastTick += Time.deltaTime;
-
+        
+        // Must use for instead of foreach, since _characterBehaviorsById may change
         while (_timeSinceLastTick >= _simulationSettings.SimplifiedAITickRate)
         {
             _timeSinceLastTick -= _simulationSettings.SimplifiedAITickRate;
-            foreach (BehaviorTree behaviorTree in _simplifiedCharacterBehaviorsById.Values)
+            for (int i = _simplifiedCharacterBehaviorsById.Values.Count; i > 0; i--)
             {
-                BehaviorManager.instance.Tick(behaviorTree);
+                BehaviorManager.instance.Tick(_simplifiedCharacterBehaviorsById.ElementAt(i - 1).Value);
             }
         }
     }
 
+    private void OnChangingLevel(object characterState, object targetLevelEdge)
+    {
+        CharacterState state = (CharacterState)characterState;
+        int levelEdge = (int)targetLevelEdge;
+        int targetLevel = ((CharacterState)characterState).BuildIndex == _levelEdges[levelEdge].LevelA ? _levelEdges[levelEdge].LevelB : _levelEdges[levelEdge].LevelA;
+        int targetVertex = targetLevel == _levelEdges[levelEdge].LevelB ? _levelEdges[levelEdge].Edge.VertexB : _levelEdges[levelEdge].Edge.VertexA;
+
+        ChangeAILevel(state, targetLevel, targetVertex);
+    }
+
+    private void ChangeAILevel(CharacterState characterState, int targetLevel, int targetVertex)
+    {
+        // Already in the target level
+        if (targetLevel == characterState.BuildIndex)
+        {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            Debug.LogError("Trying the change AI level, but he's already in the target level!");
+#endif
+            return;
+        }
+
+        int previousBuildIndex = characterState.BuildIndex;
+        UpdateCharacterState(characterState, targetLevel, targetVertex, -1, 0);
+
+        // The AI goes from a simplified level to an other
+        if (previousBuildIndex != _buildIndex && characterState.BuildIndex != _buildIndex)
+        {
+            // Update parent
+            _simplifiedCharacterBehaviorsById[characterState.Id].gameObject.transform.parent = _AIContainers[characterState.BuildIndex].transform;
+            // Update levelGraph of the behavior tree
+            _simplifiedCharacterBehaviorsById[characterState.Id].SetVariableValue(_levelGraphVariableName, _levelGraphsByBuildIndex[characterState.BuildIndex]);
+            
+            return;
+        }
+
+        // The AI goes from the current level to a simplified level or the opposite
+        Dictionary<int, BehaviorTree> behaviorsById = characterState.BuildIndex != _buildIndex ? _characterBehaviorsById : _simplifiedCharacterBehaviorsById;
+        behaviorsById[characterState.Id].UnregisterEvent<object, object>(_changingLevelEvent, OnChangingLevel);
+        Destroy(behaviorsById[characterState.Id].gameObject);
+        behaviorsById.Remove(characterState.Id);
+        CreateAI(characterState);
+    }
+
     // Update the CharacterState of all characters in the level
-    public void UpdateCharactersState()
+    public void UpdateCharacterStatesInCurrentLevel()
     {
         Graph graph = _levelGraphsByBuildIndex[_buildIndex];
 
@@ -148,23 +201,9 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
 
             PositionOnGraph positionOnGraph;
 
-            if (graph.ConvertPositionToGraph(_characterBehaviorsById[character.ID].transform.position, _wallMask, out positionOnGraph))
+            if (graph.ConvertPositionToGraph(_characterBehaviorsById[character.Id].transform.position, _wallMask, out positionOnGraph))
             {
-                character.PositionOnGraph.VertexA = positionOnGraph.VertexA;
-                character.PositionOnGraph.VertexB = positionOnGraph.VertexB;
-                character.PositionOnGraph.Progress = positionOnGraph.Progress;
-
-                if (positionOnGraph.VertexB > -1)
-                {
-                    Vector3 AtoB = graph.Vertices[positionOnGraph.VertexB].Position - graph.Vertices[positionOnGraph.VertexA].Position;
-                    character.Position = Vector3.Lerp(graph.Vertices[positionOnGraph.VertexA].Position, graph.Vertices[positionOnGraph.VertexB].Position, positionOnGraph.Progress / (AtoB).magnitude);
-                    character.Rotation = Quaternion.LookRotation(AtoB, Vector3.up).eulerAngles;
-                }
-                else
-                {
-                    character.Position = graph.Vertices[positionOnGraph.VertexA].Position;
-                    character.Rotation = Vector3.zero;
-                }
+                UpdateCharacterState(character, _buildIndex, positionOnGraph.VertexA, positionOnGraph.VertexB, positionOnGraph.Progress);
             }
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
             else
@@ -172,6 +211,28 @@ public partial class SimulationManager : MonoSingleton<SimulationManager>
                 Debug.LogError("Couldn't find the position on the graph!");
             }
 #endif
+        }
+    }
+
+    private void UpdateCharacterState(CharacterState characterState, int buildIndex, int vertexA, int vertexB, float progress)
+    {
+        characterState.BuildIndex = buildIndex;
+        characterState.PositionOnGraph.VertexA = vertexA;
+        characterState.PositionOnGraph.VertexB = vertexB;
+        characterState.PositionOnGraph.Progress = progress;
+
+        Graph graph = _levelGraphsByBuildIndex[characterState.BuildIndex];
+
+        if (characterState.PositionOnGraph.VertexB > -1)
+        {
+            Vector3 AtoB = graph.Vertices[characterState.PositionOnGraph.VertexB].Position - graph.Vertices[characterState.PositionOnGraph.VertexA].Position;
+            characterState.Position = Vector3.Lerp(graph.Vertices[characterState.PositionOnGraph.VertexA].Position, graph.Vertices[characterState.PositionOnGraph.VertexB].Position, characterState.PositionOnGraph.Progress / (AtoB).magnitude);
+            characterState.Rotation = Quaternion.LookRotation(AtoB, Vector3.up).eulerAngles;
+        }
+        else
+        {
+            characterState.Position = graph.Vertices[characterState.PositionOnGraph.VertexA].Position;
+            characterState.Rotation = Vector3.zero;
         }
     }
 
@@ -396,7 +457,7 @@ public partial class SimulationManager
 
     private void CreateDebugWindow()
     {
-        if (!_windowPrefab || _levelGraphsByBuildIndex.Count <= 0)
+        if (!_windowPrefab || _levelGraphsByBuildIndex.Count <= 2)
         {
             return;
         }

@@ -17,49 +17,48 @@ MonoBehaviour:
   - _buildIndex: 1
     _graph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
     _characterStates:
-    - _id: 20
-      _settings: 1
-      CurrentVertex: 8
+    - _id: 23
+      _settings: 0
+      PositionOnGraph:
+        VertexA: 13
+        VertexB: 0
+        Progress: 0
       Folded: 0
     Folded: 0
   - _buildIndex: 2
     _graph: {fileID: 11400000, guid: e8d4687d5b50fac47adad5f60f2844d3, type: 2}
     _characterStates:
-    - _id: 15
-      _settings: 0
-      CurrentVertex: 0
-      Folded: 0
-    - _id: 16
+    - _id: 26
       _settings: 2
-      CurrentVertex: 17
+      PositionOnGraph:
+        VertexA: 22
+        VertexB: 0
+        Progress: 0
       Folded: 0
     Folded: 0
   - _buildIndex: 3
     _graph: {fileID: 11400000, guid: d9251e4acb038324a8959db988b760e6, type: 2}
-    _characterStates:
-    - _id: 17
-      _settings: 0
-      CurrentVertex: 3
-      Folded: 0
-    - _id: 18
-      _settings: 1
-      CurrentVertex: 15
-      Folded: 0
-    - _id: 19
-      _settings: 0
-      CurrentVertex: 7
-      Folded: 0
+    _characterStates: []
     Folded: 0
   _levelEdges:
   - _levelA: 0
     _levelB: 1
     _edge:
-      Id: 20
+      _id: 27
       VertexA: 0
       VertexB: 0
       Direction: 0
       Traversable: 1
     Folded: 0
-  CharacterIdCount: 21
+  - _levelA: 1
+    _levelB: 2
+    _edge:
+      _id: 28
+      VertexA: 28
+      VertexB: 11
+      Direction: 0
+      Traversable: 1
+    Folded: 0
+  CharacterIdCount: 27
   DisplayCharacterCounters: 0
-  LevelEdgeIdCount: 22
+  LevelEdgeIdCount: 29
